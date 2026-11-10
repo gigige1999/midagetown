@@ -155,7 +155,7 @@
       interiorUnlocked: false,
       expansionUnlocked: false,
       menus: [],
-      shops: { bakery: { status: "locked" }, smithy: { status: "locked" }, general: { status: "locked" } },
+      shops: { bakery: { status: "locked" }, smithy: { status: "locked" }, general: { status: "locked" }, fishmonger: { status: "locked" }, flower: { status: "locked" } },
       expansionFloors: [{}],
       expansionFloorCount: 1,
       currentFloor: 0,
@@ -972,6 +972,8 @@
       else if (shop.unlock === "allrooms") unlocked = ["kitchen","study","barracks","storeroom","chapel"].every(function (id) {
         return s.buildings[id].status === "built";
       });
+      else if (shop.unlock === "stage5") unlocked = D.countBuilt(s) >= 5;
+      else if (shop.unlock === "floor2") unlocked = !!s.expansionUnlocked && (s.expansionFloorCount || 1) >= 2;
       st.status = unlocked ? "available" : "locked";
     });
   }
@@ -2236,8 +2238,8 @@
       '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>④ 吃饭 → 效率</strong><p>每天黎明每位居民吃 1 份食物。吃饱时全员效率 +10%，饿肚子时效率 -30%。厨房会减少 1 份口粮需求。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("crest") + '" alt=""><div><strong>⑤ 两座建筑 → 城堡内部</strong><p>庭院建成两座建筑后，点击场景左上角的「城堡内」，修复厨房、书房、兵营、账房和礼拜堂。每修好一个房间就会有一位新居民加入。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>⑥ 厨房菜单 → 居民收入</strong><p>厨房修好后，点击顶栏金色「菜单」按钮购买菜肴。菜谱会随居民数量逐步解锁；每道菜提高居民金币收入，同时每天额外消耗 1–3 份食物。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>⑦ 庭院商铺 → 额外收入</strong><p>修复厨房、兵营和全部房间后，会陆续开放面包房、铁匠铺和杂货铺。商铺会持续产生金币，也会提高居民收入。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级，升级会改变属性和外观。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>⑦ 庭院商铺 → 额外收入</strong><p>面包房、铁匠铺、杂货铺之外，还会解锁鱼摊（城堡阶段 5）和花摊（扩建第 2 层）。商铺持续产金币、提高居民收入，也各自增加 1 份/天食物消耗。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级或拆除，升级会改变属性和外观；拆除会返还一半材料，并可能让失去房间条件的客人离开。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("bunting") + '" alt=""><div><strong>⑨ 全部修复 → 丰收庆典</strong><p>庭院 3 个区域 + 城堡内 5 个区域全部完成，就能举办庆典。庆典时所有居民会聚到城堡门外。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
@@ -2730,6 +2732,98 @@
     return I.icon(type.icon);
   }
 
+  function expansionRoomRefund(type) {
+    return {
+      wood: Math.floor((type.cost.wood || 0) * 0.5),
+      stone: Math.floor((type.cost.stone || 0) * 0.5),
+      gold: Math.floor((type.cost.gold || 0) * 0.5)
+    };
+  }
+
+  function openDemolishConfirm(slotId) {
+    const room = currentFloorRooms()[slotId];
+    if (!room) return;
+    const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+    if (!type) return;
+    const floor = state.currentFloor;
+    const remainingTypes = {};
+    D.EXPANSION_SLOTS.forEach(function (slot) {
+      const r = currentFloorRooms()[slot.id];
+      if (r && slot.id !== slotId) remainingTypes[r.type] = true;
+    });
+    const willLeave = guestsOnFloor(floor).filter(function (g) {
+      const klass = guestClass(g.klass || "resident");
+      return !klass.requirements.every(function (req) { return !!remainingTypes[req]; });
+    });
+    const bedsAfter = floorRoomsDetailed(floor).reduce(function (n, e) {
+      return n + (e.slot.id === slotId ? 0 : roomCapacity(e.type, e.room));
+    }, 0);
+    const excess = Math.max(0, guestsOnFloor(floor).length - willLeave.length - bedsAfter);
+    const refund = expansionRoomRefund(type);
+    openModal(
+      modalHead("hammer", "扩建层 · 拆除", "拆除「" + type.name + "」？", "会退还一半建造材料，但房间等级和装饰会消失。") +
+      '<div class="modal-body"><div class="demolish-warning">' +
+      (willLeave.length ? "<b>" + willLeave.length + " 位客人会因失去职业房间而离开。</b>" : "") +
+      (excess > 0 ? "<b>还有 " + excess + " 位客人会因床位不足离开。</b>" : "") +
+      (!willLeave.length && excess <= 0 ? "当前没有客人会因此离开。" : "") +
+      "</div>" +
+      '<div class="requirement"><img src="' + I.icon("coin") + '" alt="">拆除返还：' + costTextOnly(refund) + "</div>" +
+      '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">保留房间</button>' +
+      '<button class="btn btn-danger" data-action="demolish-confirm" data-slot="' + slotId + '">确认拆除</button></div></div>'
+    );
+  }
+
+  function costTextOnly(cost) {
+    return RES_ORDER.filter(function (k) { return cost[k]; }).map(function (k) {
+      return D.RESOURCES[k].name + " +" + cost[k];
+    }).join(" · ") || "无";
+  }
+
+  function demolishExpansionRoom(slotId) {
+    const rooms = currentFloorRooms();
+    const room = rooms[slotId];
+    if (!room) return;
+    const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+    if (!type) return;
+    const refund = expansionRoomRefund(type);
+    rooms[slotId] = null;
+    Object.keys(refund).forEach(function (k) {
+      if (refund[k]) state.resources[k] = (state.resources[k] || 0) + refund[k];
+    });
+    const floor = state.currentFloor;
+    // 先移除因职业房间缺失而不满足条件的客人
+    const keep = [];
+    const leaving = [];
+    guestsOnFloor(floor).forEach(function (g) {
+      const klass = guestClass(g.klass || "resident");
+      const met = klass.requirements.every(function (req) { return floorHasType(floor, req); });
+      if (met) keep.push(g); else leaving.push(g);
+    });
+    // 再按剩余床位移除多余客人
+    let remaining = keep;
+    const beds = floorBeds(floor);
+    if (remaining.length > beds) {
+      leaving = leaving.concat(remaining.slice(beds));
+      remaining = remaining.slice(0, beds);
+    }
+    const keepIds = {};
+    remaining.forEach(function (g) { keepIds[g.id] = true; });
+    const leavingIds = {};
+    leaving.forEach(function (g) { leavingIds[g.id] = true; });
+    state.genericResidents = state.genericResidents.filter(function (g) {
+      return !leavingIds[g.id] || (g.floor || 0) !== floor;
+    });
+    leaving.forEach(function (g) {
+      addLog("拆除「" + type.name + "」后，「" + g.name + "」离开了城堡。", "bad");
+    });
+    addLog("第 " + (floor + 1) + " 层拆除了「" + type.name + "」，返还 " + costTextOnly(refund) + "。", "info");
+    toast("已拆除「" + type.name + "」。" + (leaving.length ? " " + leaving.length + " 位客人离开。" : ""), "neutral", "hammer");
+    closeModal(true);
+    ui.guideSig = "";
+    renderAll(true);
+    saveState();
+  }
+
   function openExpansionSlotModal(slotId) {
     if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
     const slot = D.EXPANSION_SLOTS.filter(function (s) { return s.id === slotId; })[0];
@@ -2755,6 +2849,7 @@
           '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
         '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
         '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+        '<button class="btn btn-danger" data-action="demolish-open" data-slot="' + slotId + '">拆除</button>' +
         (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-slot="' + slotId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
         "</div></div>"
       );
@@ -3076,6 +3171,8 @@
       else if (action === "expansion-slot") openExpansionSlotModal(el.dataset.slot);
       else if (action === "build-expansion") buildExpansionRoom(el.dataset.slot, el.dataset.type);
       else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.slot);
+      else if (action === "demolish-open") openDemolishConfirm(el.dataset.slot);
+      else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.slot);
       else if (action === "invite") inviteResident();
       else if (action === "go-recruit") { ui.tab = "build"; switchView("expansion"); }
       else if (action === "recruit-guest") inviteGuest(el.dataset.class);

@@ -1952,6 +1952,26 @@ window.CastleScene = (function () {
     });
   }
 
+  function drawOutdoorSoldiers(t) {
+    if (!stateRef || !stateRef.genericResidents) return;
+    const soldiers = stateRef.genericResidents.filter(function (r) { return (r.klass || "resident") === "soldier"; });
+    if (!soldiers.length) return;
+    const count = Math.min(4, soldiers.length);
+    for (let i = 0; i < count; i++) {
+      let x, y;
+      if (i < 2) {
+        x = i === 0 ? 336 : 384;
+        y = 308 + Math.sin(t * 1.1 + i * 2) * 1;
+      } else {
+        const p = (t * 10 + i * 42) % 170;
+        x = 250 + p;
+        y = 358 + Math.sin(t * 0.8 + i) * 1;
+      }
+      shadow(ctx, x, y, 6, 2, 0.16);
+      drawGuestSprite(x, y, soldiers[i], t, i * 2.4);
+    }
+  }
+
   function drawCat(x, y, t) {
     shadow(ctx, x, y - 1, 10, 3, 0.2);
     // 小垫子
@@ -3566,6 +3586,66 @@ window.CastleScene = (function () {
     R(ctx, 588, 248, 2, 6, "#4f4534");
   }
 
+  function drawFishStall(t) {
+    const x = 470, baseY = 270;
+    shadow(ctx, 516, baseY, 46, 7, 0.24);
+    R(ctx, 476, 218, 82, 38, "#3b2a1a");
+    R(ctx, 478, 220, 78, 34, "#5d5144");
+    // 蓝白条纹遮阳棚
+    for (let i = 0; i < 6; i++) {
+      R(ctx, 476 + i * 14, 212, 15, 10, i % 2 ? "#d8e0dc" : "#4f7488");
+      R(ctx, 476 + i * 14, 220, 15, 3, "rgba(25,18,12,.22)");
+    }
+    R(ctx, 472, 212, 90, 3, "#2b1c12");
+    // 柜台与鱼箱
+    R(ctx, 476, 242, 82, 10, "#3b2a1a");
+    R(ctx, 478, 243, 78, 7, "#8a623b");
+    R(ctx, 484, 228, 28, 12, "#3b2a1a");
+    R(ctx, 486, 229, 24, 9, "#b8c9cc");
+    for (let i = 0; i < 3; i++) {
+      R(ctx, 489 + i * 7, 231, 5, 3, "#8fa6ab");
+      R(ctx, 491 + i * 7, 232, 2, 1, "#e7d7b4");
+    }
+    R(ctx, 520, 228, 26, 14, "#3b2a1a");
+    R(ctx, 522, 229, 22, 11, "#95734c");
+    R(ctx, 527, 231, 12, 6, "#d0b083");
+    // 挂鱼
+    for (let i = 0; i < 3; i++) {
+      const fx = 526 + i * 10;
+      R(ctx, fx, 218, 1, 5, "#4b3725");
+      R(ctx, fx - 3, 223, 8, 3, "#b2c1c1");
+      R(ctx, fx + 4, 224, 3, 2, "#8fa6ab");
+      R(ctx, fx - 1, 224, 2, 1, "#2b2119");
+    }
+    R(ctx, 474, 252, 3, 18, "#3b2a1a");
+    R(ctx, 556, 252, 3, 18, "#3b2a1a");
+  }
+
+  function drawFlowerStall(t) {
+    const x = 214, baseY = 382;
+    shadow(ctx, 258, baseY, 44, 7, 0.22);
+    R(ctx, 218, 334, 80, 38, "#3b2a1a");
+    R(ctx, 220, 336, 76, 34, "#6d5238");
+    // 绿色遮阳棚
+    for (let i = 0; i < 6; i++) {
+      R(ctx, 216 + i * 14, 326, 15, 10, i % 2 ? "#e8ddbd" : "#5c7d4f");
+      R(ctx, 216 + i * 14, 334, 15, 3, "rgba(25,18,12,.22)");
+    }
+    R(ctx, 214, 326, 88, 3, "#2b1c12");
+    // 花桶
+    for (let i = 0; i < 4; i++) {
+      const px = 224 + i * 18;
+      R(ctx, px, 348, 14, 14, "#3b2a1a");
+      R(ctx, px + 1, 350, 12, 11, "#8a623b");
+      for (let j = 0; j < 4; j++) {
+        R(ctx, px + 3 + (j % 2) * 6, 343 + Math.floor(j / 2) * 5, 4, 4, ["#d96c5c", "#e6c05c", "#d9d1e2", "#8db1d1"][j]);
+        R(ctx, px + 4 + (j % 2) * 6, 347 + Math.floor(j / 2) * 5, 1, 3, "#5d7c4a");
+      }
+    }
+    R(ctx, 216, 366, 3, 16, "#3b2a1a");
+    R(ctx, 297, 366, 3, 16, "#3b2a1a");
+  }
+
   function drawShopSign(x, baseY, t) {
     shadow(ctx, x, baseY, 12, 3, 0.2);
     R(ctx, x - 1, baseY - 30, 3, 30, "#3b2a1a");
@@ -3596,6 +3676,10 @@ window.CastleScene = (function () {
         drawMarket(t, true, false, lights);
       } else if (shop.id === "smithy") {
         drawSmithy(t, lights);
+      } else if (shop.id === "fishmonger") {
+        drawFishStall(t);
+      } else if (shop.id === "flower") {
+        drawFlowerStall(t);
       }
     });
   }
@@ -3898,6 +3982,7 @@ window.CastleScene = (function () {
     drawTradeCart(452, 372, time);
     drawSmokeAndParticles(time);
     drawWorkers(time, lightsForFrame);
+    drawOutdoorSoldiers(time);
 
     // 全城张灯结彩
     if (stage >= 4) {

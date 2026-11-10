@@ -402,6 +402,20 @@ window.GameData = (function () {
       unlock: "allrooms", unlockText: "修复所有房间后开放",
       desc: "货架上什么都有，包括你昨天卖掉的那把勺子。",
       flavor: "金铃说，一家好的杂货铺应该让客人空手进来，满载出去。"
+    },
+    {
+      id: "fishmonger", name: "鱼摊", icon: "market", plot: { x: 470, y: 210, w: 98, h: 60, baseY: 270 },
+      cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, residentBonus: 0.05,
+      unlock: "stage5", unlockText: "城堡阶段 5 开放",
+      desc: "清晨的河鱼，带着水草和冰块的味道。",
+      flavor: "鱼摊老板说，最好的鱼要留给最早来的人。"
+    },
+    {
+      id: "flower", name: "花摊", icon: "farm", plot: { x: 214, y: 318, w: 88, h: 64, baseY: 382 },
+      cost: { wood: 30, stone: 15, gold: 90 }, income: 0.22, residentBonus: 0.03,
+      unlock: "floor2", unlockText: "扩建到第 2 层开放",
+      desc: "花摊把颜色带进石头城堡。",
+      flavor: "每束花都附赠一句不合时宜的祝福。"
     }
   ];
 
