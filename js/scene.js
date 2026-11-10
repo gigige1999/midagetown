@@ -1624,7 +1624,7 @@ window.CastleScene = (function () {
     if (status === "available") {
       drawRubble(plot, true);
       // 蓝图虚影
-      ctx.globalAlpha = 0.16;
+      ctx.globalAlpha = 0.28;
       drawer(t, false, true, []);
       ctx.globalAlpha = 1;
       return;
@@ -2957,6 +2957,63 @@ window.CastleScene = (function () {
     });
   }
 
+  function floorSkinData(id) {
+    const skins = {
+      stone: { base: "#6e5a49", a: "#766252", b: "#615244", corridor: "#4b2f26", runner: "#8c3f34", accent: "#d6a449", name: "灰石砖" },
+      wood: { base: "#7c5939", a: "#8b653f", b: "#69492d", corridor: "#5b422a", runner: "#4e6b42", accent: "#c9a24e", name: "暖木地板" },
+      checker: { base: "#8f8677", a: "#d2c6ad", b: "#4e4942", corridor: "#3f3a34", runner: "#6d5b74", accent: "#d6d0bd", name: "黑白棋盘" },
+      moss: { base: "#64705a", a: "#718061", b: "#526048", corridor: "#3f4b3b", runner: "#5b7c4a", accent: "#a7bd76", name: "青苔石砖" },
+      royal: { base: "#6f4e4b", a: "#8e5a51", b: "#3d2e31", corridor: "#3a1f26", runner: "#8f2f3d", accent: "#d6a449", name: "皇家红石" }
+    };
+    return skins[id] || skins.stone;
+  }
+
+  function drawSkinFloorBase(x, y, w, h, skin) {
+    const p = floorSkinData(skin);
+    R(ctx, x, y, w, h, p.base);
+    const step = skin === "checker" ? 14 : 12;
+    for (let yy = y; yy < y + h; yy += step) {
+      for (let xx = x; xx < x + w; xx += step) {
+        const odd = ((Math.floor((xx - x) / step) + Math.floor((yy - y) / step)) % 2) === 0;
+        if (skin === "checker") R(ctx, xx, yy, step - 1, step - 1, odd ? p.a : p.b);
+        else if (skin === "wood") {
+          if (Math.floor((yy - y) / 5) !== Math.floor((yy - y - 1) / 5)) R(ctx, xx, yy, step, 1, p.b);
+        } else if (skin === "moss") {
+          if ((xx + yy) % 23 === 0) R(ctx, xx, yy, 4, 3, p.accent);
+          else if (odd) R(ctx, xx, yy, step, 1, "rgba(90,110,80,.16)");
+        } else if (skin === "royal") {
+          R(ctx, xx, yy, step, 1, odd ? "rgba(214,164,73,.18)" : "rgba(45,30,32,.2)");
+          if ((xx + yy) % 29 === 0) R(ctx, xx, yy, 3, 3, "#c39a51");
+        } else {
+          if (odd) R(ctx, xx, yy, step, 1, "rgba(45,35,28,.12)");
+        }
+      }
+    }
+  }
+
+  function drawSkinRoomOverlay(skin, x, y, w, h) {
+    if (skin === "stone") return;
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    const p = floorSkinData(skin);
+    if (skin === "checker") {
+      for (let yy = y; yy < y + h; yy += 14) for (let xx = x; xx < x + w; xx += 14) {
+        const odd = ((Math.floor((xx - x) / 14) + Math.floor((yy - y) / 14)) % 2) === 0;
+        R(ctx, xx, yy, 13, 13, odd ? p.a : p.b);
+      }
+    } else if (skin === "wood") {
+      R(ctx, x, y, w, h, "rgba(180,120,60,.14)");
+      for (let yy = y; yy < y + h; yy += 7) R(ctx, x, yy, w, 1, "rgba(70,40,20,.3)");
+    } else if (skin === "moss") {
+      R(ctx, x, y, w, h, "rgba(94,126,78,.2)");
+      for (let i = 0; i < 8; i++) R(ctx, x + (i * 37) % w, y + (i * 23) % h, 5, 3, "rgba(150,175,105,.28)");
+    } else if (skin === "royal") {
+      R(ctx, x, y, w, h, "rgba(120,45,50,.18)");
+      for (let yy = y; yy < y + h; yy += 10) R(ctx, x, yy, w, 1, "rgba(214,164,73,.22)");
+    }
+    ctx.restore();
+  }
+
   function drawRoomLevelDecor(level, x, y, w, h, t) {
     if (!level || level <= 1) return;
     // 升级后的金边、地毯与烛光
@@ -2975,7 +3032,7 @@ window.CastleScene = (function () {
     }
   }
 
-  function drawExpansionRoom(type, slot, t, level) {
+  function drawExpansionRoom(type, slot, t, level, skin) {
     const x = slot.x, y = slot.y, w = slot.w, h = slot.h;
     R(ctx, x - 4, y - 4, w + 8, h + 8, "#2a1d17");
     R(ctx, x - 2, y - 2, w + 4, h + 4, "#695242");
@@ -2991,6 +3048,7 @@ window.CastleScene = (function () {
       interiorRoomDark({ x: x + 4, y: y + 4, w: w - 8, h: h - 8 }, 0.42);
       R(ctx, x + 12, y + 10, 2, h - 20, "#3d2c1e");
       R(ctx, x + 13, y + 11, 1, h - 22, "#876445");
+      drawSkinRoomOverlay(skin, x, y, w, h);
       ctx.restore();
       return;
     }
@@ -3064,6 +3122,7 @@ window.CastleScene = (function () {
         R(ctx, cx - 20, y + 39, 40, 11, "#8a623b");
       }
       R(ctx, x + 4, y + 4, w - 8, 2, "#a48569");
+      drawSkinRoomOverlay(skin, x, y, w, h);
       drawRoomLevelDecor(level, x, y, w, h, t);
       ctx.restore();
       return;
@@ -3298,14 +3357,17 @@ window.CastleScene = (function () {
   function drawExpansion(state, dt) {
     const floor = (state && state.currentFloor) || 0;
     const rooms = state && state.expansionFloors ? state.expansionFloors[floor] || {} : {};
+    const skinState = state && state.floorSkins ? state.floorSkins[floor] : null;
+    const skin = skinState && skinState.selected ? skinState.selected : "stone";
+    const skinData = floorSkinData(skin);
     R(ctx, 0, 0, W, H, "#18110e");
     R(ctx, 4, 4, W - 8, H - 8, "#261c16");
     interiorArchWall(8, 8, W - 16, H - 16);
     R(ctx, 18, 18, W - 36, H - 36, "#4b3a31");
-    interiorStoneFloor(20, 20, W - 40, H - 40, "#6e5a49");
+    drawSkinFloorBase(20, 20, W - 40, H - 40, skin);
     // 楼层走廊
-    R(ctx, 20, 168, W - 40, 52, "#4b2f26");
-    R(ctx, 22, 170, W - 44, 48, IN.rug);
+    R(ctx, 20, 168, W - 40, 52, skinData.corridor);
+    R(ctx, 22, 170, W - 44, 48, skinData.runner);
     for (let x = 42; x < W - 42; x += 24) {
       R(ctx, x, 174, 10, 2, "rgba(239,205,140,0.28)");
       R(ctx, x, 212, 10, 2, "rgba(239,205,140,0.28)");
@@ -3317,12 +3379,12 @@ window.CastleScene = (function () {
     ctx.fillStyle = "#f0d28a";
     ctx.font = "12px FusionPixel, FusionPixelExtra, monospace";
     ctx.textAlign = "center";
-    ctx.fillText("F" + (floor + 1) + "  ·  第 " + (floor + 1) + " 层", 360, 200);
+    ctx.fillText("F" + (floor + 1) + "  ·  第 " + (floor + 1) + " 层  ·  " + skinData.name, 360, 200);
     ctx.textAlign = "left";
     D.EXPANSION_SLOTS.forEach(function (slot) {
       const room = rooms[slot.id];
       const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      drawExpansionRoom(type, slot, time, room ? room.level || 1 : 1);
+      drawExpansionRoom(type, slot, time, room ? room.level || 1 : 1, skin);
     });
     // 楼梯
     R(ctx, 318, 352, 84, 32, "#2b1e17");

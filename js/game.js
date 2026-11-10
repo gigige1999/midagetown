@@ -158,6 +158,7 @@
       shops: { bakery: { status: "locked" }, smithy: { status: "locked" }, general: { status: "locked" }, fishmonger: { status: "locked" }, flower: { status: "locked" } },
       expansionFloors: [{}],
       expansionFloorCount: 1,
+      floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       currentFloor: 0,
       trade: { day: 1, bought: { wood: 0, stone: 0, food: 0 } },
       genericResidents: [],
@@ -273,6 +274,20 @@
       if (Object.keys(floor).some(function (k) { return !!floor[k]; })) s.expansionFloorCount = Math.max(s.expansionFloorCount, i + 1);
     });
     s.currentFloor = clamp(Number(raw.currentFloor) || 0, 0, s.expansionFloorCount - 1);
+    s.floorSkins = {};
+    const rawSkins = raw.floorSkins || {};
+    Object.keys(rawSkins).forEach(function (key) {
+      const idx = Number(key);
+      if (!isFinite(idx) || idx < 0 || idx >= D.MAX_FLOORS) return;
+      const src = rawSkins[key] || {};
+      const owned = Array.isArray(src.owned) ? src.owned.filter(function (id) {
+        return D.FLOOR_SKINS.some(function (sk) { return sk.id === id; });
+      }) : [];
+      if (owned.indexOf("stone") < 0) owned.push("stone");
+      const selected = D.FLOOR_SKINS.some(function (sk) { return sk.id === src.selected; }) && owned.indexOf(src.selected) >= 0 ? src.selected : "stone";
+      s.floorSkins[idx] = { owned: owned, selected: selected };
+    });
+    if (!s.floorSkins[0]) s.floorSkins[0] = { owned: ["stone"], selected: "stone" };
     s.genericResidents = Array.isArray(raw.genericResidents) ? raw.genericResidents.filter(function (r) {
       return r && D.MASK_TYPES.some(function (m) { return m.id === r.type; });
     }).map(function (r) {
@@ -2239,7 +2254,7 @@
       '<div class="help-item"><img src="' + I.icon("crest") + '" alt=""><div><strong>⑤ 两座建筑 → 城堡内部</strong><p>庭院建成两座建筑后，点击场景左上角的「城堡内」，修复厨房、书房、兵营、账房和礼拜堂。每修好一个房间就会有一位新居民加入。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>⑥ 厨房菜单 → 居民收入</strong><p>厨房修好后，点击顶栏金色「菜单」按钮购买菜肴。菜谱会随居民数量逐步解锁；每道菜提高居民金币收入，同时每天额外消耗 1–3 份食物。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>⑦ 庭院商铺 → 额外收入</strong><p>面包房、铁匠铺、杂货铺之外，还会解锁鱼摊（城堡阶段 5）和花摊（扩建第 2 层）。商铺持续产金币、提高居民收入，也各自增加 1 份/天食物消耗。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级或拆除，升级会改变属性和外观；拆除会返还一半材料，并可能让失去房间条件的客人离开。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级或拆除；每层还可以单独购买地板皮肤，购买只作用于当前层。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("bunting") + '" alt=""><div><strong>⑨ 全部修复 → 丰收庆典</strong><p>庭院 3 个区域 + 城堡内 5 个区域全部完成，就能举办庆典。庆典时所有居民会聚到城堡门外。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
@@ -2424,6 +2439,82 @@
     return html;
   }
 
+  function floorSkinState(index) {
+    if (!state.floorSkins) state.floorSkins = {};
+    if (!state.floorSkins[index]) state.floorSkins[index] = { owned: ["stone"], selected: "stone" };
+    const st = state.floorSkins[index];
+    if (!Array.isArray(st.owned)) st.owned = ["stone"];
+    if (st.owned.indexOf("stone") < 0) st.owned.push("stone");
+    if (!st.selected || st.owned.indexOf(st.selected) < 0) st.selected = "stone";
+    return st;
+  }
+
+  function floorSkinById(id) {
+    return D.FLOOR_SKINS.filter(function (sk) { return sk.id === id; })[0] || D.FLOOR_SKINS[0];
+  }
+
+  function currentFloorSkin() {
+    return floorSkinState(state.currentFloor || 0);
+  }
+
+  function applyFloorSkin(id) {
+    const skin = floorSkinById(id);
+    const st = currentFloorSkin();
+    if (st.owned.indexOf(skin.id) < 0) return;
+    st.selected = skin.id;
+    toast("第 " + (state.currentFloor + 1) + " 层地板换成「" + skin.name + "」。", "good", "sparkle");
+    A.sfx("page");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+  }
+
+  function buyFloorSkin(id) {
+    const skin = floorSkinById(id);
+    const st = currentFloorSkin();
+    if (st.owned.indexOf(skin.id) >= 0) { applyFloorSkin(id); return; }
+    if (!canAfford({ gold: skin.cost })) {
+      toast("金币不够，购买「" + skin.name + "」需要 " + skin.cost + " 金币。", "bad", "coin");
+      return;
+    }
+    payCost({ gold: skin.cost });
+    st.owned.push(skin.id);
+    st.selected = skin.id;
+    addLog("第 " + (state.currentFloor + 1) + " 层购买了地板皮肤「" + skin.name + "」。", "good");
+    toast("「" + skin.name + "」已应用到第 " + (state.currentFloor + 1) + " 层。", "gold", "sparkle");
+    A.sfx("complete");
+    renderAll(true);
+    saveState();
+    openFloorSkinModal();
+  }
+
+  function openFloorSkinModal() {
+    const floor = state.currentFloor || 0;
+    const st = currentFloorSkin();
+    const rows = D.FLOOR_SKINS.map(function (skin) {
+      const owned = st.owned.indexOf(skin.id) >= 0;
+      const selected = st.selected === skin.id;
+      const can = skin.cost === 0 || canAfford({ gold: skin.cost });
+      return '<div class="floor-skin-row' + (selected ? " selected" : "") + '">' +
+        '<div class="floor-skin-swatch ' + skin.id + '"></div>' +
+        '<div class="floor-skin-copy"><b>' + skin.name + '</b><span>' + skin.desc + "</span>" +
+        '<em>' + (owned ? "本层已拥有" : "仅限本层 · " + skin.cost + " 金币") + "</em></div>" +
+        '<div class="floor-skin-action">' + (selected
+          ? '<span class="menu-check">本层使用中</span>'
+          : owned
+            ? '<button class="btn btn-wood btn-small" data-action="apply-floor-skin" data-id="' + skin.id + '">使用</button>'
+            : '<button class="btn btn-gold btn-small" data-action="buy-floor-skin" data-id="' + skin.id + '"' + (can ? "" : " disabled") + '>购买</button>') +
+        "</div></div>";
+    }).join("");
+    openModal(
+      modalHead("sparkle", "扩建层 · 地板皮肤", "第 " + (floor + 1) + " 层地板", "一次购买只解锁当前楼层；另一层需要单独购买。") +
+      '<div class="modal-body"><div class="floor-skin-list">' + rows + "</div>" +
+      '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b></span>" +
+      '<button class="btn btn-primary" data-action="close-modal">完成</button></div></div>',
+      { className: "modal-floor-skin" }
+    );
+  }
+
   function expansionRoomBrief(type, room) {
     if (!type) return "";
     const parts = [];
@@ -2456,6 +2547,9 @@
       "</div>" +
       (fac.rooms > 0 && (!fac.toilet || !fac.dining) ? '<div class="facility-warning">这一层缺少' + (!fac.toilet ? "厕所" : "") + (!fac.toilet && !fac.dining ? "和" : "") + (!fac.dining ? "餐厅" : "") + "，入住居民会不满意，效率和收入都会下降。</div>" : "") +
       '<div class="summary-note">S 只放小房 · M 放小/中 · L 放任意房；招募看本层房间。</div></div>';
+    const skin = floorSkinById(currentFloorSkin().selected);
+    html += '<div class="floor-skin-card"><div class="floor-skin-swatch ' + skin.id + '"></div><div><b>地板 · ' + skin.name + "</b><span>仅第 " + (floor + 1) + " 层 · 其他层需单独购买</span></div>" +
+      '<button class="btn btn-wood btn-small" data-action="floor-skin-open">更换</button></div>';
     html += renderGuestRecruitSection(floor);
     html += '<div class="guest-recruit-head"><b>房间与位置</b><span>尺寸：S 小 / M 中 / L 大</span></div>';
     D.EXPANSION_SLOTS.forEach(function (slot) {
@@ -3213,6 +3307,9 @@
       else if (action === "expansion-slot") openExpansionSlotModal(el.dataset.slot);
       else if (action === "build-expansion") buildExpansionRoom(el.dataset.slot, el.dataset.type);
       else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.slot);
+      else if (action === "floor-skin-open") openFloorSkinModal();
+      else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);
+      else if (action === "apply-floor-skin") applyFloorSkin(el.dataset.id);
       else if (action === "demolish-open") openDemolishConfirm(el.dataset.slot);
       else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.slot);
       else if (action === "invite") inviteResident();

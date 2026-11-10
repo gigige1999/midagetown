@@ -346,6 +346,14 @@ window.GameData = (function () {
     { level: 6, min: 560, name: "王冠之城" }
   ];
 
+  const FLOOR_SKINS = [
+    { id: "stone", name: "灰石砖", cost: 0, desc: "风息堡原本的灰石地砖，免费。" },
+    { id: "wood", name: "暖木地板", cost: 120, desc: "温暖的木板地面，适合卧室与书房。" },
+    { id: "checker", name: "黑白棋盘", cost: 180, desc: "整齐的黑白石板，带一点贵族气。" },
+    { id: "moss", name: "青苔石砖", cost: 160, desc: "带苔藓的旧石砖，像被花园包住。" },
+    { id: "royal", name: "皇家红石", cost: 300, desc: "深红与金色拼花，最贵也最气派。" }
+  ];
+
   const MENUS = [
     {
       id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10, minResidents: 2, dailyFood: 1,
@@ -676,6 +684,7 @@ window.GameData = (function () {
     GUIDE: GUIDE,
     EVENTS: EVENTS,
     MENUS: MENUS,
+    FLOOR_SKINS: FLOOR_SKINS,
     SHOPS: SHOPS,
     EXPANSION_ROOMS: EXPANSION_ROOMS,
     GUEST_CLASSES: GUEST_CLASSES,
