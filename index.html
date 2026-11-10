@@ -77,7 +77,6 @@
               <button class="view-btn" data-view="indoor"><img data-icon="crest" alt="">城堡内</button>
               <button class="view-btn" data-view="expansion" hidden><img data-icon="sparkle" alt="">扩建层</button>
             </div>
-            <div class="floor-switch" id="floorSwitch" hidden></div>
 
             <div class="progress-widget" id="progressWidget" title="修复庭院和城堡内的所有区域">
               <div class="progress-head">
@@ -93,6 +92,8 @@
             <div class="toast-stack" id="toastStack" aria-live="polite"></div>
           </div>
         </div>
+
+        <div class="floor-strip" id="floorStrip" hidden></div>
 
         <div class="stage-footer">
           <div class="steward">
@@ -123,6 +124,7 @@
             </div>
           </div>
           <div class="ledger-seal"><img data-icon="crown" alt=""></div>
+          <button class="ledger-collapse" id="ledgerCollapse" title="收起账房" aria-label="收起账房">收</button>
         </div>
 
         <nav class="ledger-tabs" id="ledgerTabs" aria-label="账房分类">
@@ -144,6 +146,7 @@
           <span id="ledgerHint">跟着顶部金色按钮走，就能一步步修复城堡</span>
         </div>
       </aside>
+      <button class="ledger-expand" id="ledgerExpand" title="展开账房" aria-label="展开账房" hidden>账房</button>
     </main>
   </div>
 

@@ -407,57 +407,113 @@ window.GameData = (function () {
 
   const EXPANSION_ROOMS = [
     {
-      id: "toilet", name: "厕所", icon: "toilet", cost: { wood: 10, stone: 8, gold: 15 },
+      id: "toilet", name: "厕所", icon: "toilet", size: "S", cost: { wood: 10, stone: 8, gold: 15 },
       capacity: 0, satisfaction: 6, basic: "toilet",
-      desc: "每层的基础设施。该层缺少厕所时，效率与满意度都会下降。"
+      desc: "小型基础房。缺少厕所时，该层效率与满意度都会下降。"
     },
     {
-      id: "dining", name: "餐厅", icon: "market", cost: { wood: 25, stone: 15, gold: 80 },
+      id: "dining", name: "餐厅", icon: "market", size: "S", cost: { wood: 25, stone: 15, gold: 80 },
       capacity: 0, residentBonus: 0.10, satisfaction: 2, basic: "dining",
-      desc: "每层的基础设施。提供餐厅后，这一层才算适合居住。"
+      desc: "中型基础房。提供餐厅后，这一层才算适合居住。"
     },
     {
-      id: "guest", name: "客房", icon: "tavern", cost: { wood: 30, stone: 20, gold: 60 },
-      capacity: 2, residentBonus: 0.10, satisfaction: 1,
-      desc: "增加 2 个床位，住客收入 +10%。"
+      id: "guest", name: "卧室", icon: "tavern", size: "M", cost: { wood: 30, stone: 20, gold: 60 },
+      capacity: 2, residentBonus: 0.05, satisfaction: 1,
+      desc: "中型卧室，增加 2 个床位。士兵/大臣/传教士的招募条件之一。"
     },
     {
-      id: "dorm", name: "宿舍", icon: "dorm", cost: { wood: 40, stone: 18, gold: 45 },
-      capacity: 4, residentBonus: 0.03,
-      desc: "增加 4 个床位，空间更紧凑，收入加成较低。"
+      id: "dorm", name: "宿舍", icon: "dorm", size: "M", cost: { wood: 40, stone: 18, gold: 45 },
+      capacity: 4, residentBonus: 0.02,
+      desc: "中型房。增加 4 个床位，空间紧凑，收入加成较低。"
     },
     {
-      id: "workshop", name: "工坊", icon: "hammer", cost: { wood: 35, stone: 30, gold: 70 },
+      id: "workshop", name: "工坊", icon: "hammer", size: "S", cost: { wood: 35, stone: 30, gold: 70 },
       capacity: 0, productionBonus: 0.08,
-      desc: "全城生产 +8%。"
+      desc: "中型房。全城生产 +8%。"
     },
     {
-      id: "garden", name: "花园房", icon: "leaf", cost: { wood: 20, stone: 25, gold: 50 },
+      id: "garden", name: "花园房", icon: "leaf", size: "S", cost: { wood: 20, stone: 25, gold: 50 },
       capacity: 1, foodBonus: 0.10, satisfaction: 3,
-      desc: "增加 1 个床位，食物产出 +10%。"
+      desc: "小型房。增加 1 个床位，食物产出 +10%。"
     },
     {
-      id: "library", name: "图书室", icon: "book", cost: { wood: 28, stone: 26, gold: 75 },
+      id: "library", name: "图书室", icon: "book", size: "S", cost: { wood: 28, stone: 26, gold: 75 },
       capacity: 0, productionBonus: 0.03, residentBonus: 0.08, satisfaction: 2,
-      desc: "生产 +3%，居民收入 +8%。"
+      desc: "中型房。生产 +3%，居民收入 +8%。"
     },
     {
-      id: "bath", name: "浴场", icon: "bath", cost: { wood: 22, stone: 30, gold: 65 },
+      id: "bath", name: "浴场", icon: "bath", size: "S", cost: { wood: 22, stone: 30, gold: 65 },
       capacity: 0, residentBonus: 0.05, satisfaction: 10,
-      desc: "居民收入 +5%，满意度大幅提高。"
+      desc: "中型房。居民收入 +5%，满意度大幅提高。"
+    },
+    {
+      id: "armory", name: "武器库", icon: "hammer", size: "M", cost: { wood: 30, stone: 35, gold: 90 },
+      capacity: 0, satisfaction: 1, defense: 6,
+      desc: "中型军事房。提供防御，是招募士兵的必要房间。"
+    },
+    {
+      id: "study", name: "书房", icon: "book", size: "M", cost: { wood: 32, stone: 28, gold: 95 },
+      capacity: 0, productionBonus: 0.05, residentBonus: 0.05,
+      desc: "中型房。生产 +5%，居民收入 +5%。招募大臣的必要房间。"
+    },
+    {
+      id: "meeting", name: "会议室", icon: "scroll", size: "L", cost: { wood: 55, stone: 45, gold: 160 },
+      capacity: 0, productionBonus: 0.10, residentBonus: 0.08,
+      desc: "大型房，造价较高。生产 +10%，居民收入 +8%。招募大臣的必要房间。"
+    },
+    {
+      id: "chapel", name: "小礼拜堂", icon: "crest", size: "L", cost: { wood: 48, stone: 50, gold: 140 },
+      capacity: 0, satisfaction: 8, productionBonus: 0.03,
+      desc: "大型房。满意度 +8%，生产 +3%。招募传教士的必要房间。"
     }
   ];
 
-  const EXPANSION_SLOTS = [
-    { id: "s1", x: 18, y: 50, w: 162, h: 112 },
-    { id: "s2", x: 188, y: 50, w: 162, h: 112 },
-    { id: "s3", x: 358, y: 50, w: 162, h: 112 },
-    { id: "s4", x: 528, y: 50, w: 162, h: 112 },
-    { id: "s5", x: 18, y: 226, w: 162, h: 112 },
-    { id: "s6", x: 188, y: 226, w: 162, h: 112 },
-    { id: "s7", x: 358, y: 226, w: 162, h: 112 },
-    { id: "s8", x: 528, y: 226, w: 162, h: 112 }
+  const GUEST_CLASSES = [
+    {
+      id: "resident", name: "居民", icon: "people", color: "#c9a24e",
+      requirements: ["guest"], cost: { gold: 25, food: 4 },
+      income: 0.06, defense: 0, productionBonus: 0, satisfaction: 1,
+      trait: "居民提高金币收入；需要一张卧室床位。",
+      needText: "卧室"
+    },
+    {
+      id: "soldier", name: "士兵", icon: "hammer", color: "#6e7f8d",
+      requirements: ["toilet", "armory", "guest"], cost: { gold: 50, stone: 10, food: 6 },
+      income: 0.02, defense: 15, productionBonus: 0, satisfaction: 1,
+      trait: "士兵提高防御，降低隔壁村偷窃的概率。",
+      needText: "厕所 + 武器库 + 卧室"
+    },
+    {
+      id: "minister", name: "大臣", icon: "scroll", color: "#8d668c",
+      requirements: ["meeting", "study", "guest"], cost: { gold: 180, wood: 20, food: 10 },
+      income: 0.03, defense: 0, productionBonus: 0.06, satisfaction: 2,
+      trait: "大臣数量少、房间贵，但每个提供 +6% 生产。",
+      needText: "会议室 + 书房 + 卧室"
+    },
+    {
+      id: "missionary", name: "传教士", icon: "crest", color: "#8b7a4a",
+      requirements: ["chapel", "guest"], cost: { gold: 80, food: 8 },
+      income: 0.03, defense: 0, productionBonus: 0, satisfaction: 4,
+      trait: "没有传教士时，居民产能下降；有传教士后恢复正常。",
+      needText: "小礼拜堂 + 卧室"
+    }
   ];
+
+  const ROOM_SIZE_RANK = { S: 1, M: 2, L: 3 };
+
+  const EXPANSION_SLOTS = [
+    { id: "s1", x: 18, y: 46, w: 78, h: 108, size: "S" },
+    { id: "s2", x: 104, y: 46, w: 210, h: 108, size: "L" },
+    { id: "s3", x: 322, y: 46, w: 136, h: 108, size: "M" },
+    { id: "s4", x: 466, y: 46, w: 120, h: 108, size: "M" },
+    { id: "s5", x: 594, y: 46, w: 92, h: 108, size: "S" },
+    { id: "s6", x: 18, y: 226, w: 78, h: 108, size: "S" },
+    { id: "s7", x: 104, y: 226, w: 136, h: 108, size: "M" },
+    { id: "s8", x: 248, y: 226, w: 210, h: 108, size: "L" },
+    { id: "s9", x: 466, y: 226, w: 120, h: 108, size: "M" },
+    { id: "s10", x: 594, y: 226, w: 92, h: 108, size: "S" }
+  ];
+
   const MASK_TYPES = [
     { id: "merchant", name: "面具商人", mask: "#d6a44e", income: 0.06, quirk: "口袋里总有一枚不属于自己的硬币。" },
     { id: "bard", name: "面具乐师", mask: "#5b7b9d", income: 0.05, quirk: "没人见过面具下的脸，但大家都记得那首歌。" },
@@ -588,6 +644,8 @@ window.GameData = (function () {
     MENUS: MENUS,
     SHOPS: SHOPS,
     EXPANSION_ROOMS: EXPANSION_ROOMS,
+    GUEST_CLASSES: GUEST_CLASSES,
+    ROOM_SIZE_RANK: ROOM_SIZE_RANK,
     MASK_TYPES: MASK_TYPES,
     BASE_CAPACITY: BASE_CAPACITY,
     EXPANSION_SLOTS: EXPANSION_SLOTS,

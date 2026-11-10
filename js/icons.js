@@ -1201,6 +1201,79 @@ window.Icons = (function () {
     return c.toDataURL("image/png");
   }
 
+  function guestPortrait(id, variant) {
+    const key = "guest-" + id + "-" + (variant || 0);
+    if (!portraitCache[key]) {
+      const { c, x } = makeCanvas(40, 40);
+      const v = (variant || 0) % 4;
+      const skins = ["#e0b083", "#c98e63", "#e8c095", "#b97d55"];
+      const hairs = ["#4a3527", "#6b4a2d", "#2f2824", "#7b3f2e"];
+      const skin = skins[v], hair = hairs[(v + 1) % 4];
+      R(x, 0, 0, 40, 40, C.ink);
+      R(x, 1, 1, 38, 38, id === "soldier" ? "#30343a" : id === "minister" ? "#342e3b" : id === "missionary" ? "#302b22" : "#34302a");
+      for (let i = -8; i < 48; i += 7) for (let j = 0; j < 40; j++) {
+        const px = i + j;
+        if (px >= 1 && px < 39 && j % 7 < 2) R(x, px, j, 1, 1, "rgba(255,235,190,0.05)");
+      }
+      const cloth = id === "soldier" ? "#59616c" : id === "minister" ? "#71556f" : id === "missionary" ? "#6a5b3e" : "#4d5c6d";
+      const cloth2 = id === "soldier" ? "#3d454f" : id === "minister" ? "#4c3a4d" : id === "missionary" ? "#4a3f2b" : "#384552";
+      R(x, 5, 27, 30, 12, C.ink);
+      R(x, 7, 28, 26, 10, cloth);
+      R(x, 9, 28, 22, 3, cloth2);
+      // head
+      R(x, 12, 8, 16, 18, C.ink);
+      R(x, 13, 9, 14, 16, skin);
+      R(x, 13, 9, 14, 4, hair);
+      R(x, 14, 17, 2, 2, "#2a1c15");
+      R(x, 24, 17, 2, 2, "#2a1c15");
+      R(x, 19, 22, 2, 1, "#7b4a3a");
+      R(x, 17, 24, 6, 1, "#b97b5d");
+      if (id === "resident") {
+        R(x, 11, 13, 18, 8, C.ink);
+        R(x, 12, 14, 16, 6, ["#c9a24e", "#5b7b9d", "#748f5b", "#8d668c"][v]);
+        R(x, 14, 16, 3, 2, "#2b211b");
+        R(x, 23, 16, 3, 2, "#2b211b");
+        R(x, 19, 14, 2, 6, "#f0d28a");
+        R(x, 18, 10, 1, 3, "#f0d28a");
+        R(x, 22, 9, 1, 4, "#f0d28a");
+        R(x, 9, 26, 22, 2, "#d6a449");
+      } else if (id === "soldier") {
+        R(x, 10, 5, 20, 10, C.ink);
+        R(x, 11, 6, 18, 8, "#8d9495");
+        R(x, 9, 13, 22, 3, "#5f6868");
+        R(x, 19, 8, 2, 12, "#485154");
+        R(x, 25, 17, 2, 3, "#e7d7b4");
+        R(x, 32, 6, 2, 22, "#3b2a1a");
+        R(x, 33, 5, 2, 6, "#b9b3a4");
+        R(x, 35, 5, 4, 2, "#8d9495");
+        R(x, 9, 6, 2, 4, "#a54a3c");
+        R(x, 7, 28, 26, 2, "#a54a3c");
+      } else if (id === "minister") {
+        R(x, 9, 8, 22, 4, C.ink);
+        R(x, 10, 9, 20, 2, "#d3b35e");
+        R(x, 17, 5, 7, 5, "#8a6b3c");
+        R(x, 18, 6, 5, 2, "#c6a55e");
+        R(x, 30, 26, 5, 8, "#e2d3b4");
+        R(x, 31, 27, 3, 1, "#8b6b43");
+        R(x, 31, 29, 3, 1, "#8b6b43");
+        R(x, 20, 27, 2, 8, "#d3b35e");
+        R(x, 8, 30, 24, 1, "#d3b35e");
+      } else if (id === "missionary") {
+        R(x, 9, 6, 22, 9, C.ink);
+        R(x, 10, 7, 20, 7, "#5b4d35");
+        R(x, 12, 6, 16, 3, "#7a6848");
+        R(x, 19, 3, 2, 8, "#d6a449");
+        R(x, 17, 6, 6, 2, "#d6a449");
+        R(x, 8, 26, 24, 2, "#d6a449");
+        R(x, 18, 28, 4, 7, "#d6a449");
+        R(x, 19, 29, 2, 4, "#f0d28a");
+      }
+      R(x, 6, 36, 28, 2, "#241b14");
+      return c.toDataURL("image/png");
+    }
+    return portraitCache[key];
+  }
+
   function maskedPortrait(type) {
     const key = "mask-" + (type ? type.id : "unknown");
     if (!portraitCache[key]) {
@@ -1282,6 +1355,7 @@ window.Icons = (function () {
     portraitFor: portraitFor,
     npcPortrait: npcPortrait,
     maskedPortrait: maskedPortrait,
+    guestPortrait: guestPortrait,
     paintDataIcons: paintDataIcons,
     ROLE_COLOR: ROLE_COLOR,
     C: C
