@@ -2424,6 +2424,18 @@
     return html;
   }
 
+  function expansionRoomBrief(type, room) {
+    if (!type) return "";
+    const parts = [];
+    if (type.capacity) parts.push("床位 " + roomCapacity(type, room));
+    if (type.defense) parts.push("防御 +" + (type.defense + (roomLevel(room) - 1) * 3));
+    if (type.residentBonus) parts.push("收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%");
+    if (type.productionBonus) parts.push("生产 +" + Math.round(type.productionBonus * roomScale(room) * 100) + "%");
+    if (type.foodBonus) parts.push("食物 +" + Math.round(type.foodBonus * roomScale(room) * 100) + "%");
+    if (type.satisfaction) parts.push("满意 +" + (type.satisfaction + (roomLevel(room) - 1) * 2));
+    return parts.join(" · ") || "基础房";
+  }
+
   function renderExpansionBuildTab() {
     const floor = state.currentFloor || 0;
     const rooms = currentFloorRooms();
@@ -2435,7 +2447,7 @@
     const soldiers = classCount("soldier");
     const guests = guestsOnFloor(floor);
     let html = sectionHead("城堡扩建层 · 第 " + (floor + 1) + " 层", built + " / " + D.EXPANSION_SLOTS.length + " 间已建");
-    html += '<div class="people-summary"><div class="summary-main"><img src="' + I.icon("sparkle") + '" alt=""><div><b>自由扩建</b><span>每层 10 个不同大小的位置；先规划房间，再招募客人。</span></div></div>' +
+    html += '<div class="people-summary"><div class="summary-main"><img src="' + I.icon("sparkle") + '" alt=""><div><b>自由扩建</b><span>10 个位置 · 点击房间管理/升级</span></div></div>' +
       '<div class="summary-grid">' +
       '<div class="summary-box"><span>本层床位</span><b>' + guests.length + " / " + floorBeds(floor) + "</b></div>" +
       '<div class="summary-box"><span>防御 / 需要</span><b class="' + (soldiers >= need ? "text-good" : "text-bad") + '">' + defense + " · 士兵 " + soldiers + "/" + need + "</b></div>" +
@@ -2443,7 +2455,7 @@
       '<div class="summary-box"><span>本层餐厅</span><b class="' + (fac.dining ? "text-good" : "text-bad") + '">' + (fac.dining ? "已配置" : "缺少") + "</b></div>" +
       "</div>" +
       (fac.rooms > 0 && (!fac.toilet || !fac.dining) ? '<div class="facility-warning">这一层缺少' + (!fac.toilet ? "厕所" : "") + (!fac.toilet && !fac.dining ? "和" : "") + (!fac.dining ? "餐厅" : "") + "，入住居民会不满意，效率和收入都会下降。</div>" : "") +
-      '<div class="summary-note">房间大小不同：小型位置只能放小型房；中型位置可放小/中型；大型位置可放任意房。招募条件按“本层房间”计算。</div></div>';
+      '<div class="summary-note">S 只放小房 · M 放小/中 · L 放任意房；招募看本层房间。</div></div>';
     html += renderGuestRecruitSection(floor);
     html += '<div class="guest-recruit-head"><b>房间与位置</b><span>尺寸：S 小 / M 中 / L 大</span></div>';
     D.EXPANSION_SLOTS.forEach(function (slot) {
@@ -2451,10 +2463,10 @@
       const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
       html += '<article class="expansion-row ' + (type ? "built" : "empty") + '">' +
         '<div class="expansion-slot-id">' + slot.id.replace("s", "S") + '<small>' + slot.size + '</small></div>' +
-        '<div class="expansion-row-copy"><b>' + (type ? type.name : "空位置") + ' <span class="room-size-tag ' + slot.size + '">' + slot.size + "</span></b>" +
-        '<span>' + (type ? type.desc : "可放置 " + (slot.size === "S" ? "小型" : slot.size === "M" ? "小型 / 中型" : "任意尺寸") + "房间。") + "</span></div>" +
+        '<div class="expansion-row-copy"><b>' + (type ? type.name : "空位置") + ' <span class="room-size-tag ' + slot.size + '">' + slot.size + "</span>" + (type ? " · Lv." + roomLevel(room) : "") + "</b>" +
+        '<span>' + (type ? expansionRoomBrief(type, room) : "可放 " + (slot.size === "S" ? "小房" : slot.size === "M" ? "小/中房" : "任意房")) + "</span></div>" +
         '<div class="expansion-row-action">' + (type
-          ? '<span class="menu-check">' + type.size + " · Lv." + roomLevel(room) + "</span>"
+          ? '<button class="btn btn-ghost btn-small" data-action="expansion-slot" data-slot="' + slot.id + '">管理</button>'
           : '<button class="btn btn-gold btn-small" data-action="expansion-slot" data-slot="' + slot.id + '">建造</button>') + "</div></article>";
     });
     if (built >= D.EXPANSION_SLOTS.length) {
@@ -2465,24 +2477,51 @@
     return html;
   }
 
+  function goDownstairs() {
+    if (!state.expansionUnlocked || state.view !== "expansion") return;
+    const next = state.currentFloor + 1;
+    if (next < state.expansionFloorCount) {
+      state.currentFloor = next;
+      renderAll(true);
+      saveState();
+      A.sfx("page");
+      return;
+    }
+    if (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length && state.expansionFloorCount < D.MAX_FLOORS) {
+      state.expansionFloorCount += 1;
+      state.currentFloor = state.expansionFloorCount - 1;
+      addLog("扩建层第 " + state.expansionFloorCount + " 层开放。", "good");
+      toast("下一层已开放。", "gold", "sparkle");
+      renderAll(true);
+      saveState();
+      A.sfx("page");
+      return;
+    }
+    toast("先把这一层建满 10 个房间，楼梯才会通往下一层。", "bad", "lock");
+  }
+
   function renderFloorSwitch() {
     const el = $("#floorStrip");
     if (!el) return;
     const active = state && state.view === "expansion" && state.expansionUnlocked;
     el.hidden = !active;
     if (!active) { el.innerHTML = ""; return; }
-    let buttons = '<span class="floor-strip-label">楼层</span>';
-    for (let i = 0; i < state.expansionFloorCount; i++) {
-      buttons += '<button class="floor-btn' + (i === state.currentFloor ? " active" : "") + '" data-action="floor" data-floor="' + i + '">F' + (i + 1) + "</button>";
-    }
     const floor = state.currentFloor || 0;
-    buttons += '<span class="floor-strip-stats">' +
+    let html = '<span class="floor-strip-label">楼层</span>';
+    html += '<span class="floor-strip-stats">' +
       "<span>房间 <b>" + floorRoomCount(floor) + "/" + D.EXPANSION_SLOTS.length + "</b></span>" +
       "<span>床位 <b>" + guestsOnFloor(floor).length + "/" + floorBeds(floor) + "</b></span>" +
-      "<span>防御 <b>" + defenseValue() + "</b></span>" +
-      "<span>士兵 <b>" + classCount("soldier") + "/" + requiredSoldiers() + "</b></span>" +
-      "<span>传教士 <b>" + classCount("missionary") + "</b></span></span>";
-    el.innerHTML = buttons;
+      "<span>防御 <b>" + defenseValue() + "</b> · 兵 <b>" + classCount("soldier") + "/" + requiredSoldiers() + "</b></span>" +
+      "<span>传教 <b>" + classCount("missionary") + "</b></span></span>";
+    html += '<span class="floor-btn-row">';
+    for (let i = 0; i < state.expansionFloorCount; i++) {
+      html += '<button class="floor-btn' + (i === state.currentFloor ? " active" : "") + '" data-action="floor" data-floor="' + i + '">F' + (i + 1) + "</button>";
+    }
+    html += "</span>";
+    el.innerHTML = html;
+    const activeFloorBtn = el.querySelector(".floor-btn.active");
+    const row = el.querySelector(".floor-btn-row");
+    if (activeFloorBtn && row) row.scrollLeft = Math.max(0, activeFloorBtn.offsetLeft - row.clientWidth / 2);
   }
 
   function setSidebarCollapsed(collapsed) {
@@ -3016,7 +3055,7 @@
       const afford = canAfford(klass.cost);
       const enabled = met && beds > 0 && afford;
       html += '<article class="guest-recruit-card ' + (enabled ? "ready" : "locked") + '">' +
-        '<div class="guest-recruit-top"><img src="' + I.guestPortrait(klass.id, 0) + '" alt=""><div><b>' + klass.name + '</b><span>' + klass.trait + "</span></div></div>" +
+        '<div class="guest-recruit-top"><img src="' + I.guestPortrait(klass.id, 0) + '" alt=""><div><b>' + klass.name + '</b><span>' + klass.effectShort + "</span></div></div>" +
         '<div class="guest-req-row">' + guestRequirementHTML(klass, floor) + "</div>" +
         '<div class="guest-recruit-foot"><span class="guest-cost">' + costHTML(klass.cost, true) + " · 床位 " + beds + "</span>" +
         '<button class="btn btn-gold btn-small" data-action="recruit-guest" data-class="' + klass.id + '"' + (enabled ? "" : " disabled") + ">招募</button></div></article>";
@@ -3038,12 +3077,15 @@
       let plaque;
       if (type) {
         plaque = '<span class="room-plaque built expansion-plaque"><img src="' + expansionIcon(type) + '" alt="">' +
-          '<span><b>' + type.name + ' · Lv.' + roomLevel(room) + '</b><em>床位 +' + roomCapacity(type, room) + (type.defense ? " · 防 +" + type.defense : "") + '</em></span></span>';
+          '<span><b>' + type.name + '</b></span></span>';
       } else {
         plaque = '<span class="room-plaque available"><b>空位置 · ' + slot.size + '</b><em>S' + slot.id.replace("s", "") + ' · 点击建造</em></span>';
       }
       return '<button class="room-hotspot ' + (type ? "built" : "available") + ' expansion-slot slot-' + slot.size + '" style="' + style + '" data-action="expansion-slot" data-slot="' + slot.id + '" data-size="' + slot.size + '">' + plaque + "</button>";
-    }).join("");
+    }).join("") +
+      '<button class="stair-hotspot" data-action="floor-stairs" title="点击楼梯前往下一层"><span>' +
+      (state.currentFloor + 1 < state.expansionFloorCount ? "下一层" : (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length ? "解锁下一层" : "建满本层")) +
+      '</span></button>';
   }
 
   /* =========================================================
@@ -3183,6 +3225,7 @@
         saveState();
         A.sfx("page");
       }
+      else if (action === "floor-stairs") goDownstairs();
       else if (action === "festival-confirm") holdFestival();
       else if (action === "festival-complete") finishFestival();
       else if (action === "festival") promptFestival();

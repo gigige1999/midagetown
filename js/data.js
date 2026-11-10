@@ -335,7 +335,7 @@ window.GameData = (function () {
   };
 
   const MAX_BUILDING_LEVEL = 5;
-  const MAX_FLOORS = 6;
+  const MAX_FLOORS = 9999;
   const BASE_CAPACITY = 7;
   const CASTLE_LEVELS = [
     { level: 1, min: 0, name: "断墙重生" },
@@ -504,28 +504,28 @@ window.GameData = (function () {
 
   const GUEST_CLASSES = [
     {
-      id: "resident", name: "居民", icon: "people", color: "#c9a24e",
+      id: "resident", name: "居民", icon: "people", color: "#c9a24e", effectShort: "金币收入",
       requirements: ["residence"], cost: { gold: 25, food: 4 },
       income: 0.06, defense: 0, productionBonus: 0, satisfaction: 1,
       trait: "居民提高金币收入；需要一张卧室床位。",
       needText: "民居"
     },
     {
-      id: "soldier", name: "士兵", icon: "hammer", color: "#6e7f8d",
+      id: "soldier", name: "士兵", icon: "hammer", color: "#6e7f8d", effectShort: "防御 +15",
       requirements: ["toilet", "armory", "soldier_quarters"], cost: { gold: 50, stone: 10, food: 6 },
       income: 0.02, defense: 15, productionBonus: 0, satisfaction: 1,
       trait: "士兵提高防御，降低隔壁村偷窃的概率。",
       needText: "厕所 + 武器库 + 士兵营房"
     },
     {
-      id: "minister", name: "大臣", icon: "scroll", color: "#8d668c",
+      id: "minister", name: "大臣", icon: "scroll", color: "#8d668c", effectShort: "生产 +6%",
       requirements: ["meeting", "study", "minister_office"], cost: { gold: 180, wood: 20, food: 10 },
       income: 0.03, defense: 0, productionBonus: 0.06, satisfaction: 2,
       trait: "大臣数量少、房间贵，但每个提供 +6% 生产。",
       needText: "会议室 + 书房 + 大臣办公室"
     },
     {
-      id: "missionary", name: "传教士", icon: "crest", color: "#8b7a4a",
+      id: "missionary", name: "传教士", icon: "crest", color: "#8b7a4a", effectShort: "解除产能惩罚",
       requirements: ["chapel", "missionary_cell"], cost: { gold: 80, food: 8 },
       income: 0.03, defense: 0, productionBonus: 0, satisfaction: 4,
       trait: "没有传教士时，居民产能下降；有传教士后恢复正常。",
