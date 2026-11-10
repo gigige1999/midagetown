@@ -1875,7 +1875,6 @@
         '<div class="top-obj-meta">居民会自动生产金币 · 菜单和扩建层已开放</div></div>' +
         '<div class="top-obj-actions">' +
         (state.expansionUnlocked ? '<button class="btn btn-gold top-obj-trade" data-action="open-expansion">扩建层</button>' : "") +
-        '<button class="btn btn-wood top-obj-trade" data-action="show-ending"><img src="' + I.icon("crown") + '" alt="">回顾庆典</button>' +
         '</div>';
       return;
     }
@@ -1888,7 +1887,7 @@
         '<div class="top-obj-meta">查看菜单、扩建房间，或者去庭院添一间商铺。</div></div>' +
         '<div class="top-obj-actions">' +
         (state.expansionUnlocked ? '<button class="btn btn-gold top-obj-trade" data-action="open-expansion">扩建层</button>' : "") +
-        '<button class="btn btn-wood top-obj-trade" data-action="show-ending"><img src="' + I.icon("crown") + '" alt="">回顾庆典</button></div>';
+        '</div>';
       return;
     }
     const idx = state.guideIndex;
@@ -1907,7 +1906,6 @@
       rewardHTML +
       '</div></div>' +
       '<div class="top-obj-actions">' +
-      '<button class="btn btn-wood top-obj-trade" data-action="trade"><img src="' + I.icon("coin") + '" alt="">行商</button>' +
       '<button class="btn ' + action.cls + ' top-obj-main" data-action="guide"' + (action.disabled ? " disabled" : "") + '>' +
       escapeHTML(action.label) + '</button></div>';
   }
@@ -2259,7 +2257,7 @@
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>⑫ 防御、满意度与离开</strong><p>士兵不足时隔壁村会偷物资；没有传教士时居民产能 -20%。食物、菜单、空间、基础设施和房间等级都会影响满意度，低于 30 时客人会离开。主线居民不会离开。每层建议至少 1 间厕所和 1 间餐厅。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>⑬ 调试模式</strong><p>底部「调试」按钮或按 `~` 打开。调试模式下建造立即完成，还可以一键加资源、解锁区域、满级和跳过一天。仅用于开发测试。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>⑬ 调试模式</strong><p>按 `~` / `Ctrl+Shift+D` 打开。调试模式下建造立即完成，还可以一键加资源、解锁区域、满级和跳过一天。仅用于开发测试。</p></div></div>' +
       "</div>" +
       '<div class="modal-actions"><span class="modal-note">空格暂停 · 1/2/3 调速 · M 静音</span>' +
       '<button class="btn btn-primary" data-action="close-modal">开始经营</button></div></div>'
@@ -2528,6 +2526,7 @@
   }
 
   function renderExpansionBuildTab() {
+    ensureFloorProgression(false);
     const floor = state.currentFloor || 0;
     const rooms = currentFloorRooms();
     const built = floorRoomCount(floor);
@@ -2571,6 +2570,23 @@
     return html;
   }
 
+  function ensureFloorProgression(notify) {
+    if (!state || !state.expansionUnlocked) return;
+    const floor = state.currentFloor || 0;
+    if (floorRoomCount(floor) < D.EXPANSION_SLOTS.length) return;
+    const nextCount = floor + 2;
+    if (state.expansionFloorCount < nextCount) {
+      state.expansionFloorCount = nextCount;
+      addLog("第 " + (floor + 1) + " 层已建满，第 " + (floor + 2) + " 层自动解锁。", "good");
+      if (notify !== false) {
+        setTimeout(function () {
+          toast("第 " + (floor + 1) + " 层已满，第 " + (floor + 2) + " 层已自动解锁。点击楼梯或楼层按钮上去。", "gold", "sparkle");
+        }, 400);
+      }
+      saveState();
+    }
+  }
+
   function goDownstairs() {
     if (!state.expansionUnlocked || state.view !== "expansion") return;
     const next = state.currentFloor + 1;
@@ -2581,15 +2597,16 @@
       A.sfx("page");
       return;
     }
-    if (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length && state.expansionFloorCount < D.MAX_FLOORS) {
-      state.expansionFloorCount += 1;
-      state.currentFloor = state.expansionFloorCount - 1;
-      addLog("扩建层第 " + state.expansionFloorCount + " 层开放。", "good");
-      toast("下一层已开放。", "gold", "sparkle");
-      renderAll(true);
-      saveState();
-      A.sfx("page");
-      return;
+    if (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length) {
+      ensureFloorProgression(false);
+      if (state.expansionFloorCount > next) {
+        state.currentFloor = next;
+        toast("下一层已开放。", "gold", "sparkle");
+        renderAll(true);
+        saveState();
+        A.sfx("page");
+        return;
+      }
     }
     toast("先把这一层建满 10 个房间，楼梯才会通往下一层。", "bad", "lock");
   }
@@ -2598,6 +2615,7 @@
     const el = $("#floorStrip");
     if (!el) return;
     const active = state && state.view === "expansion" && state.expansionUnlocked;
+    if (active) ensureFloorProgression(false);
     el.hidden = !active;
     if (!active) { el.innerHTML = ""; return; }
     const floor = state.currentFloor || 0;
@@ -2809,11 +2827,6 @@
       state.log.slice(-10).reverse().map(function (l) {
         return '<div class="log-entry ' + (l.kind || "") + '"><span class="log-day">D' + l.day + '</span><span>' + escapeHTML(l.text) + "</span></div>";
       }).join("") + "</div></div>";
-    html += '<div class="journal-actions">' +
-      '<button class="btn btn-wood" data-action="help"><img src="' + I.icon("help") + '" alt="">玩法说明</button>' +
-      '<button class="btn btn-ghost" data-action="show-ending"' + (state.flags.festivalHeld ? "" : " disabled") + '><img src="' + I.icon("crown") + '" alt="">庆典回顾</button>' +
-      '<button class="btn btn-danger" data-action="reset-game">重新开始</button></div>';
-    html += '<div class="journal-text" style="margin-top:8px;color:#96764c">自动存档已开启。离开页面后回来，城堡还在原地等你。</div>';
     return html;
   }
 
@@ -3035,13 +3048,7 @@
     if (fac.rooms > 0 && !fac.dining && type.id !== "dining") {
       setTimeout(function () { toast("第 " + (floor + 1) + " 层还没有餐厅，居民会不满意。", "bad", "food"); }, 850);
     }
-    if (floorRoomCount(floor) >= D.EXPANSION_SLOTS.length && state.expansionFloorCount < D.MAX_FLOORS) {
-      state.expansionFloorCount += 1;
-      addLog("第 " + (floor + 1) + " 层建满了，第 " + state.expansionFloorCount + " 层开放。", "good");
-      setTimeout(function () {
-        toast("第 " + (floor + 1) + " 层已建满！第 " + state.expansionFloorCount + " 层开放，点击左上角楼层按钮继续扩建。", "gold", "sparkle");
-      }, 1200);
-    }
+    ensureFloorProgression(true);
     A.sfx("complete");
     ui.guideSig = "";
     renderAll(true);

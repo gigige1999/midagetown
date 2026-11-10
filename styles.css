@@ -2871,3 +2871,27 @@ button { font-size: 14px; }
 @media (max-width: 1280px) {
   .floor-strip-stats { font-size: 11px; gap: 6px; }
 }
+
+/* 精简底部状态条 */
+.stage-footer-slim {
+  min-height: 38px;
+  padding: 3px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+.stage-footer-slim .daily-status {
+  max-width: none;
+  flex-wrap: nowrap;
+  gap: 8px 12px;
+  margin: 0;
+}
+.stage-footer-slim .daily-chip { font-size: 12px; }
+.stage-footer-slim .daily-chip b { font-size: 13px; }
+@media (max-width: 1280px) {
+  .stage-footer-slim { min-height: 34px; padding: 2px 7px; }
+  .stage-footer-slim .daily-status { gap: 6px 8px; }
+  .stage-footer-slim .daily-chip { font-size: 10px; }
+  .stage-footer-slim .daily-chip b { font-size: 11px; }
+}
