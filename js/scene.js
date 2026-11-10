@@ -2937,7 +2937,25 @@ window.CastleScene = (function () {
     });
   }
 
-  function drawExpansionRoom(type, slot, t) {
+  function drawRoomLevelDecor(level, x, y, w, h, t) {
+    if (!level || level <= 1) return;
+    // 升级后的金边、地毯与烛光
+    R(ctx, x + 4, y + 3, w - 8, 2, level >= 3 ? "#e6c675" : "#a98b5d");
+    R(ctx, x + 4, y + 5, w - 8, 1, "rgba(255,240,190,.25)");
+    if (level >= 2) {
+      interiorCandle(x + 12, y + h - 14, t, true);
+      interiorCandle(x + w - 16, y + h - 14, t, true);
+      drawGlow(x + w / 2, y + h / 2, Math.min(w, h) * 0.35, "#ffb45e", 0.08);
+    }
+    if (level >= 3) {
+      R(ctx, x + w - 18, y + 8, 4, 4, "#d6a449");
+      R(ctx, x + w - 16, y + 6, 1, 2, "#ffe5a0");
+      R(ctx, x + 7, y + 8, 3, 10, "#8e3731");
+      R(ctx, x + 8, y + 9, 1, 8, "#f0d28a");
+    }
+  }
+
+  function drawExpansionRoom(type, slot, t, level) {
     const x = slot.x, y = slot.y, w = slot.w, h = slot.h;
     R(ctx, x - 4, y - 4, w + 8, h + 8, "#2a1d17");
     R(ctx, x - 2, y - 2, w + 4, h + 4, "#695242");
@@ -2981,6 +2999,26 @@ window.CastleScene = (function () {
           R(ctx, cx - 19 + i * 14, y + 26, 4, 4, i % 2 ? "#d4a44b" : "#c15c4f");
         }
         drawFlowerVase(cx - 8, y + 80, t);
+      } else if (type.id === "missionary_cell") {
+        interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#6b6052");
+        R(ctx, cx - 24, y + 26, 44, 24, "#3b2a1a");
+        R(ctx, cx - 22, y + 28, 40, 20, "#6b4c30");
+        R(ctx, cx - 18, y + 32, 24, 12, "#d8d3c2");
+        R(ctx, cx - 16, y + 33, 20, 3, "#efe5cc");
+        R(ctx, cx - 18, y + 44, 24, 2, "#5b7b9d");
+        R(ctx, cx + 16, y + 26, 2, 14, "#d6a449");
+        R(ctx, cx + 13, y + 30, 8, 2, "#d6a449");
+        interiorCandle(cx - 2, y + 64, t, true);
+      } else if (type.id === "residence") {
+        interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+        R(ctx, cx - 24, y + 24, 48, 26, "#3b2a1a");
+        R(ctx, cx - 22, y + 26, 44, 22, "#6b4c30");
+        R(ctx, cx - 18, y + 30, 26, 14, "#d8d3c2");
+        R(ctx, cx - 16, y + 31, 22, 3, "#efe5cc");
+        R(ctx, cx - 18, y + 44, 26, 2, "#a35f4e");
+        R(ctx, cx + 12, y + 30, 8, 10, "#8a623b");
+        R(ctx, cx - 16, y + 62, 32, 4, "#a87a45");
+        drawFlowerVase(cx + 20, y + 62, t);
       } else if (type.id === "workshop") {
         R(ctx, cx - 26, y + 36, 48, 16, "#3b2a1a");
         R(ctx, cx - 24, y + 37, 44, 12, "#8a623b");
@@ -3006,6 +3044,7 @@ window.CastleScene = (function () {
         R(ctx, cx - 20, y + 39, 40, 11, "#8a623b");
       }
       R(ctx, x + 4, y + 4, w - 8, 2, "#a48569");
+      drawRoomLevelDecor(level, x, y, w, h, t);
       ctx.restore();
       return;
     }
@@ -3120,6 +3159,55 @@ window.CastleScene = (function () {
       drawFlowerVase(x + 20, y + 84, t);
       drawFlowerVase(x + 132, y + 84, t);
       drawBush(ctx, x + 82, y + 82, 0.7, "green");
+    } else if (type.id === "residence") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      interiorBed(x + 12, y + 20, 42, 52, "red");
+      interiorRug(x + 56, y + 56, w - 72, 30);
+      interiorTable(x + 62, y + 30, 38, 18);
+      interiorChair(x + 56, y + 34, "right");
+      interiorShelf(x + w - 42, y + 14, 30, 20);
+      drawFlowerVase(x + 14, y + 84, t);
+    } else if (type.id === "soldier_quarters") {
+      interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#5d5b52");
+      for (let i = 0; i < 2; i++) {
+        const px = x + 12 + i * 52;
+        R(ctx, px, y + 28, 42, 24, "#3b2a1c");
+        R(ctx, px + 2, y + 30, 38, 20, "#6b4c30");
+        R(ctx, px + 5, y + 34, 18, 12, "#d8d3c2");
+        R(ctx, px + 7, y + 35, 14, 3, "#efe5cc");
+        R(ctx, px + 26, y + 34, 12, 12, "#c9c2af");
+        R(ctx, px + 6, y + 52, 2, 8, "#3b2a1a");
+        R(ctx, px + 34, y + 52, 2, 8, "#3b2a1a");
+      }
+      R(ctx, x + w - 36, y + 58, 20, 26, "#3b2a1a");
+      R(ctx, x + w - 34, y + 60, 16, 22, "#6f7d8b");
+      R(ctx, x + w - 27, y + 65, 3, 10, "#d6a449");
+      R(ctx, x + 18, y + 70, 34, 3, "#3b2a1a");
+      R(ctx, x + 20, y + 72, 30, 1, "#8a623b");
+      interiorCandle(x + 70, y + 24, t, true);
+    } else if (type.id === "minister_office") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      interiorShelf(x + 10, y + 12, 48, 28);
+      interiorTable(x + 28, y + 54, w - 56, 22);
+      interiorChair(x + 20, y + 58, "right");
+      interiorChair(x + w - 28, y + 58, "left");
+      R(ctx, x + 44, y + 50, 18, 5, "#efe5cc");
+      R(ctx, x + 47, y + 45, 8, 5, "#8e3731");
+      R(ctx, x + 72, y + 48, 3, 8, "#e2c58d");
+      interiorCandle(x + 76, y + 50, t, true);
+      R(ctx, x + w - 30, y + 14, 20, 18, "#3b2a1a");
+      R(ctx, x + w - 28, y + 16, 16, 14, "#d7c69d");
+      R(ctx, x + w - 24, y + 20, 8, 1, "#8a623b");
+    } else if (type.id === "missionary_cell") {
+      interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#6b6052");
+      interiorBed(x + 14, y + 26, 38, 46, "blue");
+      interiorRug(x + 52, y + 56, w - 66, 28);
+      R(ctx, x + w - 38, y + 18, 18, 22, "#3b2a1a");
+      R(ctx, x + w - 36, y + 20, 14, 18, "#e2d3b4");
+      R(ctx, x + w - 30, y + 24, 2, 8, "#d6a449");
+      R(ctx, x + w - 34, y + 27, 10, 2, "#d6a449");
+      interiorCandle(x + 58, y + 70, t, true);
+      drawFlowerVase(x + 16, y + 82, t);
     } else if (type.id === "armory") {
       interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#5d5b52");
       // 武器架
@@ -3214,7 +3302,7 @@ window.CastleScene = (function () {
     D.EXPANSION_SLOTS.forEach(function (slot) {
       const room = rooms[slot.id];
       const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      drawExpansionRoom(type, slot, time);
+      drawExpansionRoom(type, slot, time, room ? room.level || 1 : 1);
     });
     // 楼梯
     R(ctx, 318, 352, 84, 32, "#2b1e17");

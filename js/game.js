@@ -250,7 +250,7 @@
       D.EXPANSION_SLOTS.forEach(function (slot) {
         const saved = src && src[slot.id];
         const type = saved && D.EXPANSION_ROOMS.some(function (r) { return r.id === saved.type; }) ? saved.type : null;
-        out[slot.id] = type ? { type: type } : null;
+        out[slot.id] = type ? { type: type, level: clamp(Math.floor(Number(saved.level) || 1), 1, 5) } : null;
       });
       return out;
     }
@@ -664,6 +664,11 @@
       if (state.shops[sh.id] && state.shops[sh.id].status === "built") p += 12;
     });
     p += countExpansionRoomsAll() * 8;
+    state.expansionFloors.forEach(function (rooms) {
+      D.EXPANSION_SLOTS.forEach(function (slot) {
+        if (rooms[slot.id]) p += (roomLevel(rooms[slot.id]) - 1) * 6;
+      });
+    });
     p += Math.max(0, state.expansionFloorCount - 1) * 30;
     p += state.menus.length * 4;
     return Math.round(p);
@@ -744,15 +749,77 @@
     }).filter(Boolean);
   }
 
+  function roomLevel(room) {
+    return clamp(Math.floor(Number(room && room.level) || 1), 1, 3);
+  }
+
+  function roomScale(room) {
+    return 1 + (roomLevel(room) - 1) * 0.35;
+  }
+
+  function roomCapacity(type, room) {
+    if (!type) return 0;
+    return (type.capacity || 0) + (type.capacity ? roomLevel(room) - 1 : 0);
+  }
+
+  function floorRoomsDetailed(index) {
+    const rooms = state.expansionFloors[index] || {};
+    return D.EXPANSION_SLOTS.map(function (slot) {
+      const room = rooms[slot.id];
+      if (!room) return null;
+      const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+      return type ? { slot: slot, room: room, type: type } : null;
+    }).filter(Boolean);
+  }
+
   function floorFacilities(index) {
-    const types = floorRoomTypes(index);
+    const entries = floorRoomsDetailed(index);
+    const types = entries.map(function (e) { return e.type; });
     return {
       rooms: types.length,
       toilet: types.some(function (t) { return t.basic === "toilet"; }),
       dining: types.some(function (t) { return t.basic === "dining"; }),
-      beds: types.reduce(function (n, t) { return n + (t.capacity || 0); }, 0),
-      satisfaction: types.reduce(function (n, t) { return n + (t.satisfaction || 0); }, 0)
+      beds: entries.reduce(function (n, e) { return n + roomCapacity(e.type, e.room); }, 0),
+      satisfaction: entries.reduce(function (n, e) { return n + (e.type.satisfaction || 0) + (roomLevel(e.room) - 1) * 2; }, 0)
     };
+  }
+
+  function roomUpgradeCost(type, room) {
+    const lv = roomLevel(room);
+    return {
+      wood: Math.ceil((type.cost.wood || 0) * 0.5 * lv),
+      stone: Math.ceil((type.cost.stone || 0) * 0.5 * lv),
+      gold: Math.ceil((type.cost.gold || 0) * 0.6 * lv)
+    };
+  }
+
+  function roomUpgradeEffect(type, room) {
+    const next = Math.min(3, roomLevel(room) + 1);
+    const cap = roomCapacity(type, { level: next });
+    return "升级到 Lv." + next + "：床位 " + cap +
+      (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * (1 + (next - 1) * 0.35) * 100) + "%" : "") +
+      (type.productionBonus ? " · 生产 +" + Math.round(type.productionBonus * (1 + (next - 1) * 0.35) * 100) + "%" : "") +
+      (type.defense ? " · 防御 +" + (type.defense + (next - 1) * 3) : "") +
+      " · 满意度 +" + ((type.satisfaction || 0) + (next - 1) * 2);
+  }
+
+  function upgradeExpansionRoom(slotId) {
+    const room = currentFloorRooms()[slotId];
+    if (!room) return;
+    const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+    if (!type) return;
+    if (roomLevel(room) >= 3) { toast("这间房已经达到 Lv.3。", "bad", "star"); return; }
+    const cost = roomUpgradeCost(type, room);
+    if (!canAfford(cost)) { toast("升级材料不够，还差：" + missingCostsText(cost), "bad", "hammer"); return; }
+    payCost(cost);
+    room.level = roomLevel(room) + 1;
+    addLog("扩建层第 " + (state.currentFloor + 1) + " 层的「" + type.name + "」升级到 Lv." + room.level + "。", "good");
+    toast(type.name + " 升级到 Lv." + room.level + "！" + roomUpgradeEffect(type, { level: room.level - 1 }), "gold", "star");
+    A.sfx("complete");
+    closeModal(true);
+    ui.guideSig = "";
+    renderAll(true);
+    saveState();
   }
 
   function guestClass(id) {
@@ -764,7 +831,7 @@
   }
 
   function floorBeds(index) {
-    return floorRoomTypes(index).reduce(function (n, t) { return n + (t.capacity || 0); }, 0);
+    return floorRoomsDetailed(index).reduce(function (n, e) { return n + roomCapacity(e.type, e.room); }, 0);
   }
 
   function floorFreeBeds(index) {
@@ -790,7 +857,7 @@
         const room = rooms[slot.id];
         if (!room) return;
         const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
-        if (type && type.defense) defense += type.defense;
+        if (type && type.defense) defense += type.defense + (roomLevel(room) - 1) * 3;
       });
     });
     if (state.buildings.barracks.status === "built") defense += 5 + buildingLevel("barracks") * 2;
@@ -815,6 +882,13 @@
     return guestClass(r.klass || "resident").income || 0;
   }
 
+  function menuUpkeep() {
+    return state.menus.reduce(function (n, id) {
+      const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
+      return n + (m ? (m.dailyFood || 1) : 0);
+    }, 0);
+  }
+
   function expansionBonuses() {
     let capacity = 0, residentBonus = 0, productionBonus = 0, foodBonus = 0, satisfaction = 0;
     state.expansionFloors.forEach(function (rooms, index) {
@@ -823,11 +897,12 @@
         if (!room) return;
         const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
         if (!type) return;
-        capacity += type.capacity || 0;
-        residentBonus += type.residentBonus || 0;
-        productionBonus += type.productionBonus || 0;
-        foodBonus += type.foodBonus || 0;
-        satisfaction += type.satisfaction || 0;
+        const scale = roomScale(room);
+        capacity += type.capacity ? roomCapacity(type, room) : 0;
+        residentBonus += (type.residentBonus || 0) * scale;
+        productionBonus += (type.productionBonus || 0) * scale;
+        foodBonus += (type.foodBonus || 0) * scale;
+        satisfaction += (type.satisfaction || 0) + (roomLevel(room) - 1) * 2;
       });
       const f = floorFacilities(index);
       if (f.rooms > 0) {
@@ -908,7 +983,8 @@
     const residents = countResidents();
     const reduction = kitchenFoodReduction();
     const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
-    const upkeep = Math.max(0, residents - reduction) + shopUpkeep;
+    const menuFood = menuUpkeep();
+    const upkeep = Math.max(0, residents - reduction) + shopUpkeep + menuFood;
     let fed = true;
     if (ui.debugMode) {
       fed = true;
@@ -1236,15 +1312,16 @@
     const mult = menuMultiplier();
     const rows = D.MENUS.map(function (m) {
       const owned = hasMenu(m.id);
+      const unlocked = countResidents() >= (m.minResidents || 0);
       const afford = canAfford(m.cost);
-      return '<div class="menu-row' + (owned ? " owned" : "") + '">' +
+      return '<div class="menu-row' + (owned ? " owned" : "") + (unlocked ? "" : " locked") + '">' +
         '<div class="menu-icon"><img src="' + I.icon(m.icon) + '" alt=""></div>' +
-        '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + "</div>" +
+        '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + (unlocked ? "" : '<span class="menu-lock">需要 ' + m.minResidents + " 位居民</span>") + "</div>" +
         '<div class="menu-desc">' + m.desc + "</div>" +
-        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · " + costHTML(m.cost, true) + "</div></div>" +
+        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div></div>" +
         '<div class="menu-actions">' + (owned
           ? '<span class="menu-check">已解锁</span>'
-          : '<button class="btn btn-gold btn-small" data-action="buy-menu" data-id="' + m.id + '"' + (afford ? "" : " disabled") + '>购买</button>') +
+          : '<button class="btn btn-gold btn-small" data-action="buy-menu" data-id="' + m.id + '"' + (afford && unlocked ? "" : " disabled") + '>' + (unlocked ? "购买" : "未解锁") + '</button>') +
         "</div></div>";
     }).join("");
     openModal(
@@ -1252,7 +1329,8 @@
       '<div class="modal-body" id="menuModal">' +
       '<div class="menu-summary"><div><span>菜品数量</span><b>' + state.menus.length + " / " + D.MENUS.length + "</b></div>" +
       '<div><span>居民收入倍率</span><b>×' + mult.toFixed(2) + "</b></div>" +
-      '<div><span>居民收入</span><b>+' + (residentGoldRate() * 60).toFixed(1) + " 金/分</b></div></div>" +
+      '<div><span>居民收入</span><b>+' + (residentGoldRate() * 60).toFixed(1) + " 金/分</b></div>" +
+      '<div><span>菜品食物</span><b>' + menuUpkeep() + " /天</b></div></div>" +
       (note ? '<p class="modal-copy" style="margin-top:8px">' + escapeHTML(note) + "</p>" : '<p class="modal-copy" style="margin-top:8px">购买菜单会消耗金币和食物，永久提升所有居民（包括戴面具的新居民）的金币收入。</p>') +
       '<div class="menu-list">' + rows + "</div>" +
       '<div class="modal-actions"><span class="modal-note">菜单收入也受「吃饱」和商铺加成影响</span>' +
@@ -1266,6 +1344,10 @@
     const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
     if (!m || hasMenu(id)) return;
     if (state.buildings.kitchen.status !== "built") { toast("先修复厨房。", "bad", "lock"); return; }
+    if (countResidents() < (m.minResidents || 0)) {
+      toast("「" + m.name + "」需要 " + m.minResidents + " 位居民才会出现在菜单上。", "bad", "lock");
+      return;
+    }
     if (!canAfford(m.cost)) {
       toast("买不起这道菜，还差：" + missingCostsText(m.cost), "bad", "food");
       return;
@@ -1648,13 +1730,14 @@
     const eff = efficiencyInfo();
     const residents = countResidents();
     const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
-    const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep;
+    const menuFood = menuUpkeep();
+    const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep + menuFood;
     const satTitle = escapeHTML(eff.satisfaction.reasons.map(function (r) {
       return r.label + " " + (r.value > 0 ? "+" : "") + r.value;
     }).join(" · "));
     const chips = [];
     chips.push('<span class="daily-chip"><img src="' + I.icon("people") + '" alt="">居民 <b>' + residents + '</b>/' + residentCapacity() + "</span>");
-    chips.push('<span class="daily-chip"><img src="' + I.icon("food") + '" alt="">口粮 <b>' + upkeep + "</b>/天</span>");
+    chips.push('<span class="daily-chip" title="居民 ' + residents + '，厨房减免 ' + kitchenFoodReduction() + '，商铺 ' + shopUpkeep + '，菜品 ' + menuFood + '"><img src="' + I.icon("food") + '" alt="">口粮 <b>' + upkeep + "</b>/天</span>");
     chips.push('<span class="daily-chip"><img src="' + I.icon("sparkle") + '" alt="">效率 <b>' + (eff.percent >= 0 ? "+" : "") + eff.percent + "%</b></span>");
     chips.push('<span class="daily-chip ' + (eff.satisfaction.score >= 55 ? "good" : "bad") + '" title="' + satTitle + '">满意 <b>' + eff.satisfaction.score + "</b></span>");
     if (state.expansionUnlocked && residents > 0) {
@@ -2152,13 +2235,13 @@
       '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>③ 木材/石料 → 金币</strong><p>点击右上角的行商按钮，把木材或石料卖给行商。金币用来雇佣新居民、修复城堡房间和购买食物。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>④ 吃饭 → 效率</strong><p>每天黎明每位居民吃 1 份食物。吃饱时全员效率 +10%，饿肚子时效率 -30%。厨房会减少 1 份口粮需求。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("crest") + '" alt=""><div><strong>⑤ 两座建筑 → 城堡内部</strong><p>庭院建成两座建筑后，点击场景左上角的「城堡内」，修复厨房、书房、兵营、账房和礼拜堂。每修好一个房间就会有一位新居民加入。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>⑥ 厨房菜单 → 居民收入</strong><p>厨房修好后，点击厨房卡片或房间里的「菜单」按钮购买菜肴。每道菜都会提高所有居民的金币收入，包括后来加入的面具居民。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>⑥ 厨房菜单 → 居民收入</strong><p>厨房修好后，点击顶栏金色「菜单」按钮购买菜肴。菜谱会随居民数量逐步解锁；每道菜提高居民金币收入，同时每天额外消耗 1–3 份食物。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>⑦ 庭院商铺 → 额外收入</strong><p>修复厨房、兵营和全部房间后，会陆续开放面包房、铁匠铺和杂货铺。商铺会持续产生金币，也会提高居民收入。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 更多床位与面具居民</strong><p>修复所有房间后开放扩建层。6 个空位可以自由建造客房、餐厅、工坊、花园房，类型可重复。客房和花园房增加床位；有床位后可以在居民页邀请戴面具的新居民，它们每天吃饭，也会持续赚金币。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级，升级会改变属性和外观。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("bunting") + '" alt=""><div><strong>⑨ 全部修复 → 丰收庆典</strong><p>庭院 3 个区域 + 城堡内 5 个区域全部完成，就能举办庆典。庆典时所有居民会聚到城堡门外。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>⑫ 满意度与离开</strong><p>食物、菜单、空间、基础设施和房间等级都会影响满意度。满意度低会降低效率；低于 30 时，面具居民会开始离开。主线居民不会离开。扩建层每层建议至少 1 间厕所和 1 间餐厅。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>⑫ 防御、满意度与离开</strong><p>士兵不足时隔壁村会偷物资；没有传教士时居民产能 -20%。食物、菜单、空间、基础设施和房间等级都会影响满意度，低于 30 时客人会离开。主线居民不会离开。每层建议至少 1 间厕所和 1 间餐厅。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>⑬ 调试模式</strong><p>底部「调试」按钮或按 `~` 打开。调试模式下建造立即完成，还可以一键加资源、解锁区域、满级和跳过一天。仅用于开发测试。</p></div></div>' +
       "</div>" +
       '<div class="modal-actions"><span class="modal-note">空格暂停 · 1/2/3 调速 · M 静音</span>' +
@@ -2369,7 +2452,7 @@
         '<div class="expansion-row-copy"><b>' + (type ? type.name : "空位置") + ' <span class="room-size-tag ' + slot.size + '">' + slot.size + "</span></b>" +
         '<span>' + (type ? type.desc : "可放置 " + (slot.size === "S" ? "小型" : slot.size === "M" ? "小型 / 中型" : "任意尺寸") + "房间。") + "</span></div>" +
         '<div class="expansion-row-action">' + (type
-          ? '<span class="menu-check">' + type.size + " · 已建</span>"
+          ? '<span class="menu-check">' + type.size + " · Lv." + roomLevel(room) + "</span>"
           : '<button class="btn btn-gold btn-small" data-action="expansion-slot" data-slot="' + slot.id + '">建造</button>') + "</div></article>";
     });
     if (built >= D.EXPANSION_SLOTS.length) {
@@ -2464,7 +2547,8 @@
     const capacity = residentCapacity();
     const kitchen = state.buildings.kitchen.status === "built";
     const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
-    const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep;
+    const menuFood = menuUpkeep();
+    const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep + menuFood;
     const fed = state.lastMeal.fed !== false;
     const target = currentGuideTarget();
     const income = residentGoldRate() * 60;
@@ -2484,6 +2568,7 @@
       }).join("") + "</div>" +
       '<div class="summary-note">' + (kitchen ? "厨房在运作：每日口粮 -" + kitchenFoodReduction() + "。" : "修复厨房后，每日口粮会减少 1 份。") +
       (shopUpkeep ? " 商铺每天额外消耗 " + shopUpkeep + " 份食物。" : "") +
+      (menuFood ? " 已购菜品每天额外消耗 " + menuFood + " 份食物。" : "") +
       " 每名居民都会增加生产效率和金币收入。" + (state.expansionUnlocked ? " 扩建层可以建造客房，增加床位。" : " 修复所有房间后会开放扩建层。") +
       " 当前城堡 Lv." + castleLevelInfo().level + " · 威望 " + castleLevelInfo().prestige + "。" +
       '<div class="defense-line">防御 ' + defenseValue() + " · 士兵 " + classCount("soldier") + " / 需要 " + requiredSoldiers() +
@@ -2651,16 +2736,27 @@
     if (!slot) return;
     const type = expansionRoomInfo(slotId);
     if (type) {
+      const room = currentFloorRooms()[slotId];
+      const lv = roomLevel(room);
+      const cost = roomUpgradeCost(type, room);
+      const afford = canAfford(cost);
       openModal(
-        modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name, "S" + slotId.replace("s", "") + " 号房间") +
+        modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name + " · Lv." + lv, "S" + slotId.replace("s", "") + " 号房间") +
         '<div class="modal-body"><p class="modal-copy">' + type.desc + "</p>" +
+        '<div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
         '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
-        "房间加成：床位 +" + (type.capacity || 0) + " · 居民收入 +" + Math.round((type.residentBonus || 0) * 100) + "%" +
-        (type.productionBonus ? " · 生产 +" + Math.round(type.productionBonus * 100) + "%" : "") +
-        (type.foodBonus ? " · 食物 +" + Math.round(type.foodBonus * 100) + "%" : "") +
-        (type.satisfaction ? " · 满意度 +" + type.satisfaction : "") +
-        (type.basic ? " · 本层基础" + (type.basic === "toilet" ? "厕所" : "餐厅") : "") + "</div>" +
-        '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">关闭</button></div></div>'
+        "当前加成：床位 " + roomCapacity(type, room) +
+        (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%" : "") +
+        (type.productionBonus ? " · 生产 +" + Math.round(type.productionBonus * roomScale(room) * 100) + "%" : "") +
+        (type.foodBonus ? " · 食物 +" + Math.round(type.foodBonus * roomScale(room) * 100) + "%" : "") +
+        (type.defense ? " · 防御 +" + (type.defense + (lv - 1) * 3) : "") +
+        " · 满意度 +" + ((type.satisfaction || 0) + (lv - 1) * 2) + "</div>" +
+        (lv < 3 ? '<div class="upgrade-next"><b>升级到 Lv.' + (lv + 1) + "</b><span>" + roomUpgradeEffect(type, room) + "</span>" +
+          '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
+        '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
+        '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+        (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-slot="' + slotId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
+        "</div></div>"
       );
       return;
     }
@@ -2701,7 +2797,7 @@
     }
     if (!canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return; }
     payCost(type.cost);
-    rooms[slotId] = { type: typeId };
+    rooms[slotId] = { type: typeId, level: 1 };
     addLog("扩建层第 " + (floor + 1) + " 层新房间完成：" + type.name + "。", "good");
     toast("「" + type.name + "」建成了！" + type.desc, "gold", "sparkle");
     const fac = floorFacilities(floor);
@@ -2758,7 +2854,7 @@
       return;
     }
     if (floorFreeBeds(floor) <= 0) {
-      toast("第 " + (floor + 1) + " 层没有空床位。先建卧室、宿舍或花园房。", "bad", "lock");
+      toast("第 " + (floor + 1) + " 层没有空床位。先建民居、士兵营房、大臣办公室、静修室或其他卧室房。", "bad", "lock");
       return;
     }
     if (!canAfford(klass.cost)) {
@@ -2806,7 +2902,7 @@
       '<span class="guest-count minister">大臣 ' + classCountOnFloor(floor, "minister") + '</span>' +
       '<span class="guest-count missionary">传教士 ' + classCountOnFloor(floor, "missionary") + "</span></div>";
     if (classCount("missionary") === 0 && countResidents() > 0) {
-      html += '<div class="facility-warning">没有传教士：居民产能 -20%。在小礼拜堂和卧室齐备的楼层招募一位传教士。</div>';
+      html += '<div class="facility-warning">没有传教士：居民产能 -20%。在小礼拜堂和静修室齐备的楼层招募一位传教士。</div>';
     }
     if (classCount("soldier") < requiredSoldiers() && countResidents() > 0) {
       html += '<div class="facility-warning">防御不足：需要至少 ' + requiredSoldiers() + " 名士兵。隔壁村可能偷走物资。</div>";
@@ -2841,12 +2937,13 @@
     if (!state || state.view !== "expansion" || !state.expansionUnlocked) return;
     layer.hidden = false;
     layer.innerHTML = D.EXPANSION_SLOTS.map(function (slot) {
-      const type = expansionRoomInfo(slot.id);
+      const room = currentFloorRooms()[slot.id];
+      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
       const style = "left:" + (slot.x / 720 * 100) + "%;top:" + (slot.y / 405 * 100) + "%;width:" + (slot.w / 720 * 100) + "%;height:" + (slot.h / 405 * 100) + "%;";
       let plaque;
       if (type) {
         plaque = '<span class="room-plaque built expansion-plaque"><img src="' + expansionIcon(type) + '" alt="">' +
-          '<span><b>' + type.name + '</b><em>床位 +' + (type.capacity || 0) + (type.satisfaction ? " · 满意 +" + type.satisfaction : "") + '</em></span></span>';
+          '<span><b>' + type.name + ' · Lv.' + roomLevel(room) + '</b><em>床位 +' + roomCapacity(type, room) + (type.defense ? " · 防 +" + type.defense : "") + '</em></span></span>';
       } else {
         plaque = '<span class="room-plaque available"><b>空位置 · ' + slot.size + '</b><em>S' + slot.id.replace("s", "") + ' · 点击建造</em></span>';
       }
@@ -2978,6 +3075,7 @@
       else if (action === "shop-build") buyShop(el.dataset.id);
       else if (action === "expansion-slot") openExpansionSlotModal(el.dataset.slot);
       else if (action === "build-expansion") buildExpansionRoom(el.dataset.slot, el.dataset.type);
+      else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.slot);
       else if (action === "invite") inviteResident();
       else if (action === "go-recruit") { ui.tab = "build"; switchView("expansion"); }
       else if (action === "recruit-guest") inviteGuest(el.dataset.class);

@@ -348,35 +348,35 @@ window.GameData = (function () {
 
   const MENUS = [
     {
-      id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10,
+      id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10, minResidents: 2, dailyFood: 1,
       desc: "雨后的林地蘑菇，熬成一小锅暖汤。"
     },
     {
-      id: "bread", name: "蜂蜜面包", icon: "honeyBread", cost: { gold: 70, food: 14 }, bonus: 0.15,
+      id: "bread", name: "蜂蜜面包", icon: "honeyBread", cost: { gold: 70, food: 14 }, bonus: 0.15, minResidents: 4, dailyFood: 1,
       desc: "蜂巢里最后一勺蜜，抹在刚出炉的面包上。"
     },
     {
-      id: "roast", name: "香草烤肉", icon: "herbRoast", cost: { gold: 120, food: 22 }, bonus: 0.20,
+      id: "roast", name: "香草烤肉", icon: "herbRoast", cost: { gold: 120, food: 22 }, bonus: 0.20, minResidents: 6, dailyFood: 2,
       desc: "厨房的看家菜，连守卫都会多巡两圈。"
     },
     {
-      id: "pie", name: "苹果派", icon: "applePie", cost: { gold: 180, food: 30 }, bonus: 0.25,
+      id: "pie", name: "苹果派", icon: "applePie", cost: { gold: 180, food: 30 }, bonus: 0.25, minResidents: 8, dailyFood: 2,
       desc: "酥皮、肉桂和一点坏心思：多放一勺糖。"
     },
     {
-      id: "skewer", name: "烤蘑菇串", icon: "mushroomSkewer", cost: { gold: 90, food: 12 }, bonus: 0.12,
+      id: "skewer", name: "烤蘑菇串", icon: "mushroomSkewer", cost: { gold: 90, food: 12 }, bonus: 0.12, minResidents: 10, dailyFood: 1,
       desc: "林地里刚采的蘑菇，撒一点盐就很好。"
     },
     {
-      id: "pumpkin", name: "奶油南瓜汤", icon: "pumpkinSoup", cost: { gold: 140, food: 18 }, bonus: 0.18,
+      id: "pumpkin", name: "奶油南瓜汤", icon: "pumpkinSoup", cost: { gold: 140, food: 18 }, bonus: 0.18, minResidents: 12, dailyFood: 2,
       desc: "金黄色的汤，和秋天的壁炉最配。"
     },
     {
-      id: "fish", name: "蜂蜜烤鱼", icon: "honeyFish", cost: { gold: 220, food: 28 }, bonus: 0.28,
+      id: "fish", name: "蜂蜜烤鱼", icon: "honeyFish", cost: { gold: 220, food: 28 }, bonus: 0.28, minResidents: 14, dailyFood: 2,
       desc: "河鱼刷上蜂蜜，烤到边缘微焦。"
     },
     {
-      id: "feast", name: "皇家炖锅", icon: "royalStew", cost: { gold: 260, food: 45 }, bonus: 0.30,
+      id: "feast", name: "皇家炖锅", icon: "royalStew", cost: { gold: 260, food: 45 }, bonus: 0.30, minResidents: 16, dailyFood: 3,
       desc: "风息堡的招牌菜，适合在长桌中央冒着热气。"
     }
   ];
@@ -465,37 +465,57 @@ window.GameData = (function () {
       id: "chapel", name: "小礼拜堂", icon: "crest", size: "L", cost: { wood: 48, stone: 50, gold: 140 },
       capacity: 0, satisfaction: 8, productionBonus: 0.03,
       desc: "大型房。满意度 +8%，生产 +3%。招募传教士的必要房间。"
+    },
+    {
+      id: "residence", name: "民居", icon: "tavern", size: "S", cost: { wood: 24, stone: 16, gold: 55 },
+      capacity: 2, residentBonus: 0.06, satisfaction: 2,
+      desc: "中型居民住宅，增加 2 个床位。招募居民的必要房间。"
+    },
+    {
+      id: "soldier_quarters", name: "士兵营房", icon: "dorm", size: "M", cost: { wood: 34, stone: 30, gold: 85 },
+      capacity: 2, defense: 3, satisfaction: 1,
+      desc: "中型营房，增加 2 个床位并提高防御。招募士兵的必要房间。"
+    },
+    {
+      id: "minister_office", name: "大臣办公室", icon: "scroll", size: "M", cost: { wood: 42, stone: 34, gold: 130 },
+      capacity: 1, productionBonus: 0.06, residentBonus: 0.04,
+      desc: "中型办公室，增加 1 个床位并提高生产。招募大臣的必要房间。"
+    },
+    {
+      id: "missionary_cell", name: "静修室", icon: "crest", size: "S", cost: { wood: 18, stone: 22, gold: 60 },
+      capacity: 1, satisfaction: 5, productionBonus: 0.02,
+      desc: "小型静修室，增加 1 个床位。招募传教士的必要房间。"
     }
   ];
 
   const GUEST_CLASSES = [
     {
       id: "resident", name: "居民", icon: "people", color: "#c9a24e",
-      requirements: ["guest"], cost: { gold: 25, food: 4 },
+      requirements: ["residence"], cost: { gold: 25, food: 4 },
       income: 0.06, defense: 0, productionBonus: 0, satisfaction: 1,
       trait: "居民提高金币收入；需要一张卧室床位。",
-      needText: "卧室"
+      needText: "民居"
     },
     {
       id: "soldier", name: "士兵", icon: "hammer", color: "#6e7f8d",
-      requirements: ["toilet", "armory", "guest"], cost: { gold: 50, stone: 10, food: 6 },
+      requirements: ["toilet", "armory", "soldier_quarters"], cost: { gold: 50, stone: 10, food: 6 },
       income: 0.02, defense: 15, productionBonus: 0, satisfaction: 1,
       trait: "士兵提高防御，降低隔壁村偷窃的概率。",
-      needText: "厕所 + 武器库 + 卧室"
+      needText: "厕所 + 武器库 + 士兵营房"
     },
     {
       id: "minister", name: "大臣", icon: "scroll", color: "#8d668c",
-      requirements: ["meeting", "study", "guest"], cost: { gold: 180, wood: 20, food: 10 },
+      requirements: ["meeting", "study", "minister_office"], cost: { gold: 180, wood: 20, food: 10 },
       income: 0.03, defense: 0, productionBonus: 0.06, satisfaction: 2,
       trait: "大臣数量少、房间贵，但每个提供 +6% 生产。",
-      needText: "会议室 + 书房 + 卧室"
+      needText: "会议室 + 书房 + 大臣办公室"
     },
     {
       id: "missionary", name: "传教士", icon: "crest", color: "#8b7a4a",
-      requirements: ["chapel", "guest"], cost: { gold: 80, food: 8 },
+      requirements: ["chapel", "missionary_cell"], cost: { gold: 80, food: 8 },
       income: 0.03, defense: 0, productionBonus: 0, satisfaction: 4,
       trait: "没有传教士时，居民产能下降；有传教士后恢复正常。",
-      needText: "小礼拜堂 + 卧室"
+      needText: "小礼拜堂 + 静修室"
     }
   ];
 
