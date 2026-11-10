@@ -2671,3 +2671,28 @@ button { font-size: 14px; }
 /* 庆典舞台面板 */
 .festival-stage { background: linear-gradient(180deg, rgba(35,21,14,.55), rgba(18,11,8,.92)); border: 3px solid #1a110b; box-shadow: inset 0 0 0 2px #755535, 0 10px 0 rgba(0,0,0,.28); padding: 16px 14px 14px; max-height: 62vh; }
 .festival-crowd { max-height: 32vh; }
+
+/* 顶栏厨房菜单入口 */
+.top-menu-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 34px; padding: 3px 7px 3px 4px;
+  background: #3b2a1c; color: #e9d1a2;
+  border: 2px solid #140d08; box-shadow: inset 0 0 0 1px #6f5236;
+  font-family: var(--px); font-size: 11px; cursor: pointer;
+}
+.top-menu-btn img { width: 22px; height: 22px; }
+.top-menu-btn span { line-height: 1; }
+.top-menu-btn em { min-width: 14px; padding: 0 2px; font-style: normal; font-size: 9px; color: #2a1b0d; background: #d3a646; border: 1px solid #1a110b; text-align: center; }
+.top-menu-btn.ready { background: #c69a3f; color: #2a1b0d; box-shadow: inset 0 0 0 1px #ffe5a0; }
+.top-menu-btn.ready:hover { background: #d8ae52; border-color: #a27a49; }
+.top-menu-btn.ready em { background: #2a1b0d; color: #ffe5a0; }
+.top-menu-btn.locked { opacity: .62; }
+.top-menu-btn.locked em { color: #a58b6c; background: #2b2119; border-color: #4b3a2b; }
+@media (max-width: 1320px) {
+  .top-menu-btn span { display: none; }
+  .top-menu-btn { height: 30px; padding: 2px 4px; }
+  .top-menu-btn img { width: 20px; height: 20px; }
+}
+@media (max-width: 1080px) {
+  .top-menu-btn { order: 1; }
+}

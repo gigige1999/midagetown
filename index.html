@@ -45,6 +45,10 @@
           <button class="speed-btn" data-action="speed" data-speed="3" title="三倍速度">3×</button>
         </div>
 
+        <button class="top-menu-btn locked" id="menuBtn" title="先修复厨房，才能准备菜单" aria-label="厨房菜单">
+          <img data-icon="food" alt=""><span>菜单</span><em id="menuCount">0</em>
+        </button>
+
         <button class="square-btn trade-btn" id="tradeBtn" title="找行商买卖" aria-label="行商">
           <img data-icon="cart" alt="">
         </button>
@@ -147,9 +151,9 @@
 
   <div class="debug-panel" id="debugPanel" hidden>
     <div class="debug-head"><b>DEBUG MODE</b><button class="debug-close" data-action="debug-toggle">×</button></div>
-    <p class="debug-note">建造立即完成 · 随时加资源 · 一键升级。仅用于开发调试。</p>
+    <p class="debug-note">建造立即完成 · 金币与物资视为无限 · 一键升级。仅用于开发调试。</p>
     <div class="debug-grid">
-      <button data-action="debug-res">+1000 全资源</button>
+      <button data-action="debug-res">资源视为无限</button>
       <button data-action="debug-finish">完成所有建造</button>
       <button data-action="debug-max">所有区域 Lv.MAX</button>
       <button data-action="debug-unlock">解锁全部区域</button>

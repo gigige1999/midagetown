@@ -348,35 +348,35 @@ window.GameData = (function () {
 
   const MENUS = [
     {
-      id: "soup", name: "蘑菇浓汤", icon: "food", cost: { gold: 35, food: 8 }, bonus: 0.10,
+      id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10,
       desc: "雨后的林地蘑菇，熬成一小锅暖汤。"
     },
     {
-      id: "bread", name: "蜂蜜面包", icon: "food", cost: { gold: 70, food: 14 }, bonus: 0.15,
+      id: "bread", name: "蜂蜜面包", icon: "honeyBread", cost: { gold: 70, food: 14 }, bonus: 0.15,
       desc: "蜂巢里最后一勺蜜，抹在刚出炉的面包上。"
     },
     {
-      id: "roast", name: "香草烤肉", icon: "food", cost: { gold: 120, food: 22 }, bonus: 0.20,
+      id: "roast", name: "香草烤肉", icon: "herbRoast", cost: { gold: 120, food: 22 }, bonus: 0.20,
       desc: "厨房的看家菜，连守卫都会多巡两圈。"
     },
     {
-      id: "pie", name: "苹果派", icon: "food", cost: { gold: 180, food: 30 }, bonus: 0.25,
+      id: "pie", name: "苹果派", icon: "applePie", cost: { gold: 180, food: 30 }, bonus: 0.25,
       desc: "酥皮、肉桂和一点坏心思：多放一勺糖。"
     },
     {
-      id: "skewer", name: "烤蘑菇串", icon: "food", cost: { gold: 90, food: 12 }, bonus: 0.12,
+      id: "skewer", name: "烤蘑菇串", icon: "mushroomSkewer", cost: { gold: 90, food: 12 }, bonus: 0.12,
       desc: "林地里刚采的蘑菇，撒一点盐就很好。"
     },
     {
-      id: "pumpkin", name: "奶油南瓜汤", icon: "food", cost: { gold: 140, food: 18 }, bonus: 0.18,
+      id: "pumpkin", name: "奶油南瓜汤", icon: "pumpkinSoup", cost: { gold: 140, food: 18 }, bonus: 0.18,
       desc: "金黄色的汤，和秋天的壁炉最配。"
     },
     {
-      id: "fish", name: "蜂蜜烤鱼", icon: "food", cost: { gold: 220, food: 28 }, bonus: 0.28,
+      id: "fish", name: "蜂蜜烤鱼", icon: "honeyFish", cost: { gold: 220, food: 28 }, bonus: 0.28,
       desc: "河鱼刷上蜂蜜，烤到边缘微焦。"
     },
     {
-      id: "feast", name: "皇家炖锅", icon: "bunting", cost: { gold: 260, food: 45 }, bonus: 0.30,
+      id: "feast", name: "皇家炖锅", icon: "royalStew", cost: { gold: 260, food: 45 }, bonus: 0.30,
       desc: "风息堡的招牌菜，适合在长桌中央冒着热气。"
     }
   ];

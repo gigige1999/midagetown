@@ -831,7 +831,9 @@
     const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
     const upkeep = Math.max(0, residents - reduction) + shopUpkeep;
     let fed = true;
-    if (state.resources.food >= upkeep) {
+    if (ui.debugMode) {
+      fed = true;
+    } else if (state.resources.food >= upkeep) {
       state.resources.food -= upkeep;
     } else {
       fed = false;
@@ -918,12 +920,12 @@
       toast("城堡内的居民要通过修复房间来结识。", "neutral", "lock");
       return false;
     }
-    if (state.resources.gold < w.hireCost) {
+    if (!ui.debugMode && state.resources.gold < w.hireCost) {
       toast("金币不够。还差 " + Math.ceil(w.hireCost - state.resources.gold) + " 金币，去行商卖点资源吧。", "bad", "coin");
       openTradeModal("还差 " + Math.ceil(w.hireCost - state.resources.gold) + " 金币才能雇佣" + w.name + "。");
       return false;
     }
-    state.resources.gold -= w.hireCost;
+    if (!ui.debugMode) state.resources.gold -= w.hireCost;
     state.workers[id].hired = true;
     state.stats.hired += 1;
     const area = BUILDING_MAP[w.area];
@@ -1097,11 +1099,11 @@
   function buyFood() {
     if (!started) return;
     const cost = D.BUY_FOOD.gold;
-    if (state.resources.gold < cost) {
+    if (!ui.debugMode && state.resources.gold < cost) {
       toast("金币不够。卖点木材或石料再来吧。", "bad", "coin");
       return;
     }
-    state.resources.gold -= cost;
+    if (!ui.debugMode) state.resources.gold -= cost;
     state.resources.food += D.BUY_FOOD.food;
     addLog("向行商买了 " + D.BUY_FOOD.food + " 份食物。", "good");
     toast("食物 +" + D.BUY_FOOD.food + "，金币 -" + cost + "。", "good", "food");
@@ -1262,7 +1264,7 @@
       const w = WORKER_MAP[a.id];
       if (!w) return;
       if (state.workers[a.id].hired) { checkGuide(); return; }
-      if (state.resources.gold < w.hireCost) {
+      if (!ui.debugMode && state.resources.gold < w.hireCost) {
         openTradeModal("还差 " + Math.ceil(w.hireCost - state.resources.gold) + " 金币才能雇佣" + w.name + "。卖掉木材或石料就有了。");
         return;
       }
@@ -1437,6 +1439,19 @@
     if (ui.audioAccum >= 1.5) { ui.audioAccum = 0; updateAudioEnvironment(); }
   }
 
+  function updateMenuButton() {
+    const btn = $("#menuBtn");
+    if (!btn || !state) return;
+    const ready = state.buildings.kitchen.status === "built";
+    btn.classList.toggle("locked", !ready);
+    btn.classList.toggle("ready", ready);
+    btn.title = ready
+      ? "厨房菜单：已解锁 " + state.menus.length + " 道菜，点击购买"
+      : "先修复厨房，才能准备菜单";
+    const count = $("#menuCount");
+    if (count) count.textContent = String(state.menus.length);
+  }
+
   function updateTopbar() {
     if (!state) return;
     const hour = getHour();
@@ -1454,6 +1469,12 @@
     RES_ORDER.forEach(function (key) {
       const el = $("#resVal-" + key);
       if (!el) return;
+      if (ui.debugMode) {
+        if (el.textContent !== "无限") el.textContent = "无限";
+        const rateEl = $("#resRate-" + key);
+        if (rateEl) rateEl.textContent = "无限";
+        return;
+      }
       const val = Math.floor(state.resources[key]);
       if (el.textContent !== String(val)) {
         el.textContent = val;
@@ -1594,7 +1615,7 @@
     if (a.type === "hire") {
       const w = WORKER_MAP[a.id];
       if (state.workers[a.id].hired) return { label: "已雇佣", cls: "btn-wood", disabled: true };
-      if (state.resources.gold < w.hireCost) {
+      if (!ui.debugMode && state.resources.gold < w.hireCost) {
         return { label: "去行商凑 " + Math.ceil(w.hireCost - state.resources.gold) + " 金", cls: "btn-gold", short: "还差金币" };
       }
       return { label: "雇佣 " + w.name + " · " + w.hireCost + " 金", cls: "btn-gold" };
@@ -1940,8 +1961,8 @@
     const buyRows = ["wood", "stone", "food"].map(function (res) {
       const info = D.BUY_INFO[res];
       const remain = tradeRemaining(res);
-      const can = remain >= info.amount && state.resources.gold >= info.gold;
-      const maxBatches = Math.min(Math.floor(remain / info.amount), Math.floor(state.resources.gold / info.gold));
+      const can = remain >= info.amount && (ui.debugMode || state.resources.gold >= info.gold);
+      const maxBatches = Math.min(Math.floor(remain / info.amount), ui.debugMode ? 999 : Math.floor(state.resources.gold / info.gold));
       return '<div class="trade-row">' +
         '<div class="trade-icon"><img src="' + I.icon(D.RESOURCES[res].icon) + '" alt=""></div>' +
         '<div class="trade-copy"><div class="trade-name">' + D.RESOURCES[res].name + ' <span>现有 ' + Math.floor(state.resources[res]) + '</span></div>' +
@@ -1962,7 +1983,7 @@
       '<button class="trade-tab' + (active === "sell" ? " active" : "") + '" data-action="trade-tab" data-tab="sell">卖出 · 换金币</button>' +
       '<button class="trade-tab' + (active === "buy" ? " active" : "") + '" data-action="trade-tab" data-tab="buy">买入 · 每日限购</button>' +
       "</div>" + content +
-      '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + Math.floor(state.resources.gold) + "</b> · 第 " + state.day + " 天</span>" +
+      '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b> · 第 " + state.day + " 天</span>" +
       '<button class="btn btn-primary" data-action="close-modal">继续经营</button></div></div>',
       { className: "modal-trade" }
     );
@@ -1984,13 +2005,13 @@
     if (!info) return;
     if (state.trade.day !== state.day) state.trade = { day: state.day, bought: { wood: 0, stone: 0, food: 0 } };
     const remain = tradeRemaining(res);
-    const maxBatches = Math.min(Math.floor(remain / info.amount), Math.floor(state.resources.gold / info.gold));
+    const maxBatches = Math.min(Math.floor(remain / info.amount), ui.debugMode ? 999 : Math.floor(state.resources.gold / info.gold));
     if (remain < info.amount) { toast("今天的" + D.RESOURCES[res].name + "已经买完了，黎明会补货。", "bad", "coin"); return; }
-    if (state.resources.gold < info.gold) { toast("金币不够。先卖点东西吧。", "bad", "coin"); return; }
+    if (!ui.debugMode && state.resources.gold < info.gold) { toast("金币不够。先卖点东西吧。", "bad", "coin"); return; }
     const batches = all ? Math.max(1, maxBatches) : 1;
     const bought = batches * info.amount;
     const cost = batches * info.gold;
-    state.resources.gold -= cost;
+    if (!ui.debugMode) state.resources.gold -= cost;
     state.resources[res] = (state.resources[res] || 0) + bought;
     state.trade.bought[res] = (state.trade.bought[res] || 0) + bought;
     addLog("向行商买入 " + bought + " " + D.RESOURCES[res].name + "，花费 " + cost + " 金币。", "info");
@@ -2071,6 +2092,7 @@
   function renderAll(force) {
     if (!state) return;
     updateTopbar();
+    updateMenuButton();
     updateSceneChrome();
     ui.guideSig = "";
     renderGuideBar();
@@ -2605,8 +2627,7 @@
   function debugAction(action) {
     if (!ui.debugMode) setDebugMode(true);
     if (action === "debug-res") {
-      state.resources = { gold: state.resources.gold + 1000, wood: state.resources.wood + 1000, stone: state.resources.stone + 1000, food: state.resources.food + 1000 };
-      toast("调试：全资源 +1000。", "gold", "coin");
+      toast("调试：金币与物资已经视为无限。", "gold", "coin");
     } else if (action === "debug-finish") {
       D.BUILDINGS.forEach(function (b) {
         if (state.buildings[b.id].status === "building") completeBuilding(b);
@@ -2665,6 +2686,7 @@
     $("#newGameBtn").addEventListener("click", function () { if (peekSave()) promptNewGame(); else beginNewGame(); });
     $("#continueBtn").addEventListener("click", continueGame);
     $("#tradeBtn").addEventListener("click", function () { if (started) openTradeModal(""); });
+    $("#menuBtn").addEventListener("click", function () { if (started) openMenuModal(""); });
     $("#viewSwitch").addEventListener("click", function (e) {
       const b = e.target.closest("[data-view]");
       if (b) switchView(b.dataset.view);
@@ -2792,10 +2814,11 @@
      工具
      ========================================================= */
   function canAfford(cost) {
-    if (!cost) return true;
+    if (!cost || ui.debugMode) return true;
     return Object.keys(cost).every(function (k) { return (state.resources[k] || 0) >= cost[k]; });
   }
   function payCost(cost) {
+    if (ui.debugMode) return;
     Object.keys(cost).forEach(function (k) { state.resources[k] = Math.max(0, (state.resources[k] || 0) - cost[k]); });
   }
   function costHTML(cost, check) {
@@ -2804,7 +2827,7 @@
     RES_ORDER.forEach(function (k) {
       const amount = cost[k];
       if (!amount) return;
-      const lack = check && (state.resources[k] || 0) < amount;
+      const lack = check && !ui.debugMode && (state.resources[k] || 0) < amount;
       parts.push('<span class="cost' + (lack ? " lack" : "") + '"><img src="' + I.icon(D.RESOURCES[k].icon) + '" alt="">' + amount + "</span>");
     });
     return parts.length ? parts.join("") : '<span class="cost">无需材料</span>';

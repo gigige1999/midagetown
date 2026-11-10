@@ -674,6 +674,71 @@ window.Icons = (function () {
     R(x, 20, 6, 3, 3, C.gold);
   }
 
+  function drawMushroomSoupIcon(x) {
+    R(x, 8, 6, 1, 3, "#d9d3c2"); R(x, 13, 4, 1, 4, "#d9d3c2"); R(x, 17, 7, 1, 3, "#d9d3c2");
+    R(x, 3, 14, 18, 3, C.ink); R(x, 4, 15, 16, 5, "#e6d7b4"); R(x, 5, 16, 14, 3, "#c9a35d");
+    R(x, 2, 13, 20, 2, C.ink); R(x, 4, 12, 16, 2, "#f3ecd9");
+    R(x, 7, 10, 5, 3, "#8a5a37"); R(x, 8, 9, 3, 1, "#b98554"); R(x, 8, 13, 3, 2, "#eadfc6");
+    R(x, 13, 11, 4, 2, "#9a633c"); R(x, 14, 10, 2, 1, "#c9945d");
+    R(x, 8, 17, 8, 1, "#a87a45"); R(x, 4, 19, 16, 2, C.ink);
+  }
+  function drawHoneyBreadIcon(x) {
+    R(x, 3, 12, 18, 7, C.ink); R(x, 4, 11, 16, 7, "#b97638"); R(x, 5, 10, 14, 2, "#d9a04f");
+    R(x, 5, 12, 14, 5, "#e0b25e"); R(x, 7, 10, 3, 2, "#f0d28a"); R(x, 13, 11, 4, 1, "#c98b3f");
+    R(x, 4, 15, 3, 1, "#a55f2d"); R(x, 17, 13, 2, 1, "#8b4b22");
+    R(x, 7, 8, 1, 3, "#d6a449"); R(x, 16, 7, 1, 4, "#d6a449");
+    R(x, 9, 5, 2, 2, "#f4d98d"); R(x, 11, 4, 1, 1, "#fff0b0");
+    R(x, 4, 19, 16, 2, C.ink); R(x, 5, 19, 14, 1, "#8b5e35");
+  }
+  function drawHerbRoastIcon(x) {
+    R(x, 4, 8, 16, 9, C.ink); R(x, 5, 9, 14, 7, "#8f4f35"); R(x, 6, 8, 12, 2, "#b56c47");
+    R(x, 5, 11, 14, 3, "#a85d3f"); R(x, 7, 10, 3, 2, "#d18a5e");
+    R(x, 10, 13, 7, 1, "#6e3827"); R(x, 3, 17, 18, 2, "#d7c69d"); R(x, 2, 18, 20, 2, C.ink);
+    R(x, 16, 6, 2, 7, "#efe5cc"); R(x, 18, 5, 2, 2, "#f8f1df"); R(x, 17, 4, 1, 1, "#fff");
+    R(x, 7, 6, 1, 3, "#5d7c4a"); R(x, 8, 5, 1, 1, "#8aa56a"); R(x, 12, 5, 1, 3, "#5d7c4a");
+    R(x, 5, 20, 14, 1, "#8b6b43");
+  }
+  function drawApplePieIcon(x) {
+    R(x, 3, 14, 18, 5, C.ink); R(x, 4, 13, 16, 5, "#c88b45"); R(x, 5, 12, 14, 2, "#e2b25e");
+    R(x, 6, 15, 12, 2, "#a8553f"); R(x, 7, 14, 2, 1, "#d97451"); R(x, 15, 15, 2, 1, "#d97451");
+    for (let i = 0; i < 3; i++) R(x, 6 + i * 4, 11, 1, 5, "#9d5e2b");
+    R(x, 5, 12, 12, 1, "#f0cf83"); R(x, 4, 13, 16, 1, "#8b4f25");
+    R(x, 4, 19, 16, 2, C.ink); R(x, 6, 19, 12, 1, "#7a4b2a");
+    R(x, 11, 7, 1, 3, "#c98b3f"); R(x, 12, 6, 2, 1, "#5d7c4a");
+  }
+  function drawMushroomSkewerIcon(x) {
+    R(x, 11, 3, 2, 18, "#b98b52"); R(x, 10, 3, 1, 18, "#7b5632");
+    R(x, 6, 6, 6, 3, "#8a5a37"); R(x, 7, 5, 4, 1, "#c08a58"); R(x, 7, 9, 4, 2, "#eadfc6");
+    R(x, 12, 10, 6, 3, "#9a633c"); R(x, 13, 9, 4, 1, "#d3a36b"); R(x, 13, 13, 4, 2, "#f0e6cf");
+    R(x, 5, 15, 5, 3, "#b24f3c"); R(x, 6, 14, 3, 1, "#e0785e");
+    R(x, 12, 17, 5, 2, "#5d7c4a"); R(x, 13, 16, 3, 1, "#8aa56a");
+    R(x, 6, 19, 5, 2, "#d2a34e");
+  }
+  function drawPumpkinSoupIcon(x) {
+    R(x, 4, 13, 16, 6, C.ink); R(x, 5, 14, 14, 4, "#d9823d"); R(x, 6, 13, 12, 2, "#f0b45e");
+    R(x, 7, 15, 10, 2, "#b45f2e"); R(x, 9, 14, 4, 2, "#f5e3bd"); R(x, 12, 13, 2, 1, "#fff2d0");
+    R(x, 3, 19, 18, 2, C.ink); R(x, 5, 19, 14, 1, "#8f4f2a");
+    R(x, 11, 9, 2, 4, "#5d7c4a"); R(x, 12, 7, 3, 2, "#8aa56a"); R(x, 13, 6, 1, 1, "#c7d99a");
+    R(x, 7, 10, 1, 3, "rgba(245,227,189,.8)"); R(x, 16, 9, 1, 3, "rgba(245,227,189,.65)");
+  }
+  function drawHoneyFishIcon(x) {
+    R(x, 3, 16, 18, 3, C.ink); R(x, 4, 15, 16, 3, "#d7c69d");
+    R(x, 4, 9, 13, 6, C.ink); R(x, 5, 10, 11, 4, "#b67d43"); R(x, 6, 9, 9, 1, "#e0ae63");
+    R(x, 17, 9, 4, 6, "#b67d43"); R(x, 18, 8, 2, 2, "#e0ae63"); R(x, 16, 11, 2, 1, "#8f552d");
+    R(x, 7, 11, 1, 1, "#2b2119"); R(x, 14, 12, 3, 1, "#f0c968"); R(x, 8, 13, 5, 1, "#e8c789");
+    R(x, 9, 6, 1, 3, "#d9d3c2"); R(x, 14, 5, 1, 3, "#d9d3c2");
+    R(x, 5, 14, 3, 2, "#e6c675"); R(x, 5, 8, 1, 1, "#8aa56a");
+  }
+  function drawRoyalStewIcon(x) {
+    R(x, 4, 12, 16, 6, C.ink); R(x, 5, 11, 14, 6, "#6d4a2c"); R(x, 6, 10, 12, 2, "#b78b4a");
+    R(x, 5, 10, 2, 2, "#d6a449"); R(x, 17, 10, 2, 2, "#d6a449");
+    R(x, 7, 12, 10, 3, "#8a3f31"); R(x, 8, 11, 3, 2, "#d97451"); R(x, 13, 12, 2, 1, "#e2b25e");
+    R(x, 3, 17, 18, 2, C.ink); R(x, 6, 18, 12, 1, "#3b2a1a");
+    R(x, 7, 8, 1, 3, "#d9d3c2"); R(x, 13, 6, 1, 4, "#d9d3c2"); R(x, 18, 8, 1, 3, "#d9d3c2");
+    R(x, 9, 6, 6, 3, C.ink); R(x, 10, 7, 4, 2, "#d6a449"); R(x, 9, 5, 1, 2, "#f0d28a");
+    R(x, 12, 4, 1, 2, "#f0d28a"); R(x, 15, 5, 1, 2, "#f0d28a");
+  }
+
   const ICON_DRAWERS = {
     coin: drawCoin,
     wood: drawWood,
@@ -703,7 +768,15 @@ window.Icons = (function () {
     play: drawPlay,
     speed: drawSpeed,
     bunting: drawBunting,
-    cart: drawCart
+    cart: drawCart,
+    mushroomSoup: drawMushroomSoupIcon,
+    honeyBread: drawHoneyBreadIcon,
+    herbRoast: drawHerbRoastIcon,
+    applePie: drawApplePieIcon,
+    mushroomSkewer: drawMushroomSkewerIcon,
+    pumpkinSoup: drawPumpkinSoupIcon,
+    honeyFish: drawHoneyFishIcon,
+    royalStew: drawRoyalStewIcon
   };
 
   function renderIcon(name) {
