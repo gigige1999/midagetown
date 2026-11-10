@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#17110d">
+  <title>城堡物语 · 废墟上的王冠</title>
+  <meta name="description" content="像素风城堡模拟经营：雇人、建造、卖资源、进入城堡修复房间，让废墟重新亮起灯。">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23231712'/%3E%3Cpath d='M3 6l1 7h8l1-7-3 3-3-5-3 5z' fill='%23e3b24b'/%3E%3Cpath d='M4 13h8v1H4z' fill='%23a97427'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <noscript><div style="padding:24px;color:#f0ddb4;background:#17110d;font-family:sans-serif">《城堡物语》需要启用 JavaScript 才能游玩。</div></noscript>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><img data-icon="crest" alt=""></div>
+        <div class="brand-copy">
+          <h1>城堡物语</h1>
+          <span>CASTLE STORY</span>
+        </div>
+      </div>
+
+      <div class="top-objective" id="topObjective" aria-live="polite"></div>
+
+      <div class="resource-strip" id="resourceStrip" aria-label="城堡资源"></div>
+
+      <div class="top-actions">
+        <div class="time-widget" title="风息堡的日与夜">
+          <div class="time-line">
+            <span class="day-text" id="dayLabel">第 1 天</span>
+            <span class="season-text">金秋</span>
+            <span class="weather-text"><img id="weatherIcon" data-icon="sun" alt=""><span id="weatherLabel">晴</span></span>
+          </div>
+          <div class="clock-line">
+            <span class="clock-text" id="clockLabel">08:00</span>
+            <div class="day-track"><i id="dayFill"></i></div>
+          </div>
+        </div>
+
+        <div class="speed-box" id="speedBox" role="group" aria-label="游戏速度">
+          <button class="speed-btn" data-action="speed" data-speed="0" title="暂停"><img data-icon="pause" alt="暂停"></button>
+          <button class="speed-btn active" data-action="speed" data-speed="1" title="正常速度">1×</button>
+          <button class="speed-btn" data-action="speed" data-speed="2" title="二倍速度">2×</button>
+          <button class="speed-btn" data-action="speed" data-speed="3" title="三倍速度">3×</button>
+        </div>
+
+        <button class="square-btn trade-btn" id="tradeBtn" title="找行商买卖" aria-label="行商">
+          <img data-icon="cart" alt="">
+        </button>
+        <button class="square-btn" data-action="sound" id="soundBtn" title="声音开关" aria-label="声音开关">
+          <img data-icon="sound" alt="">
+        </button>
+        <button class="square-btn" data-action="help" title="经营手册" aria-label="经营手册">
+          <img data-icon="help" alt="">
+        </button>
+      </div>
+    </header>
+
+    <main class="game">
+      <section class="stage">
+        <div class="scene-holder" id="sceneHolder">
+          <div class="scene-frame" id="sceneFrame">
+            <canvas id="scene" width="1440" height="810" aria-label="风息堡场景"></canvas>
+
+            <div class="scene-location">
+              <span class="loc-icon"><img data-icon="crown" alt=""></span>
+              <span class="loc-copy"><strong id="sceneLocationTitle">风息堡庭院</strong><em id="sceneLocationSub">WINDREST COURTYARD</em></span>
+            </div>
+
+            <div class="view-switch" id="viewSwitch" hidden>
+              <button class="view-btn active" data-view="outdoor"><img data-icon="leaf" alt="">庭院</button>
+              <button class="view-btn" data-view="indoor"><img data-icon="crest" alt="">城堡内</button>
+              <button class="view-btn" data-view="expansion" hidden><img data-icon="sparkle" alt="">扩建层</button>
+            </div>
+            <div class="floor-switch" id="floorSwitch" hidden></div>
+
+            <div class="progress-widget" id="progressWidget" title="修复庭院和城堡内的所有区域">
+              <div class="progress-head">
+                <span class="progress-label"><img data-icon="crest" alt=""> 城堡复兴</span>
+                <span class="progress-number" id="progressValue">0 / 8</span>
+              </div>
+              <div class="progress-track"><i id="progressFill"></i></div>
+              <div class="progress-sub" id="progressSub">庭院 0/3 · 城堡内 0/5</div>
+            </div>
+
+            <div class="interior-hotspots" id="interiorHotspots" hidden></div>
+            <div class="scene-tooltip" id="sceneTooltip"></div>
+            <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="stage-footer">
+          <div class="steward">
+            <div class="steward-portrait"><img id="stewardPortrait" alt="老管家塞缪尔"></div>
+            <div class="steward-copy">
+              <span class="steward-label">管家留话</span>
+              <p class="steward-hint" id="hintText">跟着金色按钮走，就能一步步修复城堡。</p>
+            </div>
+          </div>
+          <div class="footer-status">
+            <div class="daily-status" id="dailyStatus"></div>
+            <div class="footer-tools">
+              <span class="save-status" id="saveStatus">自动存档已开启</span>
+              <button class="mini-btn" data-action="help">经营手册</button>
+              <button class="mini-btn debug-toggle" data-action="debug-toggle" title="调试模式">调试</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="ledger" aria-label="城堡账房">
+        <div class="ledger-head">
+          <div class="ledger-title">
+            <span class="ledger-icon"><img data-icon="book" alt=""></span>
+            <div>
+              <h2>城堡账房</h2>
+              <span>CASTLE LEDGER</span>
+            </div>
+          </div>
+          <div class="ledger-seal"><img data-icon="crown" alt=""></div>
+        </div>
+
+        <nav class="ledger-tabs" id="ledgerTabs" aria-label="账房分类">
+          <button class="tab-btn active" data-action="tab" data-tab="build">
+            <img data-icon="hammer" alt=""><span>建设</span>
+          </button>
+          <button class="tab-btn" data-action="tab" data-tab="people">
+            <img data-icon="people" alt=""><span>居民</span>
+          </button>
+          <button class="tab-btn" data-action="tab" data-tab="journal">
+            <img data-icon="book" alt=""><span>手记</span>
+          </button>
+        </nav>
+
+        <div class="ledger-body" id="ledgerBody"></div>
+
+        <div class="ledger-foot">
+          <img data-icon="sparkle" alt="">
+          <span id="ledgerHint">跟着顶部金色按钮走，就能一步步修复城堡</span>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="festival-overlay" id="festivalOverlay" hidden></div>
+
+  <div class="debug-panel" id="debugPanel" hidden>
+    <div class="debug-head"><b>DEBUG MODE</b><button class="debug-close" data-action="debug-toggle">×</button></div>
+    <p class="debug-note">建造立即完成 · 随时加资源 · 一键升级。仅用于开发调试。</p>
+    <div class="debug-grid">
+      <button data-action="debug-res">+1000 全资源</button>
+      <button data-action="debug-finish">完成所有建造</button>
+      <button data-action="debug-max">所有区域 Lv.MAX</button>
+      <button data-action="debug-unlock">解锁全部区域</button>
+      <button data-action="debug-bed">加客房并邀请</button>
+      <button data-action="debug-feed">补满食物</button>
+      <button data-action="debug-day">跳过一天</button>
+      <button data-action="debug-close">关闭调试</button>
+    </div>
+  </div>
+
+  <div id="modalRoot"></div>
+
+  <div class="start-screen" id="startScreen">
+    <div class="start-vignette"></div>
+    <div class="start-deco start-deco-left"></div>
+    <div class="start-deco start-deco-right"></div>
+    <div class="start-card">
+      <div class="start-kicker">一段关于废墟、热汤与灯火的故事</div>
+      <div class="start-crest"><img data-icon="crest" alt=""></div>
+      <h1 class="start-title">城堡物语</h1>
+      <div class="start-subtitle">废墟上的王冠</div>
+      <div class="start-rule"><span></span><img data-icon="sparkle" alt=""><span></span></div>
+      <p class="start-quote">“先让炉火着起来，其他的慢慢来。”</p>
+      <p class="start-blurb">聘请工匠，修好伐木场，把木材卖给行商换金币；<br>再进入城堡，修复一个个房间，认识新的居民。</p>
+      <div class="start-actions">
+        <button class="btn btn-gold btn-big" id="newGameBtn">开始新故事</button>
+        <button class="btn btn-ghost btn-big" id="continueBtn" hidden>继续经营</button>
+      </div>
+      <div class="start-foot">自动存档 · 无失败结局 · 跟着金色按钮就能玩</div>
+    </div>
+    <div class="start-credit">像素手绘 · 纯 HTML / CSS / Canvas · 无外部图片素材</div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
