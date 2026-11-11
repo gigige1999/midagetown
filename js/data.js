@@ -346,6 +346,22 @@ window.GameData = (function () {
     { level: 6, min: 560, name: "王冠之城" }
   ];
 
+  const LAND_PLOT_RECTS = [
+    { x: 176, y: 128, w: 140, h: 88 },
+    { x: 336, y: 128, w: 140, h: 88 },
+    { x: 496, y: 128, w: 140, h: 88 },
+    { x: 176, y: 258, w: 140, h: 88 },
+    { x: 336, y: 258, w: 140, h: 88 },
+    { x: 496, y: 258, w: 140, h: 88 }
+  ];
+
+  const CROPS = [
+    { id: "wheat", name: "小麦", color: "#d9b45a", days: 2, cost: 8, harvest: { food: 18, gold: 8 }, desc: "最稳的口粮。" },
+    { id: "carrot", name: "胡萝卜", color: "#d97b46", days: 1, cost: 6, harvest: { food: 12 }, desc: "一天就能收，救急。" },
+    { id: "pumpkin", name: "南瓜", color: "#d18a3f", days: 3, cost: 12, harvest: { food: 26, gold: 16 }, desc: "长得慢，收得多。" },
+    { id: "herb", name: "草药", color: "#7e9d62", days: 2, cost: 10, harvest: { gold: 26, food: 6 }, desc: "卖给行商最值钱。" }
+  ];
+
   const FLOOR_SKINS = [
     { id: "stone", name: "灰石砖", cost: 0, desc: "风息堡原本的灰石地砖，免费。" },
     { id: "wood", name: "暖木地板", cost: 120, desc: "温暖的木板地面，适合卧室与书房。" },
@@ -685,6 +701,8 @@ window.GameData = (function () {
     EVENTS: EVENTS,
     MENUS: MENUS,
     FLOOR_SKINS: FLOOR_SKINS,
+    LAND_PLOT_RECTS: LAND_PLOT_RECTS,
+    CROPS: CROPS,
     SHOPS: SHOPS,
     EXPANSION_ROOMS: EXPANSION_ROOMS,
     GUEST_CLASSES: GUEST_CLASSES,

@@ -2991,10 +2991,10 @@ window.CastleScene = (function () {
     }
   }
 
-  function drawSkinRoomOverlay(skin, x, y, w, h) {
+  function drawSkinRoomOverlay(skin, x, y, w, h, alpha) {
     if (skin === "stone") return;
     ctx.save();
-    ctx.globalAlpha = 0.28;
+    ctx.globalAlpha = alpha || 0.28;
     const p = floorSkinData(skin);
     if (skin === "checker") {
       for (let yy = y; yy < y + h; yy += 14) for (let xx = x; xx < x + w; xx += 14) {
@@ -3012,6 +3012,62 @@ window.CastleScene = (function () {
       for (let yy = y; yy < y + h; yy += 10) R(ctx, x, yy, w, 1, "rgba(214,164,73,.22)");
     }
     ctx.restore();
+  }
+
+  function drawRoomUpgradeFurniture(type, level, x, y, w, h, t) {
+    if (level <= 1) return;
+    const cx = x + w / 2;
+    // 地毯：二级起明显出现
+    const rug = type.id === "chapel" ? "#6d5b74" : type.id === "armory" ? "#6d4a39" : "#8a4c3c";
+    R(ctx, x + 7, y + h - 26, w - 14, 13, "#3d2a1c");
+    R(ctx, x + 9, y + h - 24, w - 18, 9, rug);
+    R(ctx, x + 11, y + h - 22, w - 22, 1, "rgba(242,208,135,.55)");
+    // 盆栽
+    R(ctx, x + w - 22, y + 14, 10, 8, "#a86e43");
+    R(ctx, x + w - 21, y + 11, 8, 7, "#61834e");
+    R(ctx, x + w - 18, y + 8, 4, 5, "#7a9b5d");
+    // 边桌与烛台
+    R(ctx, x + 8, y + 24, 13, 3, "#5a3d25");
+    R(ctx, x + 9, y + 27, 2, 9, "#4a3220");
+    R(ctx, x + 18, y + 27, 2, 9, "#4a3220");
+    R(ctx, x + 13, y + 17, 2, 7, "#d9c18e");
+    R(ctx, x + 12, y + 15, 4, 3, "#f2c56d");
+    if (level >= 3) {
+      // 三级：吊灯、壁旗、柜子
+      R(ctx, cx - 13, y + 7, 26, 2, "#4a3220");
+      for (let i = 0; i < 4; i++) {
+        R(ctx, cx - 11 + i * 7, y + 9, 2, 6, "#6e4a2c");
+        R(ctx, cx - 12 + i * 7, y + 15, 4, 2, "#f2c56d");
+      }
+      R(ctx, x + 7, y + 10, 2, 18, "#3b2a1a");
+      R(ctx, x + 9, y + 11, 12, 12, type.id === "chapel" ? "#8d668c" : "#a54a3c");
+      R(ctx, x + 11, y + 13, 8, 8, type.id === "chapel" ? "#d9c18e" : "#e0b05a");
+      R(ctx, x + w - 26, y + h - 45, 18, 17, "#5b3e29");
+      R(ctx, x + w - 24, y + h - 43, 14, 5, "#8a623b");
+    }
+    // 容量房：升级后多出床
+    if (type.capacity) {
+      const extra = level - 1;
+      for (let i = 0; i < extra; i++) {
+        const bx = x + 8 + i * 28;
+        const by = y + 42 + (i % 2) * 9;
+        if (bx + 26 > x + w - 8) break;
+        R(ctx, bx, by, 25, 13, "#3b2a1a");
+        R(ctx, bx + 2, by + 2, 21, 9, "#b89a6e");
+        R(ctx, bx + 4, by + 3, 12, 3, "#eee2c4");
+        R(ctx, bx + 2, by + 9, 21, 2, type.id === "soldier_quarters" ? "#59616c" : "#8a4c3c");
+        R(ctx, bx - 2, by + 16, 2, 4, "#5b3e29");
+      }
+    } else if (type.defense) {
+      // 武器架
+      R(ctx, x + w - 30, y + 38, 3, 28, "#4a3220");
+      R(ctx, x + w - 24, y + 40, 18, 2, "#8b6e48");
+      R(ctx, x + w - 20, y + 42, 2, 18, "#9aa0a0");
+      R(ctx, x + w - 14, y + 42, 2, 20, "#9aa0a0");
+    } else if (type.id === "library" || type.id === "study" || type.id === "minister_office") {
+      R(ctx, x + 7, y + h - 58, 26, 20, "#5b3e29");
+      for (let i = 0; i < 3; i++) R(ctx, x + 9, y + h - 55 + i * 6, 21, 1, "#c9a26a");
+    }
   }
 
   function drawRoomLevelDecor(level, x, y, w, h, t) {
@@ -3123,6 +3179,7 @@ window.CastleScene = (function () {
       }
       R(ctx, x + 4, y + 4, w - 8, 2, "#a48569");
       drawSkinRoomOverlay(skin, x, y, w, h);
+      drawRoomUpgradeFurniture(type, level, x, y, w, h, t);
       drawRoomLevelDecor(level, x, y, w, h, t);
       ctx.restore();
       return;
@@ -3352,6 +3409,9 @@ window.CastleScene = (function () {
       interiorCandle(x + 18, y + 46, t, true);
       interiorCandle(x + w - 18, y + 46, t, true);
     }
+    drawSkinRoomOverlay(skin, x, y, w, h);
+    drawRoomUpgradeFurniture(type, level, x, y, w, h, t);
+    drawRoomLevelDecor(level, x, y, w, h, t);
     ctx.restore();
   }
   function drawExpansion(state, dt) {
@@ -3409,6 +3469,141 @@ window.CastleScene = (function () {
     drawInteriorVignette();
     drawParticles();
   }
+  function drawLandCrop(crop, growth, ready, x, y, w, h, t) {
+    const rows = 3;
+    for (let r = 0; r < rows; r++) {
+      const yy = y + 16 + r * 20;
+      R(ctx, x + 10, yy, w - 20, 1, "rgba(45,30,18,.35)");
+      for (let i = 0; i < 5; i++) {
+        const xx = x + 18 + i * ((w - 36) / 4);
+        if (!growth && !ready) {
+          R(ctx, xx, yy - 2, 2, 2, "#5b4324");
+        } else if (!ready) {
+          R(ctx, xx, yy - 7, 2, 7, "#5f7f4b");
+          R(ctx, xx - 3, yy - 7, 3, 2, "#7d9b61");
+          R(ctx, xx + 2, yy - 9, 3, 2, "#7d9b61");
+        } else {
+          R(ctx, xx - 1, yy - 10, 3, 10, "#4f6e3d");
+          if (crop === "wheat") {
+            R(ctx, xx - 4, yy - 15, 8, 7, "#d9b45a");
+            R(ctx, xx - 2, yy - 17, 4, 3, "#e8cb79");
+          } else if (crop === "carrot") {
+            R(ctx, xx - 3, yy - 8, 6, 7, "#d97b46");
+            R(ctx, xx - 2, yy - 11, 4, 4, "#6c904f");
+          } else if (crop === "pumpkin") {
+            ellipse(ctx, xx, yy - 9, 8, 6, "#d18a3f");
+            R(ctx, xx - 1, yy - 15, 2, 4, "#5f7d46");
+          } else {
+            R(ctx, xx - 3, yy - 12, 6, 6, "#7e9d62");
+            R(ctx, xx - 1, yy - 15, 3, 3, "#d8c76c");
+          }
+        }
+      }
+    }
+    if (ready) {
+      ctx.globalAlpha = 0.2 + 0.1 * Math.sin(t * 3);
+      R(ctx, x + 3, y + 3, w - 6, h - 6, "#f5d47a");
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawLandScene(state, dt) {
+    const hour = hourOf(state);
+    const night = nightAmount(hour);
+    drawSky(hour);
+    drawStars(night, hour);
+    drawSunMoon(hour, night);
+    drawClouds(hour, state ? state.weather : "clear");
+    // 远山与草地
+    R(ctx, 0, 190, W, 215, "#73905f");
+    for (let i = 0; i < 6; i++) {
+      ellipse(ctx, 60 + i * 125, 210 + (i % 2) * 12, 85, 30, "#668254");
+    }
+    R(ctx, 0, 220, W, 6, "#8ba06e");
+    // 土路
+    R(ctx, 0, 360, W, 45, "#8a6a48");
+    R(ctx, 0, 366, W, 3, "#a8875c");
+    // 农舍
+    R(ctx, 28, 128, 112, 88, "#6d4a2f");
+    R(ctx, 24, 120, 120, 14, "#8d3f32");
+    for (let i = 0; i < 5; i++) R(ctx, 28 + i * 24, 124, 22, 6, i % 2 ? "#a65442" : "#7e352b");
+    R(ctx, 44, 154, 24, 24, "#d9c18e");
+    R(ctx, 47, 157, 18, 18, "#6e8790");
+    R(ctx, 82, 158, 30, 58, "#4b3222");
+    R(ctx, 85, 162, 24, 50, "#725034");
+    R(ctx, 121, 92, 8, 50, "#4a3422");
+    for (let i = 0; i < 3; i++) R(ctx, 116, 94 + i * 13, 18, 2, "#8b6e48");
+    // 围栏
+    for (let x = 160; x < 700; x += 22) {
+      R(ctx, x, 112, 3, 24, "#5b432a");
+      R(ctx, x + 3, 116, 19, 2, "#795b39");
+    }
+    R(ctx, 160, 112, 3, 250, "#5b432a");
+    R(ctx, 697, 112, 3, 250, "#5b432a");
+    // 田地
+    (state && state.land ? state.land.plots : []).forEach(function (plot, i) {
+      const r = D.LAND_PLOT_RECTS[i];
+      if (!plot.unlocked) {
+        R(ctx, r.x, r.y, r.w, r.h, "#607b4e");
+        R(ctx, r.x + 3, r.y + 3, r.w - 6, r.h - 6, "#6f8a5b");
+        for (let k = 0; k < 7; k++) R(ctx, r.x + 9 + k * 18, r.y + 12, 2, 3, "#8ba46e");
+        for (let k = 0; k < 5; k++) R(ctx, r.x + 12 + k * 24, r.y + 34, 2, 2, "#8ba46e");
+        R(ctx, r.x, r.y, r.w, 2, "#4b3320");
+        R(ctx, r.x, r.y + r.h - 2, r.w, 2, "#4b3320");
+        // 四角木桩 + 中间木牌
+        [[r.x + 4, r.y + 4], [r.x + r.w - 7, r.y + 4], [r.x + 4, r.y + r.h - 16], [r.x + r.w - 7, r.y + r.h - 16]].forEach(function (p) {
+          R(ctx, p[0], p[1], 3, 14, "#4b3320");
+          R(ctx, p[0] + 1, p[1] + 1, 1, 12, "#8a623b");
+        });
+        R(ctx, r.x + 30, r.y + 27, 80, 28, "#4b3320");
+        R(ctx, r.x + 33, r.y + 30, 74, 22, "#c2a06b");
+        ctx.fillStyle = "#4b3320"; ctx.font = "11px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
+        ctx.fillText("待开垦", r.x + 70, r.y + 46); ctx.textAlign = "left";
+        return;
+      }
+      R(ctx, r.x, r.y, r.w, r.h, "#5d4028");
+      R(ctx, r.x + 2, r.y + 2, r.w - 4, r.h - 4, "#6f5032");
+      for (let k = 1; k < 4; k++) R(ctx, r.x + 4, r.y + k * 20, r.w - 8, 1, "#4b3320");
+      if (plot.crop) {
+        drawLandCrop(plot.crop, plot.growth, plot.ready, r.x, r.y, r.w, r.h, time);
+      } else {
+        for (let k = 0; k < 4; k++) R(ctx, r.x + 16 + k * 28, r.y + 30, 2, 2, "#98744a");
+      }
+      R(ctx, r.x, r.y, 2, r.h, "#4b3320");
+      R(ctx, r.x + r.w - 2, r.y, 2, r.h, "#4b3320");
+    });
+    // 草垛与树，填满地图边缘
+    for (let i = 0; i < 4; i++) {
+      const hx = 20 + i * 188, hy = 388 - (i % 2) * 5;
+      ellipse(ctx, hx, hy, 20, 8, "#b9934f");
+      R(ctx, hx - 13, hy - 9, 26, 10, "#c9a45b");
+      R(ctx, hx - 11, hy - 12, 22, 4, "#ddbc72");
+      R(ctx, hx - 2, hy - 12, 2, 20, "#8a623b");
+    }
+    for (let i = 0; i < 5; i++) {
+      const tx = i < 2 ? 12 + i * 36 : 650 + (i - 2) * 26;
+      const ty = 242 + (i % 3) * 38;
+      R(ctx, tx, ty - 28, 6, 30, "#4a3320");
+      ellipse(ctx, tx + 3, ty - 34, 24, 14, "#3f5f3a");
+      ellipse(ctx, tx - 8, ty - 30, 16, 11, "#4a7044");
+      ellipse(ctx, tx + 14, ty - 30, 16, 11, "#4a7044");
+    }
+    // 木牌
+    R(ctx, 294, 76, 132, 34, "#4b3320");
+    R(ctx, 298, 80, 124, 26, "#d9c18e");
+    ctx.fillStyle = "#4b3320"; ctx.font = "12px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
+    ctx.fillText("风息堡领地", 360, 98);
+    ctx.textAlign = "left";
+    // 草与花
+    for (let i = 0; i < 26; i++) {
+      const x = 12 + (i * 83) % 700;
+      const y = 220 + (i * 37) % 160;
+      if (x > 160 && x < 680 && y > 110 && y < 350) continue;
+      R(ctx, x, y, 2, 5, "#527040");
+      if (i % 4 === 0) R(ctx, x - 1, y - 2, 4, 2, ["#d9c25e", "#d97f6a", "#d8d1e2"][i % 3]);
+    }
+  }
+
   function drawInterior(state, dt) {
     // 背景与外墙
     R(ctx, 0, 0, W, H, "#1b1310");
@@ -3429,6 +3624,17 @@ window.CastleScene = (function () {
     interiorWoodFloor(518, 158, 176, 98);
     interiorStoneFloor(26, 272, 176, 104, "#5f5043");
     interiorStoneFloor(518, 272, 176, 104, "#665648");
+
+    const interiorSkin = state && state.interiorSkin && state.interiorSkin.selected ? state.interiorSkin.selected : "stone";
+    const interiorSkinData = floorSkinData(interiorSkin);
+    drawSkinRoomOverlay(interiorSkin, 20, 20, W - 40, H - 40, 0.15);
+    if (interiorSkin !== "stone") {
+      R(ctx, 306, 178, 108, 182, interiorSkinData.runner);
+      R(ctx, 310, 182, 100, 174, interiorSkinData.runner);
+      R(ctx, 306, 178, 108, 3, interiorSkinData.accent);
+      R(ctx, 306, 357, 108, 3, interiorSkinData.accent);
+      for (let yy = 190; yy < 350; yy += 18) R(ctx, 312, yy, 96, 1, "rgba(255,240,200,.18)");
+    }
 
     // 内墙
     interiorArchWall(206, 20, 10, 365);
@@ -3986,6 +4192,11 @@ window.CastleScene = (function () {
     ctx.clearRect(0, 0, W, H);
     hitAreas = [];
 
+    if (state && state.view === "land") {
+      hideTooltip();
+      drawLandScene(state, dt);
+      return;
+    }
     if (state && state.view === "indoor") {
       hideTooltip();
       drawInterior(state, dt);
