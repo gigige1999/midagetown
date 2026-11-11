@@ -3035,3 +3035,9 @@ button { font-size: 14px; }
 .gate-hotspot.locked:hover { border-color: #9f8a68; }
 
 .land-plot-level { margin: 2px 0 7px; padding: 6px 8px; background: #edf2df; border: 1px solid #a3b18b; font-size: 11px; color: #4e5f3a; }
+
+/* 热点层本身穿透，所有可点击子元素必须显式开启命中 */
+.interior-hotspots .land-hotspot,
+.interior-hotspots .territory-arrow,
+.interior-hotspots .gate-hotspot,
+.interior-hotspots .stair-hotspot { pointer-events: auto; }
