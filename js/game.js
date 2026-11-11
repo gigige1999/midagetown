@@ -322,6 +322,7 @@
         unlocked: i === 0 ? true : !!src.unlocked,
         crop: src.unlocked ? crop : null,
         growth: clamp(Number(src.growth) || 0, 0, 4),
+        level: clamp(Number(src.level) || 1, 1, 3),
         ready: !!(src.unlocked && crop && src.ready),
         plantedDay: Number(src.plantedDay) || null
       });
@@ -2349,7 +2350,7 @@
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>⑫ 防御、满意度与离开</strong><p>士兵不足时隔壁村会偷物资；没有传教士时居民产能 -20%。食物、菜单、空间、基础设施和房间等级都会影响满意度，低于 30 时客人会离开。主线居民不会离开。每层建议至少 1 间厕所和 1 间餐厅。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("farm") + '" alt=""><div><strong>⑬ 领地农田</strong><p>顶部切换到「领地」，一页有 12 块田，用金币/木材逐块开垦。8 种作物按居民数解锁；作物成熟后收获并记录，用于解锁番茄意面、玉米面包、葡萄派、薰衣草茶。菜品会给不同职业加成；农夫/厨师是新增居民。领地底部还能建 2 个商铺。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("farm") + '" alt=""><div><strong>⑬ 领地农田</strong><p>顶部切换到「领地」，一页有 12 块田，用金币/木材逐块开垦。8 种作物按居民数解锁；作物成熟后收获并记录，用于解锁番茄意面、玉米面包、葡萄派、薰衣草茶。菜品会给不同职业加成；农夫/厨师是新增居民。领地底部还能建 2 个商铺；点击田地可开垦或升级田地。庭院城门可点击进入大厅。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>⑭ 调试模式</strong><p>按 `~` / `Ctrl+Shift+D` 打开。调试模式下建造立即完成，还可以一键加资源、解锁区域、满级和跳过一天。仅用于开发测试。</p></div></div>' +
       "</div>" +
       '<div class="modal-actions"><span class="modal-note">空格暂停 · 1/2/3 调速 · M 静音</span>' +
@@ -2713,6 +2714,36 @@
     saveState();
   }
 
+  function landPlotLevel(plot) {
+    return Math.max(1, Math.min(3, Number(plot && plot.level) || 1));
+  }
+
+  function landUpgradeCost(plot) {
+    const lv = landPlotLevel(plot);
+    return lv >= 3 ? null : { gold: 60 + lv * 40, wood: 20 + lv * 10 };
+  }
+
+  function upgradeLandPlot(index) {
+    const plot = state.land.plots[index];
+    if (!plot || !plot.unlocked) return;
+    const lv = landPlotLevel(plot);
+    if (lv >= 3) { toast("这块田已经升到最高等级。", "bad", "star"); return; }
+    const cost = landUpgradeCost(plot);
+    if (!canAfford(cost)) { toast("升级田地还差：" + missingCostsText(cost), "bad", "hammer"); return; }
+    payCost(cost);
+    plot.level = lv + 1;
+    addLog("第 " + (index + 1) + " 块田升级到 Lv." + plot.level + "。", "good");
+    toast("第 " + (index + 1) + " 块田升级到 Lv." + plot.level + "，收成提高。", "gold", "farm");
+    A.sfx("build");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+  }
+
+  function landYieldMultiplier(plot) {
+    return 1 + (landPlotLevel(plot) - 1) * 0.18;
+  }
+
   function landUnlockedCount() {
     return state.land.plots.filter(function (p) { return p.unlocked; }).length;
   }
@@ -2792,7 +2823,7 @@
     const crop = cropById(plot.crop);
     if (!state.land.cropsSeen) state.land.cropsSeen = {};
     state.land.cropsSeen[crop.id] = true;
-    const yieldMult = 1 + classCount("farmer") * 0.08 + menuAffinity("farmer");
+    const yieldMult = (1 + classCount("farmer") * 0.08 + menuAffinity("farmer")) * landYieldMultiplier(plot);
     Object.keys(crop.harvest).forEach(function (k) {
       state.resources[k] = (state.resources[k] || 0) + Math.round(crop.harvest[k] * yieldMult);
     });
@@ -2831,20 +2862,27 @@
           '<span class="crop-dot" style="background:' + crop.color + '"></span><span class="crop-copy"><b>' + crop.name + '</b><em>' + (unlocked ? crop.days + " 天 · " + crop.cost + " 金" : "需要 " + crop.minResidents + " 居民") + '</em></span>' +
           '<span class="crop-gain">' + (unlocked ? gains : "未解锁") + "</span></button>";
       }).join("");
+      const upCost = landUpgradeCost(plot);
       openModal(
         modalHead("farm", "领地 · 第 " + (index + 1) + " 块田", "播种", "选择一种作物；同一天只能种一次。") +
-        '<div class="modal-body"><div class="crop-list">' + rows + "</div>" +
-        '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">取消</button></div></div>'
+        '<div class="modal-body"><div class="land-plot-level">田地 Lv.' + landPlotLevel(plot) + " · 收成 +" + Math.round((landYieldMultiplier(plot) - 1) * 100) + "%</div>" +
+        '<div class="crop-list">' + rows + "</div>" +
+        '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">取消</button>' +
+        (upCost ? '<button class="btn btn-wood" data-action="upgrade-land" data-plot="' + index + '"' + (canAfford(upCost) ? "" : " disabled") + ">升级田地 · " + costTextOnly(upCost) + "</button>" : '<span class="modal-note">田地已满级</span>') +
+        "</div></div>"
       );
       return;
     }
     const crop = cropById(plot.crop);
     const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + crop.harvest[k]; }).join(" · ");
+    const upCost = landUpgradeCost(plot);
     openModal(
       modalHead("farm", "领地 · 第 " + (index + 1) + " 块田", crop.name, plot.ready ? "已经成熟，可以收获" : "第 " + (crop.days - plot.growth) + " 天后成熟") +
-      '<div class="modal-body"><div class="land-modal-cost">' + (plot.ready ? "已经成熟，可以收获。" : "生长中：" + plot.growth + " / " + crop.days + " 天") + "</div>" +
+      '<div class="modal-body"><div class="land-plot-level">田地 Lv.' + landPlotLevel(plot) + " · 收成 +" + Math.round((landYieldMultiplier(plot) - 1) * 100) + "%</div>" +
+      '<div class="land-modal-cost">' + (plot.ready ? "已经成熟，可以收获。" : "生长中：" + plot.growth + " / " + crop.days + " 天") + "</div>" +
       '<div class="requirement">预计收成：' + gains + "</div>" +
       '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+      (upCost ? '<button class="btn btn-wood" data-action="upgrade-land" data-plot="' + index + '"' + (canAfford(upCost) ? "" : " disabled") + ">升级田地 · " + costTextOnly(upCost) + "</button>" : "") +
       (plot.ready ? '<button class="btn btn-gold" data-action="harvest-land" data-plot="' + index + '">收获</button>' : "") + "</div></div>"
     );
   }
@@ -2862,7 +2900,7 @@
     plots.forEach(function (plot, i) {
       const locked = !plot.unlocked;
       html += '<button class="land-tile ' + (locked ? "locked" : plot.ready ? "ready" : plot.crop ? "growing" : "empty") + '" data-action="land-plot" data-plot="' + i + '">' +
-        '<span class="land-tile-id">田 ' + (i + 1) + "</span><b>" + landPlotState(plot) + "</b></button>";
+        '<span class="land-tile-id">田 ' + (i + 1) + " · Lv." + landPlotLevel(plot) + "</span><b>" + landPlotState(plot) + "</b></button>";
     });
     html += "</div>";
     const next = nextLandPlot();
@@ -3210,7 +3248,8 @@
     if (state && state.view === "land") { renderLandHotspots(); return; }
     if (state && state.view === "outdoor") {
       layer.hidden = false;
-      layer.innerHTML = '<button class="territory-arrow right" data-action="territory-to" data-view="land">领地 →</button>';
+      layer.innerHTML = '<button class="gate-hotspot' + (state.interiorUnlocked ? "" : " locked") + '" data-action="enter-castle"><span>' + (state.interiorUnlocked ? "进入城堡" : "城堡未开放") + '</span></button>' +
+        '<button class="territory-arrow right" data-action="territory-to" data-view="land">领地 →</button>';
       return;
     }
     layer.hidden = true;
@@ -3723,6 +3762,11 @@
       else if (action === "sow-land") sowLandCrop(Number(el.dataset.plot), el.dataset.crop);
       else if (action === "harvest-land") harvestLandPlot(Number(el.dataset.plot));
       else if (action === "land-shop") buildLandShop(Number(el.dataset.slot));
+      else if (action === "upgrade-land") upgradeLandPlot(Number(el.dataset.plot));
+      else if (action === "enter-castle") {
+        if (!state.interiorUnlocked) toast("城堡内部还没有开放。先在庭院建成两座建筑。", "bad", "lock");
+        else switchView("indoor");
+      }
       else if (action === "territory-to") switchView(el.dataset.view);
       else if (action === "decor-open") { if (state.view === "indoor") openInteriorSkinModal(); else if (state.view === "expansion") openFloorSkinModal(); }
       else if (action === "floor-skin-open") openFloorSkinModal();

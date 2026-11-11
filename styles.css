@@ -3026,3 +3026,12 @@ button { font-size: 14px; }
 .indoor-decor-btn { display: flex; align-items: center; gap: 5px; width: 100%; margin: 0 0 8px; padding: 6px 8px; background: #efe3ca; border: 2px solid #c2a678; color: #513b25; font-family: var(--px); font-size: 11px; cursor: pointer; text-align: left; }
 .indoor-decor-btn:hover { background: #f8edd8; }
 .indoor-decor-btn img { width: 20px; height: 20px; }
+
+/* 庭院城门点击进入 */
+.gate-hotspot { position: absolute; left: 45.2%; top: 50.5%; width: 10.4%; height: 17%; z-index: 6; background: transparent; border: 2px solid transparent; cursor: pointer; font-family: var(--px); }
+.gate-hotspot span { position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%); padding: 3px 7px; background: rgba(36,24,15,.9); border: 1px solid #876b49; color: #f0d28a; font-size: 10px; white-space: nowrap; }
+.gate-hotspot:hover { border-color: #d6a449; background: rgba(255,224,150,.08); }
+.gate-hotspot.locked span { color: #b6a98e; border-color: #6e5b43; }
+.gate-hotspot.locked:hover { border-color: #9f8a68; }
+
+.land-plot-level { margin: 2px 0 7px; padding: 6px 8px; background: #edf2df; border: 1px solid #a3b18b; font-size: 11px; color: #4e5f3a; }

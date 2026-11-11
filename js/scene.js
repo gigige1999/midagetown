@@ -3586,7 +3586,13 @@ window.CastleScene = (function () {
       }
       R(ctx, r.x, r.y, r.w, r.h, "#5d4028");
       R(ctx, r.x + 2, r.y + 2, r.w - 4, r.h - 4, "#6f5032");
-      for (let k = 1; k < 4; k++) R(ctx, r.x + 4, r.y + k * 20, r.w - 8, 1, "#4b3320");
+      const lv = Math.max(1, Math.min(3, Number(plot.level) || 1));
+      if (lv > 1) {
+        R(ctx, r.x + 2, r.y + 2, r.w - 4, 2, "#b98a45");
+        R(ctx, r.x + 2, r.y + r.h - 4, r.w - 4, 2, "#b98a45");
+        for (let k = 0; k < lv; k++) R(ctx, r.x + r.w - 12 + k * 4, r.y + 5, 3, 3, "#e2c46d");
+      }
+      for (let k = 1; k < 4; k++) R(ctx, r.x + 4, r.y + k * 18, r.w - 8, 1, "#4b3320");
       if (plot.crop) {
         drawLandCrop(plot.crop, plot.growth, plot.ready, r.x, r.y, r.w, r.h, time);
       } else {
