@@ -1522,6 +1522,7 @@
     ui.guideSig = "";
     renderAll(true);
     saveState();
+    if (ui.modalOpen) openShopModal();
   }
 
   function announceShopUnlocks(before) {
@@ -1759,6 +1760,44 @@
     }
     ui.audioAccum += dt;
     if (ui.audioAccum >= 1.5) { ui.audioAccum = 0; updateAudioEnvironment(); }
+  }
+
+  function updateShopButton() {
+    const btn = $("#shopBtn");
+    if (!btn || !state) return;
+    const built = D.SHOPS.filter(function (s) { return state.shops[s.id].status === "built"; }).length;
+    const count = $("#shopCount");
+    if (count) count.textContent = built;
+    btn.title = "庭院商铺：" + built + " / " + D.SHOPS.length + " 营业中，点击查看";
+  }
+
+  function openShopModal() {
+    if (!started) return;
+    refreshShopUnlocks();
+    const built = D.SHOPS.filter(function (s) { return state.shops[s.id].status === "built"; }).length;
+    const rows = D.SHOPS.map(function (shop) {
+      const st = state.shops[shop.id];
+      const can = canAfford(shop.cost);
+      const status = st.status === "built"
+        ? "营业中 · 金币 +" + (shop.income * 60).toFixed(1) + "/分"
+        : st.status === "available"
+          ? "可开业 · 金币 +" + (shop.income * 60).toFixed(1) + "/分"
+          : shop.unlockText;
+      const action = st.status === "built"
+        ? '<span class="shop-open">营业中</span>'
+        : st.status === "available"
+          ? '<button class="btn btn-gold btn-small" data-action="shop-build" data-id="' + shop.id + '"' + (can ? "" : " disabled") + '>开业</button>'
+          : '<span class="shop-lock">未开放</span>';
+      return '<div class="quick-shop-row ' + st.status + '"><div class="quick-shop-icon"><img src="' + I.buildingIcon(shop.icon) + '" alt=""></div>' +
+        '<div class="quick-shop-copy"><b>' + shop.name + '</b><span>' + status + '</span>' +
+        (st.status === "available" ? '<em>' + costHTML(shop.cost, true) + '</em>' : "") + "</div>" +
+        '<div class="quick-shop-action">' + action + "</div></div>";
+    }).join("");
+    openModal(
+      modalHead("market", "庭院 · 商铺", "商铺一览", built + " / " + D.SHOPS.length + " 营业中 · 会持续带来金币") +
+      '<div class="modal-body"><div class="quick-shop-list">' + rows + "</div>" +
+      '<div class="modal-actions"><span class="modal-note">领地商铺在「领地」页底部建设</span><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>'
+    );
   }
 
   function updateMenuButton() {
@@ -2426,6 +2465,7 @@
     if (!state) return;
     updateTopbar();
     updateMenuButton();
+    updateShopButton();
     updateSceneChrome();
     ui.guideSig = "";
     renderGuideBar();
@@ -3728,6 +3768,7 @@
     $("#continueBtn").addEventListener("click", continueGame);
     $("#tradeBtn").addEventListener("click", function () { if (started) openTradeModal(""); });
     $("#menuBtn").addEventListener("click", function () { if (started) openMenuModal(""); });
+    $("#shopBtn").addEventListener("click", function () { if (started) openShopModal(); });
     const collapseBtn = $("#ledgerCollapse");
     if (collapseBtn) collapseBtn.addEventListener("click", function () { setSidebarCollapsed(true); });
     const expandBtn = $("#ledgerExpand");
