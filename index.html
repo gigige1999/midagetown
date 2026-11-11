@@ -63,29 +63,29 @@
 
     <main class="game">
       <section class="stage">
+        <div class="scene-topnav">
+          <div class="scene-location">
+            <span class="loc-icon"><img data-icon="crown" alt=""></span>
+            <span class="loc-copy"><strong id="sceneLocationTitle">风息堡庭院</strong><em id="sceneLocationSub">WINDREST COURTYARD</em></span>
+          </div>
+          <div class="view-switch" id="viewSwitch" hidden>
+            <button class="view-btn active" data-view="outdoor"><img data-icon="leaf" alt="">庭院</button>
+            <button class="view-btn" data-view="indoor"><img data-icon="crest" alt="">城堡内</button>
+            <button class="view-btn" data-view="expansion" hidden><img data-icon="sparkle" alt="">扩建层</button>
+          </div>
+          <div class="progress-widget" id="progressWidget" title="修复庭院和城堡内的所有区域">
+            <div class="progress-head">
+              <span class="progress-label"><img data-icon="crest" alt=""> 城堡复兴</span>
+              <span class="progress-number" id="progressValue">0 / 8</span>
+            </div>
+            <div class="progress-track"><i id="progressFill"></i></div>
+            <div class="progress-sub" id="progressSub">庭院 0/3 · 城堡内 0/5</div>
+          </div>
+        </div>
+
         <div class="scene-holder" id="sceneHolder">
           <div class="scene-frame" id="sceneFrame">
             <canvas id="scene" width="1440" height="810" aria-label="风息堡场景"></canvas>
-
-            <div class="scene-location">
-              <span class="loc-icon"><img data-icon="crown" alt=""></span>
-              <span class="loc-copy"><strong id="sceneLocationTitle">风息堡庭院</strong><em id="sceneLocationSub">WINDREST COURTYARD</em></span>
-            </div>
-
-            <div class="view-switch" id="viewSwitch" hidden>
-              <button class="view-btn active" data-view="outdoor"><img data-icon="leaf" alt="">庭院</button>
-              <button class="view-btn" data-view="indoor"><img data-icon="crest" alt="">城堡内</button>
-              <button class="view-btn" data-view="expansion" hidden><img data-icon="sparkle" alt="">扩建层</button>
-            </div>
-
-            <div class="progress-widget" id="progressWidget" title="修复庭院和城堡内的所有区域">
-              <div class="progress-head">
-                <span class="progress-label"><img data-icon="crest" alt=""> 城堡复兴</span>
-                <span class="progress-number" id="progressValue">0 / 8</span>
-              </div>
-              <div class="progress-track"><i id="progressFill"></i></div>
-              <div class="progress-sub" id="progressSub">庭院 0/3 · 城堡内 0/5</div>
-            </div>
 
             <div class="interior-hotspots" id="interiorHotspots" hidden></div>
             <div class="scene-tooltip" id="sceneTooltip"></div>

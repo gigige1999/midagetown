@@ -1757,12 +1757,6 @@
     chips.push('<span class="daily-chip" title="居民 ' + residents + '，厨房减免 ' + kitchenFoodReduction() + '，商铺 ' + shopUpkeep + '，菜品 ' + menuFood + '"><img src="' + I.icon("food") + '" alt="">口粮 <b>' + upkeep + "</b>/天</span>");
     chips.push('<span class="daily-chip"><img src="' + I.icon("sparkle") + '" alt="">效率 <b>' + (eff.percent >= 0 ? "+" : "") + eff.percent + "%</b></span>");
     chips.push('<span class="daily-chip ' + (eff.satisfaction.score >= 55 ? "good" : "bad") + '" title="' + satTitle + '">满意 <b>' + eff.satisfaction.score + "</b></span>");
-    if (state.expansionUnlocked && residents > 0) {
-      chips.push('<span class="daily-chip ' + (classCount("soldier") >= requiredSoldiers() ? "good" : "bad") + '">防御 <b>' + classCount("soldier") + "/" + requiredSoldiers() + "</b></span>");
-    }
-    if (state.expansionUnlocked && residents > 0 && missionaryCount() === 0) {
-      chips.push('<span class="daily-chip bad">缺传教士 · 产能-20%</span>');
-    }
     el.innerHTML = chips.join("");
   }
 
@@ -2525,51 +2519,6 @@
     return parts.join(" · ") || "基础房";
   }
 
-  function renderExpansionBuildTab() {
-    ensureFloorProgression(false);
-    const floor = state.currentFloor || 0;
-    const rooms = currentFloorRooms();
-    const built = floorRoomCount(floor);
-    const exp = expansionBonuses();
-    const fac = floorFacilities(floor);
-    const defense = defenseValue();
-    const need = requiredSoldiers();
-    const soldiers = classCount("soldier");
-    const guests = guestsOnFloor(floor);
-    let html = sectionHead("城堡扩建层 · 第 " + (floor + 1) + " 层", built + " / " + D.EXPANSION_SLOTS.length + " 间已建");
-    html += '<div class="people-summary"><div class="summary-main"><img src="' + I.icon("sparkle") + '" alt=""><div><b>自由扩建</b><span>10 个位置 · 点击房间管理/升级</span></div></div>' +
-      '<div class="summary-grid">' +
-      '<div class="summary-box"><span>本层床位</span><b>' + guests.length + " / " + floorBeds(floor) + "</b></div>" +
-      '<div class="summary-box"><span>防御 / 需要</span><b class="' + (soldiers >= need ? "text-good" : "text-bad") + '">' + defense + " · 士兵 " + soldiers + "/" + need + "</b></div>" +
-      '<div class="summary-box"><span>本层厕所</span><b class="' + (fac.toilet ? "text-good" : "text-bad") + '">' + (fac.toilet ? "已配置" : "缺少") + "</b></div>" +
-      '<div class="summary-box"><span>本层餐厅</span><b class="' + (fac.dining ? "text-good" : "text-bad") + '">' + (fac.dining ? "已配置" : "缺少") + "</b></div>" +
-      "</div>" +
-      (fac.rooms > 0 && (!fac.toilet || !fac.dining) ? '<div class="facility-warning">这一层缺少' + (!fac.toilet ? "厕所" : "") + (!fac.toilet && !fac.dining ? "和" : "") + (!fac.dining ? "餐厅" : "") + "，入住居民会不满意，效率和收入都会下降。</div>" : "") +
-      '<div class="summary-note">S 只放小房 · M 放小/中 · L 放任意房；招募看本层房间。</div></div>';
-    const skin = floorSkinById(currentFloorSkin().selected);
-    html += '<div class="floor-skin-card"><div class="floor-skin-swatch ' + skin.id + '"></div><div><b>地板 · ' + skin.name + "</b><span>仅第 " + (floor + 1) + " 层 · 其他层需单独购买</span></div>" +
-      '<button class="btn btn-wood btn-small" data-action="floor-skin-open">更换</button></div>';
-    html += renderGuestRecruitSection(floor);
-    html += '<div class="guest-recruit-head"><b>房间与位置</b><span>尺寸：S 小 / M 中 / L 大</span></div>';
-    D.EXPANSION_SLOTS.forEach(function (slot) {
-      const room = rooms[slot.id];
-      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      html += '<article class="expansion-row ' + (type ? "built" : "empty") + '">' +
-        '<div class="expansion-slot-id">' + slot.id.replace("s", "S") + '<small>' + slot.size + '</small></div>' +
-        '<div class="expansion-row-copy"><b>' + (type ? type.name : "空位置") + ' <span class="room-size-tag ' + slot.size + '">' + slot.size + "</span>" + (type ? " · Lv." + roomLevel(room) : "") + "</b>" +
-        '<span>' + (type ? expansionRoomBrief(type, room) : "可放 " + (slot.size === "S" ? "小房" : slot.size === "M" ? "小/中房" : "任意房")) + "</span></div>" +
-        '<div class="expansion-row-action">' + (type
-          ? '<button class="btn btn-ghost btn-small" data-action="expansion-slot" data-slot="' + slot.id + '">管理</button>'
-          : '<button class="btn btn-gold btn-small" data-action="expansion-slot" data-slot="' + slot.id + '">建造</button>') + "</div></article>";
-    });
-    if (built >= D.EXPANSION_SLOTS.length) {
-      html += '<div class="floor-full-note">' + (state.expansionFloorCount < D.MAX_FLOORS
-        ? "这一层已经建满。去下一层继续扩建吧。"
-        : "所有楼层都已建满。你拥有一座真正的城堡了。") + "</div>";
-    }
-    return html;
-  }
-
   function ensureFloorProgression(notify) {
     if (!state || !state.expansionUnlocked) return;
     const floor = state.currentFloor || 0;
@@ -2585,6 +2534,62 @@
       }
       saveState();
     }
+  }
+
+  function renderExpansionBuildTab() {
+    ensureFloorProgression(false);
+    const floor = state.currentFloor || 0;
+    const rooms = currentFloorRooms();
+    const built = floorRoomCount(floor);
+    const fac = floorFacilities(floor);
+    const defense = defenseValue();
+    const need = requiredSoldiers();
+    const soldiers = classCount("soldier");
+    const guests = guestsOnFloor(floor);
+    const missing = [];
+    if (fac.rooms > 0 && !fac.toilet) missing.push("缺厕所");
+    if (fac.rooms > 0 && !fac.dining) missing.push("缺餐厅");
+    if (need > 0 && soldiers < need) missing.push("缺士兵 " + soldiers + "/" + need);
+    if (countResidents() > 0 && missionaryCount() === 0) missing.push("缺传教士");
+    let html = sectionHead("第 " + (floor + 1) + " 层", built + "/" + D.EXPANSION_SLOTS.length + " 房");
+    html += '<div class="floor-compact-stats">' +
+      '<div class="floor-stat"><span>床位</span><b>' + guests.length + " / " + floorBeds(floor) + "</b></div>" +
+      '<div class="floor-stat"><span>传教</span><b>' + classCount("missionary") + "</b></div></div>";
+    if (missing.length) html += '<div class="floor-warning">' + missing.join(" · ") + "</div>";
+    html += '<div class="floor-actions"><button class="btn btn-gold btn-small" data-action="recruit-open"><img src="' + I.icon("people") + '" alt="">招募客人</button>' +
+      '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传教 " + classCountOnFloor(floor, "missionary") + "</span></div>";
+    html += '<div class="room-grid">';
+    D.EXPANSION_SLOTS.forEach(function (slot) {
+      const room = rooms[slot.id];
+      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
+      html += '<button class="room-tile ' + (type ? "built" : "empty") + '" data-action="expansion-slot" data-slot="' + slot.id + '">' +
+        '<span class="room-tile-id">' + slot.id.replace("s", "S") + " · " + slot.size + "</span>" +
+        '<b>' + (type ? type.name + " Lv." + roomLevel(room) : "空位 · 建造") + "</b></button>";
+    });
+    html += "</div>";
+    return html;
+  }
+
+  function openRecruitModal() {
+    const floor = state.currentFloor || 0;
+    const rows = D.GUEST_CLASSES.map(function (klass) {
+      const met = requirementsMet(floor, klass);
+      const beds = floorFreeBeds(floor);
+      const afford = canAfford(klass.cost);
+      const enabled = met && beds > 0 && afford;
+      return '<div class="recruit-row ' + (enabled ? "ready" : "locked") + '">' +
+        '<img class="recruit-portrait" src="' + I.guestPortrait(klass.id, 0) + '" alt="">' +
+        '<div class="recruit-copy"><b>' + klass.name + '</b><span>' + klass.effectShort + "</span>" +
+        '<div class="guest-req-row">' + guestRequirementHTML(klass, floor) + "</div></div>" +
+        '<div class="recruit-action"><span class="guest-cost">' + costHTML(klass.cost, true) + "</span>" +
+        '<button class="btn btn-gold btn-small" data-action="recruit-guest" data-class="' + klass.id + '"' + (enabled ? "" : " disabled") + ">招募</button></div></div>";
+    }).join("");
+    openModal(
+      modalHead("people", "扩建层 · 第 " + (floor + 1) + " 层", "招募客人", "房间条件按本层计算；每位客人占 1 个床位。") +
+      '<div class="modal-body"><div class="recruit-summary">床位 ' + guestsOnFloor(floor).length + " / " + floorBeds(floor) + " · 防御 " + defenseValue() + " · 士兵 " + classCount("soldier") + "/" + requiredSoldiers() + "</div>" +
+      '<div class="recruit-list">' + rows + "</div>" +
+      '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">关闭</button></div></div>'
+    );
   }
 
   function goDownstairs() {
@@ -2982,8 +2987,7 @@
       const afford = canAfford(cost);
       openModal(
         modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name + " · Lv." + lv, "S" + slotId.replace("s", "") + " 号房间") +
-        '<div class="modal-body"><p class="modal-copy">' + type.desc + "</p>" +
-        '<div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
+        '<div class="modal-body"><div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
         '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
         "当前加成：床位 " + roomCapacity(type, room) +
         (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%" : "") +
@@ -2995,6 +2999,7 @@
           '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
         '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
         '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+        '<button class="btn btn-wood" data-action="floor-skin-open"><img src="' + I.icon("sparkle") + '" alt="">地板皮肤</button>' +
         '<button class="btn btn-danger" data-action="demolish-open" data-slot="' + slotId + '">拆除</button>' +
         (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-slot="' + slotId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
         "</div></div>"
@@ -3115,6 +3120,7 @@
       (klass.id === "minister" ? " 生产 +" + Math.round(klass.productionBonus * 100) + "%" : "") +
       (klass.id === "missionary" ? " 恢复居民产能" : ""), "gold", klass.icon);
     A.sfx("hire");
+    if (ui.modalOpen) closeModal(true);
     renderAll(true);
     saveState();
   }
@@ -3314,6 +3320,7 @@
       else if (action === "expansion-slot") openExpansionSlotModal(el.dataset.slot);
       else if (action === "build-expansion") buildExpansionRoom(el.dataset.slot, el.dataset.type);
       else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.slot);
+      else if (action === "recruit-open") openRecruitModal();
       else if (action === "floor-skin-open") openFloorSkinModal();
       else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);
       else if (action === "apply-floor-skin") applyFloorSkin(el.dataset.id);
