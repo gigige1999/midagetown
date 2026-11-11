@@ -739,6 +739,35 @@ window.Icons = (function () {
     R(x, 12, 4, 1, 2, "#f0d28a"); R(x, 15, 5, 1, 2, "#f0d28a");
   }
 
+  function drawTomatoPastaIcon(x) {
+    R(x, 4, 11, 16, 7, C.ink); R(x, 5, 10, 14, 7, "#d9d0b8"); R(x, 6, 11, 12, 5, "#e8dfc7");
+    for (let i = 0; i < 5; i++) R(x, 7 + i * 2, 12 + (i % 2), 3, 1, "#d9b45a");
+    R(x, 7, 12, 4, 3, "#c94d3f"); R(x, 13, 13, 4, 3, "#b83d34");
+    R(x, 10, 9, 2, 2, "#6c904f"); R(x, 16, 9, 2, 2, "#6c904f");
+    R(x, 3, 18, 18, 2, C.ink); R(x, 6, 20, 12, 1, "#3b2a1a");
+  }
+
+  function drawCornBreadIcon(x) {
+    R(x, 5, 10, 14, 8, C.ink); R(x, 6, 9, 12, 9, "#d9a84f"); R(x, 7, 8, 10, 5, "#e8bf67");
+    for (let i = 0; i < 4; i++) R(x, 7 + i * 3, 10, 2, 5, "#c58a35");
+    R(x, 4, 17, 16, 2, C.ink); R(x, 7, 19, 10, 1, "#3b2a1a");
+    R(x, 15, 6, 2, 3, "#e2bd54"); R(x, 13, 5, 3, 2, "#e2bd54");
+  }
+
+  function drawGrapePieIcon(x) {
+    R(x, 4, 10, 16, 8, C.ink); R(x, 5, 9, 14, 9, "#d9b45a"); R(x, 6, 8, 12, 4, "#e8c86f");
+    R(x, 7, 11, 4, 3, "#8a5d9e"); R(x, 12, 11, 4, 3, "#7a4f8e"); R(x, 9, 14, 4, 3, "#8a5d9e");
+    R(x, 6, 17, 12, 1, "#a87838"); R(x, 3, 18, 18, 2, C.ink);
+    R(x, 9, 6, 2, 2, "#6c904f");
+  }
+
+  function drawLavenderTeaIcon(x) {
+    R(x, 7, 9, 10, 8, C.ink); R(x, 8, 8, 8, 8, "#e8dfc7"); R(x, 9, 8, 6, 1, "#f4eeda");
+    R(x, 5, 16, 14, 2, C.ink); R(x, 7, 18, 10, 1, "#3b2a1a");
+    R(x, 8, 5, 1, 5, "#7a6a9e"); R(x, 11, 4, 1, 6, "#8a7bb8"); R(x, 14, 5, 1, 5, "#7a6a9e");
+    R(x, 10, 3, 2, 2, "#8a7bb8"); R(x, 13, 2, 2, 2, "#a99bd0");
+  }
+
   const ICON_DRAWERS = {
     coin: drawCoin,
     wood: drawWood,
@@ -776,7 +805,11 @@ window.Icons = (function () {
     mushroomSkewer: drawMushroomSkewerIcon,
     pumpkinSoup: drawPumpkinSoupIcon,
     honeyFish: drawHoneyFishIcon,
-    royalStew: drawRoyalStewIcon
+    royalStew: drawRoyalStewIcon,
+    tomatoPasta: drawTomatoPastaIcon,
+    cornBread: drawCornBreadIcon,
+    grapePie: drawGrapePieIcon,
+    lavenderTea: drawLavenderTeaIcon
   };
 
   function renderIcon(name) {
@@ -1210,13 +1243,13 @@ window.Icons = (function () {
       const hairs = ["#4a3527", "#6b4a2d", "#2f2824", "#7b3f2e"];
       const skin = skins[v], hair = hairs[(v + 1) % 4];
       R(x, 0, 0, 40, 40, C.ink);
-      R(x, 1, 1, 38, 38, id === "soldier" ? "#30343a" : id === "minister" ? "#342e3b" : id === "missionary" ? "#302b22" : "#34302a");
+      R(x, 1, 1, 38, 38, id === "soldier" ? "#30343a" : id === "minister" ? "#342e3b" : id === "missionary" ? "#302b22" : id === "farmer" ? "#2d3a26" : id === "cook" ? "#3a2b26" : "#34302a");
       for (let i = -8; i < 48; i += 7) for (let j = 0; j < 40; j++) {
         const px = i + j;
         if (px >= 1 && px < 39 && j % 7 < 2) R(x, px, j, 1, 1, "rgba(255,235,190,0.05)");
       }
-      const cloth = id === "soldier" ? "#59616c" : id === "minister" ? "#71556f" : id === "missionary" ? "#6a5b3e" : "#4d5c6d";
-      const cloth2 = id === "soldier" ? "#3d454f" : id === "minister" ? "#4c3a4d" : id === "missionary" ? "#4a3f2b" : "#384552";
+      const cloth = id === "soldier" ? "#59616c" : id === "minister" ? "#71556f" : id === "missionary" ? "#6a5b3e" : id === "farmer" ? "#5f7d46" : id === "cook" ? "#b86b4d" : "#4d5c6d";
+      const cloth2 = id === "soldier" ? "#3d454f" : id === "minister" ? "#4c3a4d" : id === "missionary" ? "#4a3f2b" : id === "farmer" ? "#435a32" : id === "cook" ? "#7e4636" : "#384552";
       R(x, 5, 27, 30, 12, C.ink);
       R(x, 7, 28, 26, 10, cloth);
       R(x, 9, 28, 22, 3, cloth2);
@@ -1228,6 +1261,16 @@ window.Icons = (function () {
       R(x, 24, 17, 2, 2, "#2a1c15");
       R(x, 19, 22, 2, 1, "#7b4a3a");
       R(x, 17, 24, 6, 1, "#b97b5d");
+      if (id === "farmer") {
+        R(x, 9, 10, 22, 2, C.ink);
+        R(x, 10, 10, 20, 1, "#d9b45a");
+        R(x, 14, 6, 12, 4, "#c9a24e");
+        R(x, 15, 5, 10, 2, "#e2c46d");
+      } else if (id === "cook") {
+        R(x, 12, 4, 16, 6, "#f0e8d4");
+        R(x, 10, 9, 20, 2, "#d8cdb8");
+        R(x, 13, 6, 14, 3, "#f5efe0");
+      }
       if (id === "resident") {
         R(x, 11, 13, 18, 8, C.ink);
         R(x, 12, 14, 16, 6, ["#c9a24e", "#5b7b9d", "#748f5b", "#8d668c"][v]);

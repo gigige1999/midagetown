@@ -166,8 +166,14 @@
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
+        { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null }
-      ] },
+      ], shops: [null, null], cropsSeen: {} },
       currentFloor: 0,
       trade: { day: 1, bought: { wood: 0, stone: 0, food: 0 } },
       genericResidents: [],
@@ -315,11 +321,20 @@
       s.land.plots.push({
         unlocked: i === 0 ? true : !!src.unlocked,
         crop: src.unlocked ? crop : null,
-        growth: clamp(Number(src.growth) || 0, 0, 3),
+        growth: clamp(Number(src.growth) || 0, 0, 4),
         ready: !!(src.unlocked && crop && src.ready),
         plantedDay: Number(src.plantedDay) || null
       });
     }
+    const rawLandShops = Array.isArray(rawLand.shops) ? rawLand.shops : [];
+    s.land.shops = [0, 1].map(function (i) {
+      const id = rawLandShops[i];
+      return D.LAND_SHOPS.some(function (sh) { return sh.id === id; }) ? id : null;
+    });
+    s.land.cropsSeen = {};
+    Object.keys(rawLand.cropsSeen || {}).forEach(function (id) {
+      if (D.CROPS.some(function (c) { return c.id === id; })) s.land.cropsSeen[id] = true;
+    });
     s.genericResidents = Array.isArray(raw.genericResidents) ? raw.genericResidents.filter(function (r) {
       return r && D.MASK_TYPES.some(function (m) { return m.id === r.type; });
     }).map(function (r) {
@@ -648,7 +663,8 @@
     const free = residentCapacity() - rooms;
     if (rooms > 0 && free >= 2) { score += 5; reasons.push({ label: "空间宽裕", value: 5, good: true }); }
     if (rooms > 0 && free <= 0) { score -= 5; reasons.push({ label: "空间已满", value: -5, good: false }); }
-    const menuBonus = Math.min(20, state.menus.length * 4);
+    let menuBonus = Math.min(20, state.menus.length * 4);
+    menuBonus += Math.round(menuAffinity("missionary") * 100);
     if (menuBonus) { score += menuBonus; reasons.push({ label: "菜单丰富", value: menuBonus, good: true }); }
     const exp = expansionBonuses();
     if (exp.satisfaction) {
@@ -737,7 +753,7 @@
     D.WORKERS.forEach(function (w) {
       if (state.workers[w.id] && state.workers[w.id].hired) bonus += w.bonus;
     });
-    bonus += expansionBonuses().productionBonus + shopBonuses().productionBonus + studyProductionBonus() + ministerBonus();
+    bonus += expansionBonuses().productionBonus + shopBonuses().productionBonus + studyProductionBonus() + ministerBonus() + menuAffinity("minister");
     const residents = countResidents();
     const fed = state.lastMeal.fed !== false;
     const sat = satisfactionInfo();
@@ -764,7 +780,7 @@
       const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
       if (m) mult += m.bonus;
     });
-    return mult;
+    return mult * (1 + classCount("cook") * 0.05);
   }
 
   function floorRooms(index) {
@@ -909,6 +925,7 @@
     });
     if (state.buildings.barracks.status === "built") defense += 5 + buildingLevel("barracks") * 2;
     if (state.workers.irondan.hired) defense += 8;
+    defense *= 1 + menuAffinity("soldier");
     return Math.round(defense);
   }
 
@@ -927,6 +944,27 @@
 
   function guestIncome(r) {
     return guestClass(r.klass || "resident").income || 0;
+  }
+
+  function menuAffinity(klassId) {
+    return state.menus.reduce(function (n, id) {
+      const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
+      return n + (m && m.affinity && m.affinity[klassId] ? m.affinity[klassId] : 0);
+    }, 0);
+  }
+
+  function classUnlockMet(klass) {
+    if (!klass.unlock) return true;
+    if (klass.unlock.crops) return Object.keys((state.land && state.land.cropsSeen) || {}).length >= klass.unlock.crops;
+    if (klass.unlock.menus) return state.menus.length >= klass.unlock.menus;
+    return true;
+  }
+
+  function classUnlockText(klass) {
+    if (!klass.unlock) return "";
+    if (klass.unlock.crops) return "收获 " + klass.unlock.crops + " 种作物后解锁";
+    if (klass.unlock.menus) return "拥有 " + klass.unlock.menus + " 道菜谱后解锁";
+    return "";
   }
 
   function menuUpkeep() {
@@ -986,6 +1024,12 @@
         income += shop.income || 0;
       }
     });
+    (state.land && state.land.shops || []).forEach(function (id) {
+      const shop = id ? landShopById(id) : null;
+      if (!shop) return;
+      residentBonus += shop.residentBonus || 0;
+      income += shop.income || 0;
+    });
     return { residentBonus: residentBonus, productionBonus: productionBonus, income: income };
   }
 
@@ -997,7 +1041,7 @@
     const named = D.countHired(state);
     let generic = 0;
     state.genericResidents.forEach(function (r) { generic += guestIncome(r); });
-    const menu = menuMultiplier();
+    const menu = menuMultiplier() * (1 + menuAffinity("resident"));
     const shop = 1 + shopBonuses().residentBonus + expansionBonuses().residentBonus;
     const fed = state.lastMeal.fed !== false ? 1.1 : 0.7;
     return (named * 0.035 + generic) * menu * shop * fed * satisfactionMultiplier() * Math.max(0.55, 1 - missingFacilityCount() * 0.08) * missionaryPenalty();
@@ -1032,7 +1076,7 @@
     state.weather = pickWeather();
     const residents = countResidents();
     const reduction = kitchenFoodReduction();
-    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
+    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length + landShopBuiltCount();
     const menuFood = menuUpkeep();
     const upkeep = Math.max(0, residents - reduction) + shopUpkeep + menuFood;
     let fed = true;
@@ -1354,6 +1398,14 @@
      ========================================================= */
   function hasMenu(id) { return state.menus.indexOf(id) >= 0; }
 
+  function affinityText(m) {
+    if (!m.affinity) return "无角色加成";
+    return Object.keys(m.affinity).map(function (id) {
+      const k = D.GUEST_CLASSES.filter(function (x) { return x.id === id; })[0];
+      return (k ? k.name : id) + " +" + Math.round(m.affinity[id] * 100) + "%";
+    }).join(" · ");
+  }
+
   function openMenuModal(note) {
     if (state.buildings.kitchen.status !== "built") {
       toast("先修复厨房，布丁才能开始准备菜单。", "bad", "lock");
@@ -1362,13 +1414,14 @@
     const mult = menuMultiplier();
     const rows = D.MENUS.map(function (m) {
       const owned = hasMenu(m.id);
-      const unlocked = countResidents() >= (m.minResidents || 0);
+      const cropOk = !m.requiresCrop || (state.land.cropsSeen && state.land.cropsSeen[m.requiresCrop]);
+      const unlocked = countResidents() >= (m.minResidents || 0) && cropOk;
       const afford = canAfford(m.cost);
       return '<div class="menu-row' + (owned ? " owned" : "") + (unlocked ? "" : " locked") + '">' +
         '<div class="menu-icon"><img src="' + I.icon(m.icon) + '" alt=""></div>' +
-        '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + (unlocked ? "" : '<span class="menu-lock">需要 ' + m.minResidents + " 位居民</span>") + "</div>" +
+        '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + (owned || unlocked ? "" : '<span class="menu-lock">' + (!cropOk ? "需要收获" + (D.CROPS.filter(function (c) { return c.id === m.requiresCrop; })[0] || {}).name : "需要 " + m.minResidents + " 位居民") + "</span>") + "</div>" +
         '<div class="menu-desc">' + m.desc + "</div>" +
-        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div></div>" +
+        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · " + affinityText(m) + " · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div></div>" +
         '<div class="menu-actions">' + (owned
           ? '<span class="menu-check">已解锁</span>'
           : '<button class="btn btn-gold btn-small" data-action="buy-menu" data-id="' + m.id + '"' + (afford && unlocked ? "" : " disabled") + '>' + (unlocked ? "购买" : "未解锁") + '</button>') +
@@ -1396,6 +1449,11 @@
     if (state.buildings.kitchen.status !== "built") { toast("先修复厨房。", "bad", "lock"); return; }
     if (countResidents() < (m.minResidents || 0)) {
       toast("「" + m.name + "」需要 " + m.minResidents + " 位居民才会出现在菜单上。", "bad", "lock");
+      return;
+    }
+    if (m.requiresCrop && !(state.land.cropsSeen && state.land.cropsSeen[m.requiresCrop])) {
+      const c = D.CROPS.filter(function (x) { return x.id === m.requiresCrop; })[0];
+      toast("先收获一份" + (c ? c.name : "作物") + "，才能解锁「" + m.name + "」。", "bad", "lock");
       return;
     }
     if (!canAfford(m.cost)) {
@@ -1779,7 +1837,7 @@
     if (!el || !state) return;
     const eff = efficiencyInfo();
     const residents = countResidents();
-    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
+    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length + landShopBuiltCount();
     const menuFood = menuUpkeep();
     const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep + menuFood;
     const satTitle = escapeHTML(eff.satisfaction.reasons.map(function (r) {
@@ -2286,12 +2344,12 @@
       '<div class="help-item"><img src="' + I.icon("crest") + '" alt=""><div><strong>⑤ 两座建筑 → 城堡内部</strong><p>庭院建成两座建筑后，点击场景上方的「城堡内」，修复厨房、书房、兵营、账房和礼拜堂。每修好一个房间就会有一位新居民加入。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("food") + '" alt=""><div><strong>⑥ 厨房菜单 → 居民收入</strong><p>厨房修好后，点击顶栏金色「菜单」按钮购买菜肴。菜谱会随居民数量逐步解锁；每道菜提高居民金币收入，同时每天额外消耗 1–3 份食物。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("coin") + '" alt=""><div><strong>⑦ 庭院商铺 → 额外收入</strong><p>面包房、铁匠铺、杂货铺之外，还会解锁鱼摊（城堡阶段 5）和花摊（扩建第 2 层）。商铺持续产金币、提高居民收入，也各自增加 1 份/天食物消耗。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级或拆除；地板/装修使用场景上方的「装修」按钮，与房间升级分开。扩建层按楼层独立购买。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("sparkle") + '" alt=""><div><strong>⑧ 扩建层 → 房间、职业与配比</strong><p>修复所有房间后开放扩建层。每层 10 个不同尺寸的位置，房间可重复、位置自选。居民需要民居，士兵需要厕所+武器库+士兵营房，大臣需要会议室+书房+大臣办公室，传教士需要小礼拜堂+静修室。点击已建房间可以升级或拆除，升级会多出地毯、家具、床位和吊灯；地板/装修使用场景上方的「装修」按钮，与房间升级分开。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("bunting") + '" alt=""><div><strong>⑨ 全部修复 → 丰收庆典</strong><p>庭院 3 个区域 + 城堡内 5 个区域全部完成，就能举办庆典。庆典时所有居民会聚到城堡门外。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("cart") + '" alt=""><div><strong>⑩ 行商买入页</strong><p>行商现在有「卖出 / 买入」两页。木材、石料、食物都能买，但每种物资每天有购买上限，黎明刷新。卖出价格受金铃和账房等级影响。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("arrow") + '" alt=""><div><strong>⑪ 扩建与升级</strong><p>伐木场、农田、采石场可以扩建提高产速；城堡房间也可以升级，增强效果与满意度。顶栏进度会显示城堡等级与威望，外观会随等级变得更华丽。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>⑫ 防御、满意度与离开</strong><p>士兵不足时隔壁村会偷物资；没有传教士时居民产能 -20%。食物、菜单、空间、基础设施和房间等级都会影响满意度，低于 30 时客人会离开。主线居民不会离开。每层建议至少 1 间厕所和 1 间餐厅。</p></div></div>' +
-      '<div class="help-item"><img src="' + I.icon("farm") + '" alt=""><div><strong>⑬ 领地农田</strong><p>顶部切换到「领地」，用金币/木材开垦最多 6 块田。空田每天可选择小麦、胡萝卜、南瓜或草药；作物按天数生长，成熟后点击收获。不同作物收成不同。</p></div></div>' +
+      '<div class="help-item"><img src="' + I.icon("farm") + '" alt=""><div><strong>⑬ 领地农田</strong><p>顶部切换到「领地」，一页有 12 块田，用金币/木材逐块开垦。8 种作物按居民数解锁；作物成熟后收获并记录，用于解锁番茄意面、玉米面包、葡萄派、薰衣草茶。菜品会给不同职业加成；农夫/厨师是新增居民。领地底部还能建 2 个商铺。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>⑭ 调试模式</strong><p>按 `~` / `Ctrl+Shift+D` 打开。调试模式下建造立即完成，还可以一键加资源、解锁区域、满级和跳过一天。仅用于开发测试。</p></div></div>' +
       "</div>" +
       '<div class="modal-actions"><span class="modal-note">空格暂停 · 1/2/3 调速 · M 静音</span>' +
@@ -2631,6 +2689,30 @@
     return D.CROPS.filter(function (c) { return c.id === id; })[0] || D.CROPS[0];
   }
 
+  function landShopById(id) {
+    return D.LAND_SHOPS.filter(function (sh) { return sh.id === id; })[0] || null;
+  }
+
+  function landShopBuiltCount() {
+    return (state.land.shops || []).filter(Boolean).length;
+  }
+
+  function buildLandShop(index) {
+    if (!state.land || !state.land.plots) return;
+    if (state.land.shops[index]) return;
+    const shop = D.LAND_SHOPS[index];
+    if (!shop) return;
+    if (!canAfford(shop.cost)) { toast("建造" + shop.name + "还差：" + missingCostsText(shop.cost), "bad", "hammer"); return; }
+    payCost(shop.cost);
+    if (!state.land.shops) state.land.shops = [null, null];
+    state.land.shops[index] = shop.id;
+    addLog("领地里建起了「" + shop.name + "」。", "good");
+    toast(shop.name + "开张，领地商铺开始营业。", "gold", "coin");
+    A.sfx("build");
+    renderAll(true);
+    saveState();
+  }
+
   function landUnlockedCount() {
     return state.land.plots.filter(function (p) { return p.unlocked; }).length;
   }
@@ -2676,6 +2758,7 @@
     const plot = state.land.plots[index];
     if (!plot || !plot.unlocked || plot.crop) return;
     const crop = cropById(cropId);
+    if (countResidents() < (crop.minResidents || 0)) { toast("「" + crop.name + "」需要 " + crop.minResidents + " 位居民后解锁。", "bad", "lock"); return; }
     if (!canAfford({ gold: crop.cost })) { toast("金币不够，播种需要 " + crop.cost + " 金币。", "bad", "coin"); return; }
     payCost({ gold: crop.cost });
     plot.crop = crop.id;
@@ -2707,10 +2790,13 @@
     const plot = state.land.plots[index];
     if (!plot || !plot.ready || !plot.crop) return;
     const crop = cropById(plot.crop);
+    if (!state.land.cropsSeen) state.land.cropsSeen = {};
+    state.land.cropsSeen[crop.id] = true;
+    const yieldMult = 1 + classCount("farmer") * 0.08 + menuAffinity("farmer");
     Object.keys(crop.harvest).forEach(function (k) {
-      state.resources[k] = (state.resources[k] || 0) + crop.harvest[k];
+      state.resources[k] = (state.resources[k] || 0) + Math.round(crop.harvest[k] * yieldMult);
     });
-    const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + crop.harvest[k]; }).join(" · ");
+    const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + Math.round(crop.harvest[k] * yieldMult); }).join(" · ");
     addLog("收获第 " + (index + 1) + " 块田的" + crop.name + "：" + gains + "。", "good");
     toast("收获" + crop.name + "：" + gains, "gold", "food");
     plot.crop = null;
@@ -2738,11 +2824,12 @@
     }
     if (!plot.crop) {
       const rows = D.CROPS.map(function (crop) {
-        const can = canAfford({ gold: crop.cost });
+        const unlocked = countResidents() >= (crop.minResidents || 0);
+        const can = unlocked && canAfford({ gold: crop.cost });
         const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + crop.harvest[k]; }).join(" · ");
-        return '<button class="crop-row" data-action="sow-land" data-plot="' + index + '" data-crop="' + crop.id + '"' + (can ? "" : " disabled") + ">" +
-          '<span class="crop-dot" style="background:' + crop.color + '"></span><span class="crop-copy"><b>' + crop.name + '</b><em>' + crop.days + " 天 · " + crop.cost + " 金</em></span>" +
-          '<span class="crop-gain">' + gains + "</span></button>";
+        return '<button class="crop-row' + (unlocked ? "" : " crop-locked") + '" data-action="sow-land" data-plot="' + index + '" data-crop="' + crop.id + '"' + (can ? "" : " disabled") + ">" +
+          '<span class="crop-dot" style="background:' + crop.color + '"></span><span class="crop-copy"><b>' + crop.name + '</b><em>' + (unlocked ? crop.days + " 天 · " + crop.cost + " 金" : "需要 " + crop.minResidents + " 居民") + '</em></span>' +
+          '<span class="crop-gain">' + (unlocked ? gains : "未解锁") + "</span></button>";
       }).join("");
       openModal(
         modalHead("farm", "领地 · 第 " + (index + 1) + " 块田", "播种", "选择一种作物；同一天只能种一次。") +
@@ -2785,6 +2872,13 @@
     } else {
       html += '<div class="floor-warning">土地已经全部开垦，没有更多田地了。</div>';
     }
+    html += '<div class="tab-section-head" style="margin-top:10px"><b>领地商铺</b><span class="count">' + landShopBuiltCount() + "/2</span></div>";
+    D.LAND_SHOPS.forEach(function (shop, i) {
+      const built = state.land.shops && state.land.shops[i];
+      html += '<button class="land-shop-tile ' + (built ? "built" : "") + '" data-action="land-shop" data-slot="' + i + '">' +
+        '<b>' + (built ? "「" + shop.name + "」营业中" : "商铺位 " + (i + 1) + " · " + shop.name) + "</b>" +
+        '<em>' + (built ? "金币 +" + (shop.income * 60).toFixed(1) + "/分" : costTextOnly(shop.cost)) + "</em></button>";
+    });
     return html;
   }
 
@@ -2826,7 +2920,7 @@
       '<div class="floor-stat"><span>传教</span><b>' + classCount("missionary") + "</b></div></div>";
     if (missing.length) html += '<div class="floor-warning">' + missing.join(" · ") + "</div>";
     html += '<div class="floor-actions"><button class="btn btn-gold btn-small" data-action="recruit-open"><img src="' + I.icon("people") + '" alt="">招募客人</button>' +
-      '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传教 " + classCountOnFloor(floor, "missionary") + "</span></div>";
+      '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传 " + classCountOnFloor(floor, "missionary") + " · 农 " + classCountOnFloor(floor, "farmer") + " · 厨 " + classCountOnFloor(floor, "cook") + "</span></div>";
     html += '<div class="room-grid">';
     D.EXPANSION_SLOTS.forEach(function (slot) {
       const room = rooms[slot.id];
@@ -2843,12 +2937,13 @@
     const floor = state.currentFloor || 0;
     const rows = D.GUEST_CLASSES.map(function (klass) {
       const met = requirementsMet(floor, klass);
+      const unlocked = classUnlockMet(klass);
       const beds = floorFreeBeds(floor);
       const afford = canAfford(klass.cost);
-      const enabled = met && beds > 0 && afford;
+      const enabled = met && unlocked && beds > 0 && afford;
       return '<div class="recruit-row ' + (enabled ? "ready" : "locked") + '">' +
         '<img class="recruit-portrait" src="' + I.guestPortrait(klass.id, 0) + '" alt="">' +
-        '<div class="recruit-copy"><b>' + klass.name + '</b><span>' + klass.effectShort + "</span>" +
+        '<div class="recruit-copy"><b>' + klass.name + '</b><span>' + klass.effectShort + (unlocked ? "" : " · " + classUnlockText(klass)) + "</span>" +
         '<div class="guest-req-row">' + guestRequirementHTML(klass, floor) + "</div></div>" +
         '<div class="recruit-action"><span class="guest-cost">' + costHTML(klass.cost, true) + "</span>" +
         '<button class="btn btn-gold btn-small" data-action="recruit-guest" data-class="' + klass.id + '"' + (enabled ? "" : " disabled") + ">招募</button></div></div>";
@@ -2973,7 +3068,7 @@
     const residents = countResidents();
     const capacity = residentCapacity();
     const kitchen = state.buildings.kitchen.status === "built";
-    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length;
+    const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length + landShopBuiltCount();
     const menuFood = menuUpkeep();
     const upkeep = Math.max(0, residents - kitchenFoodReduction()) + shopUpkeep + menuFood;
     const fed = state.lastMeal.fed !== false;
@@ -3113,6 +3208,11 @@
     if (state && state.view === "indoor") { renderInteriorHotspots(); return; }
     if (state && state.view === "expansion") { renderExpansionHotspots(); return; }
     if (state && state.view === "land") { renderLandHotspots(); return; }
+    if (state && state.view === "outdoor") {
+      layer.hidden = false;
+      layer.innerHTML = '<button class="territory-arrow right" data-action="territory-to" data-view="land">领地 →</button>';
+      return;
+    }
     layer.hidden = true;
     layer.innerHTML = "";
   }
@@ -3155,7 +3255,10 @@
       const style = "left:" + (r.x / 720 * 100) + "%;top:" + (r.y / 405 * 100) + "%;width:" + (r.w / 720 * 100) + "%;height:" + (r.h / 405 * 100) + "%;";
       const label = !plot.unlocked ? "开垦" : !plot.crop ? "播种" : plot.ready ? "收获" : "田 " + (i + 1);
       return '<button class="land-hotspot ' + (!plot.unlocked ? "locked" : plot.ready ? "ready" : "") + '" style="' + style + '" data-action="land-plot" data-plot="' + i + '" title="田 ' + (i + 1) + '"><span>' + label + "</span></button>";
-    }).join("");
+    }).join("") + D.LAND_SHOP_RECTS.map(function (r, i) {
+      const built = state.land.shops && state.land.shops[i];
+      return '<button class="land-hotspot shop" style="left:' + (r.x / 720 * 100) + '%;top:' + (r.y / 405 * 100) + '%;width:' + (r.w / 720 * 100) + '%;height:' + (r.h / 405 * 100) + '%;" data-action="land-shop" data-slot="' + i + '" title="领地商铺"><span>' + (built ? "营业中" : "建商铺") + "</span></button>";
+    }).join("") + '<button class="territory-arrow left" data-action="territory-to" data-view="outdoor">← 庭院</button>';
   }
 
   /* =========================================================
@@ -3354,6 +3457,8 @@
 
   const MASK_NAMES = ["阿灰", "铜扣", "小满", "青弦", "白羽", "栗子", "石南", "蜜糖", "夜莺", "七弦"];
   const GUEST_NAMES = {
+    farmer: ["阿土", "麦穗", "青禾", "老犁"],
+    cook: ["汤勺", "布丁", "胡椒", "奶油"],
     resident: ["阿灰", "铜扣", "小满", "青弦", "白羽", "栗子", "石南", "蜜糖", "夜莺", "七弦"],
     soldier: ["铁牛", "石盾", "长枪", "灰狼", "铜盔", "黑岩", "短刃", "守夜"],
     minister: ["金策", "青简", "白算", "墨衡", "文石", "长史"],
@@ -3374,6 +3479,7 @@
     if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
     const klass = D.GUEST_CLASSES.filter(function (c) { return c.id === klassId; })[0];
     if (!klass) return;
+    if (!classUnlockMet(klass)) { toast("招募" + klass.name + "需要：" + classUnlockText(klass) + "。", "bad", "lock"); return; }
     const floor = state.currentFloor || 0;
     const missing = klass.requirements.filter(function (typeId) { return !floorHasType(floor, typeId); });
     if (missing.length) {
@@ -3616,6 +3722,8 @@
       else if (action === "expand-land") expandLandPlot(Number(el.dataset.plot));
       else if (action === "sow-land") sowLandCrop(Number(el.dataset.plot), el.dataset.crop);
       else if (action === "harvest-land") harvestLandPlot(Number(el.dataset.plot));
+      else if (action === "land-shop") buildLandShop(Number(el.dataset.slot));
+      else if (action === "territory-to") switchView(el.dataset.view);
       else if (action === "decor-open") { if (state.view === "indoor") openInteriorSkinModal(); else if (state.view === "expansion") openFloorSkinModal(); }
       else if (action === "floor-skin-open") openFloorSkinModal();
       else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);

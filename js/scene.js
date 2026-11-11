@@ -2906,11 +2906,19 @@ window.CastleScene = (function () {
       missionary: {
         look: { skin: "#e0b083", skinShade: "#b88763", hair: "#4a3527", hairShade: "#30251d", hat: "hood", hatColor: "#6a5b3e", hatShade: "#4a3f2b", clothes: "#7a6848", clothesShade: "#554830", accent: "#d6a449", beard: false, glasses: false, blush: false },
         role: "merchant"
+      },
+      farmer: {
+        look: { skin: "#d9a77a", skinShade: "#b57f56", hair: "#5a3b24", hairShade: "#3e2818", hat: "straw", hatColor: "#d9b45a", hatShade: "#a8853d", clothes: "#5f7d46", clothesShade: "#435a32", accent: "#e2c46d", beard: false, glasses: false, blush: true },
+        role: "farmer"
+      },
+      cook: {
+        look: { skin: "#e1b184", skinShade: "#bd8a5e", hair: "#4a3527", hairShade: "#30251d", hat: "toque", hatColor: "#f0e8d4", hatShade: "#cfc4ae", clothes: "#b86b4d", clothesShade: "#874a35", accent: "#f0e8d4", beard: false, glasses: false, blush: true },
+        role: "cook"
       }
     };
     const cfg = configs[klass] || configs.resident;
     drawCharacter(ctx, x, y, cfg.look, { phase: t * 1.2 + phase, staffed: false, role: cfg.role, dir: Math.sin(t * 0.4 + phase) > 0 ? 1 : -1 });
-    const classColors = { resident: "#d6a449", soldier: "#aeb3a7", minister: "#b08caf", missionary: "#f0d28a" };
+    const classColors = { resident: "#d6a449", soldier: "#aeb3a7", minister: "#b08caf", missionary: "#f0d28a", farmer: "#a7bd76", cook: "#e0956f" };
     R(ctx, x - 3, y - 28, 7, 3, "rgba(24,16,11,.8)");
     R(ctx, x - 1, y - 27, 3, 2, classColors[klass] || classColors.resident);
     // 职业小道具
@@ -3493,6 +3501,21 @@ window.CastleScene = (function () {
           } else if (crop === "pumpkin") {
             ellipse(ctx, xx, yy - 9, 8, 6, "#d18a3f");
             R(ctx, xx - 1, yy - 15, 2, 4, "#5f7d46");
+          } else if (crop === "tomato") {
+            R(ctx, xx - 3, yy - 10, 6, 6, "#c94d3f");
+            R(ctx, xx - 2, yy - 13, 4, 3, "#6c904f");
+          } else if (crop === "corn") {
+            R(ctx, xx - 2, yy - 17, 4, 17, "#d8b14e");
+            R(ctx, xx - 5, yy - 12, 10, 3, "#7e9d62");
+            R(ctx, xx - 6, yy - 6, 12, 2, "#7e9d62");
+          } else if (crop === "grape") {
+            for (let g = 0; g < 3; g++) {
+              ellipse(ctx, xx - 4 + g * 4, yy - 8 - (g % 2) * 3, 4, 4, "#7a4f8e");
+            }
+            R(ctx, xx - 1, yy - 15, 2, 5, "#6c904f");
+          } else if (crop === "lavender") {
+            R(ctx, xx - 1, yy - 17, 2, 12, "#6c904f");
+            for (let l = 0; l < 4; l++) R(ctx, xx - 3 + (l % 2) * 4, yy - 18 + l * 3, 3, 3, "#9a86c1");
           } else {
             R(ctx, xx - 3, yy - 12, 6, 6, "#7e9d62");
             R(ctx, xx - 1, yy - 15, 3, 3, "#d8c76c");
@@ -3572,6 +3595,31 @@ window.CastleScene = (function () {
       R(ctx, r.x, r.y, 2, r.h, "#4b3320");
       R(ctx, r.x + r.w - 2, r.y, 2, r.h, "#4b3320");
     });
+    // 领地商铺位
+    (D.LAND_SHOP_RECTS || []).forEach(function (r, i) {
+      const built = state && state.land && state.land.shops && state.land.shops[i];
+      if (built) {
+        R(ctx, r.x, r.baseY - 34, r.w, 30, "#3b2a17");
+        R(ctx, r.x + 3, r.baseY - 31, r.w - 6, 25, "#7a5637");
+        R(ctx, r.x, r.baseY - 37, r.w, 7, i === 0 ? "#d3a64b" : "#7d9b61");
+        for (let k = 0; k < 6; k++) R(ctx, r.x + 4 + k * 17, r.baseY - 34, 8, 4, k % 2 ? "#f0e0b8" : "#5d432a");
+        R(ctx, r.x + 8, r.baseY - 25, r.w - 16, 4, "#5b3e29");
+        R(ctx, r.x + 14, r.baseY - 21, 18, 8, "#b88a4f");
+        R(ctx, r.x + 44, r.baseY - 21, 18, 8, "#8a5d9e");
+        R(ctx, r.x + 76, r.baseY - 21, 18, 8, "#d9b45a");
+        R(ctx, r.x + 4, r.baseY - 13, 3, 13, "#3b2a17");
+        R(ctx, r.x + r.w - 7, r.baseY - 13, 3, 13, "#3b2a17");
+        ctx.fillStyle = "#f0d28a"; ctx.font = "9px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
+        ctx.fillText(D.LAND_SHOPS[i] ? D.LAND_SHOPS[i].name : "商铺", r.x + r.w / 2, r.baseY - 42); ctx.textAlign = "left";
+      } else {
+        R(ctx, r.x, r.baseY - 12, r.w, 3, "#5b432a");
+        R(ctx, r.x + 6, r.baseY - 26, r.w - 12, 14, "#4b3320");
+        R(ctx, r.x + 8, r.baseY - 24, r.w - 16, 10, "#d9c18e");
+        ctx.fillStyle = "#5b432a"; ctx.font = "9px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
+        ctx.fillText("商铺位", r.x + r.w / 2, r.baseY - 17); ctx.textAlign = "left";
+      }
+    });
+
     // 草垛与树，填满地图边缘
     for (let i = 0; i < 4; i++) {
       const hx = 20 + i * 188, hy = 388 - (i % 2) * 5;
@@ -3601,6 +3649,44 @@ window.CastleScene = (function () {
       if (x > 160 && x < 680 && y > 110 && y < 350) continue;
       R(ctx, x, y, 2, 5, "#527040");
       if (i % 4 === 0) R(ctx, x - 1, y - 2, 4, 2, ["#d9c25e", "#d97f6a", "#d8d1e2"][i % 3]);
+    }
+  }
+
+  function drawInteriorRoomUpgrade(b, level, t) {
+    const r = b.rect;
+    if (level <= 1) return;
+    // 房间地毯
+    const rug = b.id === "chapel" ? "#6d5b74" : b.id === "barracks" ? "#6d4a39" : b.id === "kitchen" ? "#a25b45" : "#8a4c3c";
+    R(ctx, r.x + 12, r.y + r.h - 28, r.w - 24, 13, "#3d2a1c");
+    R(ctx, r.x + 14, r.y + r.h - 26, r.w - 28, 9, rug);
+    R(ctx, r.x + 16, r.y + r.h - 24, r.w - 32, 1, "rgba(242,208,135,.55)");
+    R(ctx, r.x + 14, r.y + r.h - 26, r.w - 28, 2, "#d6a449");
+    R(ctx, r.x + 14, r.y + r.h - 17, r.w - 28, 2, "#d6a449");
+    // 挂毯与额外烛台
+    R(ctx, r.x + r.w / 2 - 10, r.y + 8, 20, 3, "#3b2a1a");
+    R(ctx, r.x + r.w / 2 - 8, r.y + 11, 16, 16, rug);
+    R(ctx, r.x + r.w / 2 - 6, r.y + 13, 12, 12, "#d6a449");
+    R(ctx, r.x + r.w / 2 - 4, r.y + 15, 8, 8, rug);
+    for (let i = 0; i < 2; i++) {
+      R(ctx, r.x + 18 + i * (r.w - 36), r.y + r.h - 34, 3, 8, "#3b2a1a");
+      R(ctx, r.x + 17 + i * (r.w - 36), r.y + r.h - 37, 5, 4, "#f2c56d");
+    }
+    // 盆栽 / 边柜
+    R(ctx, r.x + r.w - 24, r.y + 14, 9, 8, "#a86e43");
+    R(ctx, r.x + r.w - 23, r.y + 10, 8, 8, "#61834e");
+    R(ctx, r.x + r.w - 20, r.y + 7, 4, 5, "#7a9b5d");
+    R(ctx, r.x + 10, r.y + 18, 18, 15, "#5b3e29");
+    R(ctx, r.x + 12, r.y + 20, 14, 4, "#8a623b");
+    R(ctx, r.x + 12, r.y + 27, 14, 4, "#8a623b");
+    if (level >= 3) {
+      R(ctx, r.x + r.w / 2 - 16, r.y + 7, 32, 2, "#4a3220");
+      for (let i = 0; i < 5; i++) {
+        R(ctx, r.x + r.w / 2 - 14 + i * 7, r.y + 9, 2, 6, "#6e4a2c");
+        R(ctx, r.x + r.w / 2 - 15 + i * 7, r.y + 15, 4, 2, "#f2c56d");
+      }
+      R(ctx, r.x + r.w - 32, r.y + 42, 20, 24, "#5b3e29");
+      R(ctx, r.x + r.w - 30, r.y + 44, 16, 5, "#8a623b");
+      R(ctx, r.x + r.w - 30, r.y + 52, 16, 5, "#8a623b");
     }
   }
 
@@ -3710,6 +3796,11 @@ window.CastleScene = (function () {
         R(ctx, r.x + r.w - 22, r.y + 8, 4, 4, "#d6a449");
         R(ctx, r.x + r.w - 20, r.y + 6, 1, 2, "#ffe5a0");
       }
+    });
+
+    D.BUILDINGS.filter(function (b) { return b.scene === "indoor"; }).forEach(function (b) {
+      const bs = st[b.id];
+      if (bs && bs.status === "built") drawInteriorRoomUpgrade(b, bs.level || 1, time);
     });
 
     // 礼拜堂彩窗与暖色空气

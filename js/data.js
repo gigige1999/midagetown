@@ -347,19 +347,39 @@ window.GameData = (function () {
   ];
 
   const LAND_PLOT_RECTS = [
-    { x: 176, y: 128, w: 140, h: 88 },
-    { x: 336, y: 128, w: 140, h: 88 },
-    { x: 496, y: 128, w: 140, h: 88 },
-    { x: 176, y: 258, w: 140, h: 88 },
-    { x: 336, y: 258, w: 140, h: 88 },
-    { x: 496, y: 258, w: 140, h: 88 }
+    { x: 166, y: 108, w: 122, h: 74 },
+    { x: 296, y: 108, w: 122, h: 74 },
+    { x: 426, y: 108, w: 122, h: 74 },
+    { x: 556, y: 108, w: 122, h: 74 },
+    { x: 166, y: 190, w: 122, h: 74 },
+    { x: 296, y: 190, w: 122, h: 74 },
+    { x: 426, y: 190, w: 122, h: 74 },
+    { x: 556, y: 190, w: 122, h: 74 },
+    { x: 166, y: 272, w: 122, h: 74 },
+    { x: 296, y: 272, w: 122, h: 74 },
+    { x: 426, y: 272, w: 122, h: 74 },
+    { x: 556, y: 272, w: 122, h: 74 }
   ];
 
   const CROPS = [
-    { id: "wheat", name: "小麦", color: "#d9b45a", days: 2, cost: 8, harvest: { food: 18, gold: 8 }, desc: "最稳的口粮。" },
-    { id: "carrot", name: "胡萝卜", color: "#d97b46", days: 1, cost: 6, harvest: { food: 12 }, desc: "一天就能收，救急。" },
-    { id: "pumpkin", name: "南瓜", color: "#d18a3f", days: 3, cost: 12, harvest: { food: 26, gold: 16 }, desc: "长得慢，收得多。" },
-    { id: "herb", name: "草药", color: "#7e9d62", days: 2, cost: 10, harvest: { gold: 26, food: 6 }, desc: "卖给行商最值钱。" }
+    { id: "wheat", name: "小麦", color: "#d9b45a", days: 2, cost: 8, minResidents: 0, harvest: { food: 18, gold: 8 }, desc: "最稳的口粮。" },
+    { id: "carrot", name: "胡萝卜", color: "#d97b46", days: 1, cost: 6, minResidents: 0, harvest: { food: 12 }, desc: "一天就能收，救急。" },
+    { id: "pumpkin", name: "南瓜", color: "#d18a3f", days: 3, cost: 12, minResidents: 0, harvest: { food: 26, gold: 16 }, desc: "长得慢，收得多。" },
+    { id: "herb", name: "草药", color: "#7e9d62", days: 2, cost: 10, minResidents: 0, harvest: { gold: 26, food: 6 }, desc: "卖给行商最值钱。" },
+    { id: "tomato", name: "番茄", color: "#c94d3f", days: 2, cost: 11, minResidents: 4, harvest: { food: 20, gold: 12 }, desc: "厨房最常用的红色作物。" },
+    { id: "corn", name: "玉米", color: "#e2bd54", days: 3, cost: 14, minResidents: 8, harvest: { food: 28, gold: 18 }, desc: "能磨粉，也能直接烤。" },
+    { id: "grape", name: "葡萄", color: "#8a5d9e", days: 4, cost: 18, minResidents: 12, harvest: { gold: 42, food: 10 }, desc: "酿成酒或做成派都值钱。" },
+    { id: "lavender", name: "薰衣草", color: "#8a7bb8", days: 3, cost: 16, minResidents: 16, harvest: { gold: 36, food: 8 }, desc: "香气能让宫殿安静下来。" }
+  ];
+
+  const LAND_SHOPS = [
+    { id: "waystation", name: "驿站", icon: "cart", cost: { wood: 50, stone: 30, gold: 150 }, income: 0.35, residentBonus: 0.05, desc: "让路过的商队歇脚，顺带做点买卖。" },
+    { id: "orchard", name: "果园铺", icon: "farm", cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, foodBonus: 0.05, desc: "把领地里的果子直接卖给路人。" }
+  ];
+
+  const LAND_SHOP_RECTS = [
+    { x: 254, y: 352, w: 108, h: 44, baseY: 396 },
+    { x: 390, y: 352, w: 108, h: 44, baseY: 396 }
   ];
 
   const FLOOR_SKINS = [
@@ -372,36 +392,56 @@ window.GameData = (function () {
 
   const MENUS = [
     {
-      id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10, minResidents: 2, dailyFood: 1,
+      id: "soup", name: "蘑菇浓汤", icon: "mushroomSoup", cost: { gold: 35, food: 8 }, bonus: 0.10, minResidents: 2, dailyFood: 1, affinity: { resident: 0.03, farmer: 0.02 },
       desc: "雨后的林地蘑菇，熬成一小锅暖汤。"
     },
     {
-      id: "bread", name: "蜂蜜面包", icon: "honeyBread", cost: { gold: 70, food: 14 }, bonus: 0.15, minResidents: 4, dailyFood: 1,
+      id: "bread", name: "蜂蜜面包", icon: "honeyBread", cost: { gold: 70, food: 14 }, bonus: 0.15, minResidents: 4, dailyFood: 1, affinity: { minister: 0.02, cook: 0.02 },
       desc: "蜂巢里最后一勺蜜，抹在刚出炉的面包上。"
     },
     {
-      id: "roast", name: "香草烤肉", icon: "herbRoast", cost: { gold: 120, food: 22 }, bonus: 0.20, minResidents: 6, dailyFood: 2,
+      id: "roast", name: "香草烤肉", icon: "herbRoast", cost: { gold: 120, food: 22 }, bonus: 0.20, minResidents: 6, dailyFood: 2, affinity: { soldier: 0.04 },
       desc: "厨房的看家菜，连守卫都会多巡两圈。"
     },
     {
-      id: "pie", name: "苹果派", icon: "applePie", cost: { gold: 180, food: 30 }, bonus: 0.25, minResidents: 8, dailyFood: 2,
+      id: "pie", name: "苹果派", icon: "applePie", cost: { gold: 180, food: 30 }, bonus: 0.25, minResidents: 8, dailyFood: 2, affinity: { cook: 0.03, resident: 0.02 },
       desc: "酥皮、肉桂和一点坏心思：多放一勺糖。"
     },
     {
-      id: "skewer", name: "烤蘑菇串", icon: "mushroomSkewer", cost: { gold: 90, food: 12 }, bonus: 0.12, minResidents: 10, dailyFood: 1,
+      id: "skewer", name: "烤蘑菇串", icon: "mushroomSkewer", cost: { gold: 90, food: 12 }, bonus: 0.12, minResidents: 10, dailyFood: 1, affinity: { farmer: 0.03 },
       desc: "林地里刚采的蘑菇，撒一点盐就很好。"
     },
     {
-      id: "pumpkin", name: "奶油南瓜汤", icon: "pumpkinSoup", cost: { gold: 140, food: 18 }, bonus: 0.18, minResidents: 12, dailyFood: 2,
+      id: "pumpkin", name: "奶油南瓜汤", icon: "pumpkinSoup", cost: { gold: 140, food: 18 }, bonus: 0.18, minResidents: 12, dailyFood: 2, affinity: { farmer: 0.03, resident: 0.02 },
       desc: "金黄色的汤，和秋天的壁炉最配。"
     },
     {
-      id: "fish", name: "蜂蜜烤鱼", icon: "honeyFish", cost: { gold: 220, food: 28 }, bonus: 0.28, minResidents: 14, dailyFood: 2,
+      id: "fish", name: "蜂蜜烤鱼", icon: "honeyFish", cost: { gold: 220, food: 28 }, bonus: 0.28, minResidents: 14, dailyFood: 2, affinity: { soldier: 0.03, cook: 0.02 },
       desc: "河鱼刷上蜂蜜，烤到边缘微焦。"
     },
     {
-      id: "feast", name: "皇家炖锅", icon: "royalStew", cost: { gold: 260, food: 45 }, bonus: 0.30, minResidents: 16, dailyFood: 3,
+      id: "feast", name: "皇家炖锅", icon: "royalStew", cost: { gold: 260, food: 45 }, bonus: 0.30, minResidents: 16, dailyFood: 3, affinity: { resident: 0.03, soldier: 0.02, minister: 0.02, missionary: 0.02 },
       desc: "风息堡的招牌菜，适合在长桌中央冒着热气。"
+    },
+    {
+      id: "tomatoPasta", name: "番茄意面", icon: "tomatoPasta", cost: { gold: 150, food: 24 }, bonus: 0.16, minResidents: 6, dailyFood: 2,
+      requiresCrop: "tomato", affinity: { resident: 0.04, cook: 0.03 },
+      desc: "番茄的酸甜裹住面条，居民和厨师都喜欢。"
+    },
+    {
+      id: "cornBread", name: "玉米面包", icon: "cornBread", cost: { gold: 190, food: 30 }, bonus: 0.20, minResidents: 10, dailyFood: 2,
+      requiresCrop: "corn", affinity: { farmer: 0.05, soldier: 0.02 },
+      desc: "粗粮面包，农夫和守卫吃了更有力气。"
+    },
+    {
+      id: "grapePie", name: "葡萄派", icon: "grapePie", cost: { gold: 240, food: 34 }, bonus: 0.26, minResidents: 14, dailyFood: 2,
+      requiresCrop: "grape", affinity: { cook: 0.05, minister: 0.02 },
+      desc: "深紫色的果馅，切开时香气会先跑出来。"
+    },
+    {
+      id: "lavenderTea", name: "薰衣草茶", icon: "lavenderTea", cost: { gold: 280, food: 28 }, bonus: 0.22, minResidents: 18, dailyFood: 1,
+      requiresCrop: "lavender", affinity: { missionary: 0.06, resident: 0.02 },
+      desc: "一杯安神的茶，适合在礼拜堂之后慢慢喝。"
     }
   ];
 
@@ -554,6 +594,22 @@ window.GameData = (function () {
       income: 0.03, defense: 0, productionBonus: 0, satisfaction: 4,
       trait: "没有传教士时，居民产能下降；有传教士后恢复正常。",
       needText: "小礼拜堂 + 静修室"
+    },
+    {
+      id: "farmer", name: "农夫", icon: "farm", color: "#6f8a4e", effectShort: "收成 +8%",
+      requirements: ["residence", "garden"], cost: { gold: 60, food: 8 },
+      income: 0.04, defense: 0, productionBonus: 0, satisfaction: 2, harvestBonus: 0.08,
+      unlock: { crops: 1 }, unlockText: "收获 1 种作物后解锁",
+      trait: "农夫提高领地收成；收获过作物后才能招募。",
+      needText: "民居 + 花园房"
+    },
+    {
+      id: "cook", name: "厨师", icon: "food", color: "#b86b4d", effectShort: "菜单收入 +5%",
+      requirements: ["residence", "dining"], cost: { gold: 90, food: 10 },
+      income: 0.04, defense: 0, productionBonus: 0, satisfaction: 2, menuBonus: 0.05,
+      unlock: { menus: 6 }, unlockText: "拥有 6 道菜谱后解锁",
+      trait: "厨师提高菜单收入；菜谱足够多之后才会加入。",
+      needText: "民居 + 餐厅"
     }
   ];
 
@@ -702,6 +758,8 @@ window.GameData = (function () {
     MENUS: MENUS,
     FLOOR_SKINS: FLOOR_SKINS,
     LAND_PLOT_RECTS: LAND_PLOT_RECTS,
+    LAND_SHOP_RECTS: LAND_SHOP_RECTS,
+    LAND_SHOPS: LAND_SHOPS,
     CROPS: CROPS,
     SHOPS: SHOPS,
     EXPANSION_ROOMS: EXPANSION_ROOMS,
