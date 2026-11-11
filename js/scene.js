@@ -3476,6 +3476,7 @@ window.CastleScene = (function () {
     drawInteriorDust(time);
     drawInteriorVignette();
     drawParticles();
+    hitAreas.push({ type: "stairs", x: 306, y: 348, w: 108, h: 40 });
   }
   function drawLandCrop(crop, growth, ready, x, y, w, h, t) {
     const rows = 3;
@@ -3600,6 +3601,7 @@ window.CastleScene = (function () {
       }
       R(ctx, r.x, r.y, 2, r.h, "#4b3320");
       R(ctx, r.x + r.w - 2, r.y, 2, r.h, "#4b3320");
+      hitAreas.push({ type: "land-plot", index: i, x: r.x, y: r.y, w: r.w, h: r.h });
     });
     // 领地商铺位
     (D.LAND_SHOP_RECTS || []).forEach(function (r, i) {
@@ -3624,6 +3626,7 @@ window.CastleScene = (function () {
         ctx.fillStyle = "#5b432a"; ctx.font = "9px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
         ctx.fillText("商铺位", r.x + r.w / 2, r.baseY - 17); ctx.textAlign = "left";
       }
+      hitAreas.push({ type: "land-shop", index: i, x: r.x, y: r.y, w: r.w, h: r.h });
     });
 
     // 草垛与树，填满地图边缘
@@ -3656,6 +3659,7 @@ window.CastleScene = (function () {
       R(ctx, x, y, 2, 5, "#527040");
       if (i % 4 === 0) R(ctx, x - 1, y - 2, 4, 2, ["#d9c25e", "#d97f6a", "#d8d1e2"][i % 3]);
     }
+    hitAreas.push({ type: "territory", view: "outdoor", x: 0, y: 150, w: 32, h: 110 });
   }
 
   function drawInteriorRoomUpgrade(b, level, t) {
@@ -4352,6 +4356,8 @@ window.CastleScene = (function () {
     drawTradeCart(452, 372, time);
     drawSmokeAndParticles(time);
     drawWorkers(time, lightsForFrame);
+    hitAreas.push({ type: "castle-gate", x: 330, y: 205, w: 82, h: 72 });
+    hitAreas.push({ type: "territory", view: "land", x: 688, y: 150, w: 32, h: 115 });
     drawOutdoorSoldiers(time);
 
     // 全城张灯结彩
@@ -4505,6 +4511,16 @@ window.CastleScene = (function () {
       if (handlers.onPlayer) handlers.onPlayer();
     } else if (target.type === "castle") {
       if (handlers.onCastle) handlers.onCastle();
+    } else if (target.type === "castle-gate") {
+      if (handlers.onCastleGate) handlers.onCastleGate();
+    } else if (target.type === "territory") {
+      if (handlers.onTerritory) handlers.onTerritory(target.view);
+    } else if (target.type === "land-plot") {
+      if (handlers.onLandPlot) handlers.onLandPlot(target.index);
+    } else if (target.type === "land-shop") {
+      if (handlers.onLandShop) handlers.onLandShop(target.index);
+    } else if (target.type === "stairs") {
+      if (handlers.onStairs) handlers.onStairs();
     }
   }
 

@@ -116,6 +116,27 @@
       onCastle: function () {
         if (!started || ui.modalOpen) return;
         openCastleModal();
+      },
+      onCastleGate: function () {
+        if (!started || ui.modalOpen) return;
+        if (!state.interiorUnlocked) toast("城堡内部还没有开放。先在庭院建成两座建筑。", "bad", "lock");
+        else switchView("indoor");
+      },
+      onTerritory: function (view) {
+        if (!started || ui.modalOpen) return;
+        switchView(view);
+      },
+      onLandPlot: function (index) {
+        if (!started || ui.modalOpen || state.view !== "land") return;
+        openLandPlotModal(index);
+      },
+      onLandShop: function (index) {
+        if (!started || ui.modalOpen || state.view !== "land") return;
+        buildLandShop(index);
+      },
+      onStairs: function () {
+        if (!started || ui.modalOpen || state.view !== "expansion") return;
+        goDownstairs();
       }
     });
   }
