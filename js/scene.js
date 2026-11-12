@@ -2938,11 +2938,156 @@ window.CastleScene = (function () {
     }
   }
 
+  const guestMotion = {};
+  const socialLast = {};
+  let lastWanderTime = 0;
+
+  function outdoorRoute(klass) {
+    switch (klass) {
+      case "soldier": return [[298, 306], [352, 306], [414, 304], [428, 292], [352, 292], [306, 292]];
+      case "minister": return [[382, 300], [452, 306], [470, 298], [430, 292]];
+      case "missionary": return [[330, 314], [300, 332], [332, 342], [354, 330]];
+      case "farmer": return [[258, 322], [214, 330], [176, 336], [214, 326]];
+      case "cook": return [[300, 300], [262, 306], [226, 312], [262, 304]];
+      default: return [[360, 330], [334, 318], [360, 304], [388, 318]];
+    }
+  }
+
+  function stepGuest(r, route, dt) {
+    const key = "g" + r.id;
+    if (!guestMotion[key]) {
+      guestMotion[key] = {
+        i: 0, x: route[0][0], y: route[0][1],
+        wait: Math.random() * 1.4, phase: Math.random() * 6.28, dir: 1, walking: false
+      };
+    }
+    const g = guestMotion[key];
+    if (g.wait > 0) { g.wait -= dt; g.walking = false; return g; }
+    const target = route[g.i % route.length];
+    const dx = target[0] - g.x;
+    const dy = target[1] - g.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 1.5) {
+      g.i += 1;
+      g.wait = 0.7 + Math.random() * 1.9;
+      g.walking = false;
+      return g;
+    }
+    const step = Math.min(dist, 18 * dt);
+    g.x += (dx / dist) * step;
+    g.y += (dy / dist) * step;
+    g.dir = dx >= 0 ? 1 : -1;
+    g.phase += dt * 2.2;
+    g.walking = true;
+    return g;
+  }
+
+  function drawSocialBubbles(pts) {
+    const list = window.__castleBubbles || [];
+    const now = Date.now();
+    for (let k = 0; k < list.length; k++) {
+      const b = list[k];
+      if (b.until && now > b.until) continue;
+      let pt = null;
+      for (let i = 0; i < pts.length; i++) if (pts[i].r.id === b.id) { pt = pts[i]; break; }
+      if (!pt) continue;
+      ctx.font = "9px 'PingFang SC', 'Microsoft YaHei', monospace";
+      const tw = ctx.measureText(b.text).width;
+      const w = Math.min(160, Math.max(36, tw + 12));
+      const x = Math.max(6, Math.min(W - w - 6, pt.x - w / 2));
+      const y = Math.max(8, pt.y - 52);
+      ctx.globalAlpha = 0.94;
+      R(ctx, x, y, w, 16, "#1d140e");
+      ctx.globalAlpha = 1;
+      R(ctx, x, y, w, 1, b.tone === "love" ? "#e08aa0" : b.tone === "fight" ? "#c9654f" : "#d6a449");
+      R(ctx, x, y + 15, w, 1, "#120c08");
+      R(ctx, pt.x - 2, y + 16, 5, 3, "#1d140e");
+      ctx.fillStyle = b.tone === "love" ? "#f7b3c4" : b.tone === "fight" ? "#f2b296" : "#f0ddb4";
+      ctx.textAlign = "left";
+      ctx.fillText(b.text, x + 6, y + 11);
+      ctx.fillStyle = "#f0ddb4";
+    }
+    if (list.length && now > list[0].until) {
+      window.__castleBubbles = list.filter(function (b) { return !b.until || now <= b.until; });
+    }
+  }
+
+  function drawRaiders(t) {
+    const raid = window.__castleRaid;
+    if (!raid || Date.now() > raid.until) return;
+    const n = Math.max(1, Math.min(4, raid.count || 3));
+    // 红色边缘警示
+    const pulse = 0.10 + 0.06 * (0.5 + 0.5 * Math.sin(t * 4));
+    ctx.globalAlpha = pulse;
+    for (let i = 0; i < 6; i++) {
+      R(ctx, i * 6, 0, 1, H, "#c0392b");
+      R(ctx, W - i * 6 - 1, 0, 1, H, "#c0392b");
+      R(ctx, 0, i * 6, W, 1, "#c0392b");
+      R(ctx, 0, H - i * 6 - 1, W, 1, "#c0392b");
+    }
+    ctx.globalAlpha = 1;
+
+    for (let i = 0; i < n; i++) {
+      const x = 300 + i * 32 + Math.sin(t * 1.3 + i * 1.7) * 4;
+      const y = 352 + Math.sin(t * 5 + i) * 1.4;
+      // 火把（先画，形成背光）
+      R(ctx, x + 13, y - 26, 3, 15, "#4a3220");
+      R(ctx, x + 10, y - 34, 8, 10, "#f2a03c");
+      R(ctx, x + 12, y - 37, 4, 6, "#ffd27a");
+      drawGlow(x + 13, y - 31, 26, "#ff9a3c", 0.22);
+      // 袭击者：深红披风 + 兜帽
+      R(ctx, x - 7, y - 24, 15, 15, "#1c120e");
+      R(ctx, x - 6, y - 23, 13, 13, "#5e2a24");
+      R(ctx, x - 5, y - 22, 11, 6, "#7d3a2f");
+      R(ctx, x - 6, y - 31, 13, 8, "#241713");
+      R(ctx, x - 4, y - 30, 9, 6, "#3a2018");
+      R(ctx, x - 3, y - 27, 2, 2, "#ffb066");
+      R(ctx, x + 2, y - 27, 2, 2, "#ffb066");
+      R(ctx, x - 8, y - 18, 3, 16, "#241713");
+      R(ctx, x + 6, y - 18, 3, 16, "#241713");
+      // 武器
+      R(ctx, x - 12, y - 26, 2, 18, "#b7bcbc");
+      R(ctx, x - 15, y - 29, 8, 4, "#d8dcda");
+      // 头顶警示
+      ctx.fillStyle = i % 2 ? "#ff8a6a" : "#ffd07a";
+      ctx.font = "10px 'PingFang SC', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("!", x, y - 40);
+    }
+    ctx.textAlign = "left";
+  }
+
   function drawMaskedWanderers(t, mode) {
     if (!stateRef || !stateRef.genericResidents || !stateRef.genericResidents.length) return;
+    const dt = Math.max(0, Math.min(0.05, t - lastWanderTime));
+    lastWanderTime = t;
     const guests = mode === "expansion"
       ? stateRef.genericResidents.filter(function (r) { return (r.floor || 0) === (stateRef.currentFloor || 0); })
       : stateRef.genericResidents;
+
+    if (mode === "outdoor") {
+      const shown = guests.slice(0, 8);
+      const pts = [];
+      shown.forEach(function (r, i) {
+        const g = stepGuest(r, outdoorRoute(r.klass || "resident"), dt);
+        drawGuestSprite(g.x, g.y, r, t, i * 2.3);
+        pts.push({ r: r, x: g.x, y: g.y });
+      });
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x;
+          const dy = pts[i].y - pts[j].y;
+          if (dx * dx + dy * dy > 26 * 26) continue;
+          const key = [pts[i].r.id, pts[j].r.id].sort(function (a, b) { return a - b; }).join("-");
+          if (socialLast[key] && t - socialLast[key] < 18) continue;
+          socialLast[key] = t;
+          if (handlers.onSocial) handlers.onSocial(pts[i].r.id, pts[j].r.id);
+        }
+      }
+      drawSocialBubbles(pts);
+      return;
+    }
+
     guests.slice(0, mode === "expansion" ? 14 : 5).forEach(function (r, i) {
       const klass = r.klass || "resident";
       let x, y;
@@ -4151,6 +4296,146 @@ window.CastleScene = (function () {
     }
   }
 
+  function drawOuterBailey(stage, t) {
+    if (stage < 2) return;
+    const stone = "#8a8474", stoneL = "#a8a190", stoneD = "#5e5a4f", stoneM = "#736d5f";
+    const grass = "#6f8a5b";
+
+    // 领土地面：每升一级向外扩一圈
+    const spread = 34 + stage * 26;
+    ctx.globalAlpha = 0.45;
+    ellipse(ctx, 360, 322, spread + 110, 28 + stage * 2, grass);
+    ctx.globalAlpha = 1;
+
+    // 前庭石铺广场：宽度随阶段明显增长
+    const apronHalf = 92 + stage * 17;
+    for (let i = 0; i < 9; i++) {
+      const w = apronHalf * (0.74 + i * 0.033);
+      R(ctx, 360 - w, 302 + i * 3, w * 2, 3, i % 2 ? "#8d8474" : "#847b6b");
+    }
+    R(ctx, 360 - apronHalf * 0.74, 301, apronHalf * 1.48, 2, "#a49a86");
+    R(ctx, 360 - apronHalf, 328, apronHalf * 2, 2, "#6b6355");
+    for (let i = 0; i < 9; i++) {
+      const w = apronHalf * (0.74 + i * 0.033);
+      R(ctx, 360 - w, 302 + i * 3, 3, 3, "#a49a86");
+      R(ctx, 360 + w - 3, 302 + i * 3, 3, 3, "#a49a86");
+    }
+
+    // 木栅栏
+    if (stage === 2) {
+      [-1, 1].forEach(function (dir) {
+        for (let i = 0; i < 6; i++) {
+          const x = 360 + dir * (96 + i * 18);
+          R(ctx, x, 282, 4, 28, "#4b3320");
+          R(ctx, x + 1, 284, 2, 24, "#7a5637");
+          R(ctx, x - 3, 290, 10, 3, "#5b432a");
+          R(ctx, x - 3, 300, 10, 2, "#5b432a");
+        }
+      });
+      return;
+    }
+
+    // 左右石墙：明显伸出主堡两侧
+    if (stage >= 4) {
+      [[200, 258, 84], [436, 258, 84]].forEach(function (seg) {
+        const x = seg[0], y = seg[1], w = seg[2];
+        R(ctx, x, y, w, 52, stoneD);
+        R(ctx, x + 2, y + 2, w - 4, 48, stone);
+        R(ctx, x + 2, y + 2, w - 4, 4, stoneL);
+        R(ctx, x + 2, y + 44, w - 4, 6, stoneD);
+        for (let i = 0; i < Math.floor(w / 12); i++) {
+          R(ctx, x + 2 + i * 12, y - 8, 8, 10, stoneD);
+          R(ctx, x + 3 + i * 12, y - 7, 6, 8, stoneM);
+        }
+        for (let i = 0; i < 3; i++) {
+          R(ctx, x + 8 + i * ((w - 24) / 2), y + 14, 14, 8, stoneM);
+          R(ctx, x + 9 + i * ((w - 24) / 2), y + 15, 12, 6, "#4e4a41");
+        }
+      });
+    }
+
+    // 角塔
+    if (stage >= 5) {
+      [[190, 222], [496, 222]].forEach(function (p, idx) {
+        const x = p[0], y = p[1];
+        R(ctx, x, y, 42, 84, stoneD);
+        R(ctx, x + 2, y + 2, 38, 80, stone);
+        R(ctx, x + 2, y + 2, 38, 4, stoneL);
+        R(ctx, x - 3, y + 40, 48, 4, stoneD);
+        for (let i = 0; i < 5; i++) {
+          R(ctx, x + 1 + i * 9, y - 9, 7, 11, stoneD);
+          R(ctx, x + 2 + i * 9, y - 8, 5, 8, stoneM);
+        }
+        R(ctx, x + 15, y + 14, 11, 20, "#2b1e17");
+        R(ctx, x + 16, y + 15, 8, 18, idx === 0 ? "#d6a449" : "#8e3731");
+        R(ctx, x + 19, y + 21, 2, 6, "#f0d28a");
+        ctx.fillStyle = "#c9c2af";
+        ctx.font = "7px 'PingFang SC', sans-serif";
+      });
+    }
+
+    // 侧翼建筑
+    if (stage >= 6) {
+      [[150, 244, "#6d4a2f", "#8d3f32"], [500, 244, "#5f4a33", "#46647f"]].forEach(function (b) {
+        const x = b[0], y = b[1];
+        R(ctx, x, y, 62, 42, "#3b2a1a");
+        R(ctx, x + 2, y + 2, 58, 38, b[2]);
+        R(ctx, x - 2, y - 10, 66, 12, "#3b2a1a");
+        for (let i = 0; i < 4; i++) R(ctx, x + i * 16, y - 8, 15, 8, i % 2 ? b[3] : "#7e352b");
+        R(ctx, x + 10, y + 14, 12, 12, "#d9c18e");
+        R(ctx, x + 11, y + 15, 10, 10, "#6e8790");
+        R(ctx, x + 36, y + 12, 14, 24, "#4b3222");
+        R(ctx, x + 38, y + 14, 10, 8, "#8a623b");
+      });
+    }
+
+    // 外层围墙与城垛：领地边界继续外扩
+    if (stage >= 7) {
+      const y = 316;
+      [[150, 300], [420, 570]].forEach(function (seg) {
+        const x0 = seg[0], w = seg[1] - seg[0];
+        R(ctx, x0, y, w, 14, stoneD);
+        R(ctx, x0 + 2, y + 2, w - 4, 9, stone);
+        for (let i = 0; i * 16 < w - 10; i++) {
+          R(ctx, x0 + 4 + i * 16, y - 6, 9, 8, stoneD);
+          R(ctx, x0 + 5 + i * 16, y - 5, 7, 6, stone);
+        }
+      });
+      [150, 558].forEach(function (x) {
+        R(ctx, x, 300, 12, 34, stoneD);
+        R(ctx, x + 2, 302, 8, 30, stone);
+      });
+    }
+
+    // 金顶与旗阵
+    if (stage >= 8) {
+      [[214, 254], [482, 254]].forEach(function (p, i) {
+        R(ctx, p[0], p[1], 44, 12, "#b58a3c");
+        R(ctx, p[0] + 2, p[1] + 2, 40, 8, "#e8bd58");
+        R(ctx, p[0] + 18, p[1] - 16, 3, 17, "#3b2a1a");
+        R(ctx, p[0] + 21, p[1] - 16, 18, 11, i ? "#46647f" : "#8e3731");
+      });
+      for (let i = 0; i < 7; i++) {
+        const x = 168 + i * 62;
+        R(ctx, x, 306, 2, 16, "#4b3a2a");
+        R(ctx, x + 2, 306, 13, 8, i % 2 ? "#8e3731" : "#46647f");
+      }
+      // 主堡前广场石阶
+      R(ctx, 316, 292, 88, 6, "#9a927f");
+      R(ctx, 310, 298, 100, 6, "#847c6b");
+    }
+
+    // 墙头火把
+    if (stage >= 4) {
+      [218, 442].forEach(function (x, i) {
+        const flick = 0.7 + 0.3 * Math.sin(t * 5 + i);
+        R(ctx, x, 258, 3, 10, "#3b2a1a");
+        R(ctx, x - 1, 254, 5, 5, "#f2c56d");
+        drawGlow(x + 1, 256, 18 * flick, "#ffcf72", 0.12);
+      });
+    }
+  }
+
   function drawProgressMilestones(t) {
     if (!stateRef || !stateRef.buildings) return;
     let count = 0;
@@ -4317,6 +4602,7 @@ window.CastleScene = (function () {
     drawBirds(hour, state ? state.weather : "clear");
     if (!bgLayer) bgLayer = createBackground();
     ctx.drawImage(bgLayer, 0, 0);
+    drawOuterBailey(stage, time);
     ctx.drawImage(castleLayer(stage), 0, 0);
 
     // 城堡动态
@@ -4359,6 +4645,8 @@ window.CastleScene = (function () {
     hitAreas.push({ type: "castle-gate", x: 330, y: 205, w: 82, h: 72 });
     hitAreas.push({ type: "territory", view: "land", x: 688, y: 150, w: 32, h: 115 });
     drawOutdoorSoldiers(time);
+    drawMaskedWanderers(time, "outdoor");
+    drawRaiders(time);
 
     // 全城张灯结彩
     if (stage >= 4) {

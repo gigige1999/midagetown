@@ -137,6 +137,10 @@
       onStairs: function () {
         if (!started || ui.modalOpen || state.view !== "expansion") return;
         goDownstairs();
+      },
+      onSocial: function (idA, idB) {
+        if (!started || ui.modalOpen) return;
+        onSocial(idA, idB);
       }
     });
   }
@@ -199,6 +203,7 @@
       trade: { day: 1, bought: { wood: 0, stone: 0, food: 0 } },
       genericResidents: [],
       nextGenericId: 1,
+      relations: {},
       flags: { introSeen: false, enteredCastle: false, festivalHeld: false, festivalDay: null, chapelBuilt: false },
       lastMeal: { day: 1, fed: true, upkeep: 0, residents: 0 },
       stats: { hired: 0, built: 0, soldWood: 0, soldStone: 0, soldFood: 0, playSeconds: 0 },
@@ -561,6 +566,18 @@
     if (ui.guideCheckAccum >= 0.35) {
       ui.guideCheckAccum = 0;
       checkGuide();
+    }
+    // 关系心跳：即使没有在路上撞见，也会定期发生互动
+    if (state.view === "outdoor" && state.genericResidents.length >= 2) {
+      ui.socialAccum = (ui.socialAccum || 0) + dt;
+      if (ui.socialAccum >= 9) {
+        ui.socialAccum = 0;
+        const pool = state.genericResidents.slice(0, 8);
+        const i = Math.floor(Math.random() * pool.length);
+        let j = Math.floor(Math.random() * pool.length);
+        if (j === i) j = (j + 1) % pool.length;
+        if (pool[i] && pool[j] && pool[i].id !== pool[j].id) onSocial(pool[i].id, pool[j].id);
+      }
     }
     ui.saveAccum += dt;
     if (ui.saveAccum >= 5) {
@@ -1151,11 +1168,13 @@
           state.resources.food = Math.max(0, state.resources.food - foodLoss);
           state.resources.gold = Math.max(0, state.resources.gold - goldLoss);
           addLog("隔壁村的人趁夜摸进仓库，偷走了 " + woodLoss + " 木材、" + stoneLoss + " 石料、" + foodLoss + " 食物和 " + goldLoss + " 金币。需要更多士兵。", "bad");
+          triggerRaidAlert(soldiers, need, true);
           setTimeout(function () {
             toast("防御不足！隔壁村偷走了物资。当前士兵 " + soldiers + "，建议至少 " + need + "。", "bad", "hammer");
           }, 420);
         } else {
           addLog("夜里有人在围墙外徘徊，但没敢进来。士兵不足，最好再招募一些。", "bad");
+          triggerRaidAlert(soldiers, need, false);
         }
       }
     }
@@ -3256,6 +3275,30 @@
       });
     }
 
+    const relRows = [];
+    Object.keys(state.relations || {}).forEach(function (key) {
+      const rel = state.relations[key];
+      if (!rel || rel.status === "neutral") return;
+      const ids = key.split("|").map(Number);
+      const a = state.genericResidents.filter(function (r) { return r.id === ids[0]; })[0];
+      const b = state.genericResidents.filter(function (r) { return r.id === ids[1]; })[0];
+      if (!a || !b) return;
+      relRows.push({ a: a, b: b, rel: rel });
+    });
+    relRows.sort(function (x, y) { return Math.abs(y.rel.affinity) - Math.abs(x.rel.affinity); });
+    if (relRows.length) {
+      html += sectionHead("城堡关系", relRows.length + " 对");
+      html += '<div class="relation-list">' + relRows.slice(0, 6).map(function (row) {
+        const kind = row.rel.status;
+        return '<div class="relation-row ' + kind + '">' +
+          '<img src="' + guestPortraitFor(row.a) + '" alt="">' +
+          '<span class="relation-symbol">' + (kind === "love" ? "♥" : kind === "rival" ? "✕" : "·") + "</span>" +
+          '<img src="' + guestPortraitFor(row.b) + '" alt="">' +
+          '<div class="relation-copy"><b>' + row.a.name + " / " + row.b.name + "</b>" +
+          '<span>' + relationLabel(kind) + " · 好感 " + (row.rel.affinity > 0 ? "+" : "") + row.rel.affinity + "</span></div></div>";
+      }).join("") + "</div>";
+    }
+
     const indoorLocked = D.WORKERS.filter(function (w) { return w.scene === "indoor" && !state.workers[w.id].hired; });
     if (indoorLocked.length) {
       html += sectionHead("城堡内的新面孔", "修复房间后加入");
@@ -3572,6 +3615,105 @@
       return I.maskedPortrait(type);
     }
     return I.guestPortrait(klass.id, r.variant || 0);
+  }
+
+  const SOCIAL_LINES = {
+    resident: ["今天的汤不错。", "你看见我的钥匙了吗？", "井水比昨天凉。"],
+    soldier: ["巡完这圈就换岗。", "墙头风大，别站太久。"],
+    minister: ["账目又多了两页。", "这份契据要重抄。"],
+    missionary: ["钟声快响了。", "愿今天平安。"],
+    farmer: ["菜地该浇水了。", "今年的麦子不错。"],
+    cook: ["面包快出炉了。", "谁来帮我搬面粉？"]
+  };
+  const LOVE_LINES = ["和你一起巡墙也不错。", "今晚一起看灯吗？", "你的面具很好看。", "这句话我只对你说。"];
+  const FIGHT_LINES = ["你又把我的汤勺拿走了！", "别在走廊上跑！", "那是我的位置。", "上次的事我可没忘。"];
+
+  function relationKey(a, b) {
+    return [Number(a), Number(b)].sort(function (x, y) { return x - y; }).join("|");
+  }
+
+  function getRelation(a, b) {
+    if (!state.relations) state.relations = {};
+    const key = relationKey(a, b);
+    if (!state.relations[key]) state.relations[key] = { affinity: 0, status: "neutral", lastDay: 0 };
+    return state.relations[key];
+  }
+
+  function relationLabel(status) {
+    return status === "love" ? "恋爱" : status === "rival" ? "不和" : status === "friend" ? "熟络" : "点头之交";
+  }
+
+  function pushBubble(id, text, tone, ms) {
+    if (!window.__castleBubbles) window.__castleBubbles = [];
+    window.__castleBubbles.push({ id: Number(id), text: text, tone: tone || "talk", until: Date.now() + (ms || 2800) });
+    if (window.__castleBubbles.length > 10) window.__castleBubbles.splice(0, window.__castleBubbles.length - 10);
+  }
+
+  function pickLine(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  function onSocial(idA, idB) {
+    if (!state || !state.genericResidents) return;
+    const a = state.genericResidents.filter(function (r) { return r.id === Number(idA); })[0];
+    const b = state.genericResidents.filter(function (r) { return r.id === Number(idB); })[0];
+    if (!a || !b) return;
+    const rel = getRelation(a.id, b.id);
+    const ka = a.klass || "resident", kb = b.klass || "resident";
+    let delta = Math.round(Math.random() * 5 - 2);
+    if ((ka === "soldier" && kb === "minister") || (ka === "minister" && kb === "soldier")) delta -= 1;
+    if (ka === "resident" && kb === "resident") delta += 1;
+    if (ka === "missionary" || kb === "missionary") delta += 1;
+    rel.affinity = Math.max(-10, Math.min(10, rel.affinity + delta));
+    rel.lastDay = state.day;
+    const prev = rel.status;
+    rel.status = rel.affinity >= 6 ? "love" : rel.affinity <= -5 ? "rival" : rel.affinity >= 2 ? "friend" : "neutral";
+
+    if (rel.status === "love") {
+      const line = pickLine(LOVE_LINES);
+      pushBubble(a.id, line, "love");
+      pushBubble(b.id, "……嗯。", "love");
+    } else if (rel.status === "rival") {
+      const line = pickLine(FIGHT_LINES);
+      pushBubble(a.id, line, "fight");
+      pushBubble(b.id, "你再说一遍？", "fight");
+    } else {
+      pushBubble(a.id, pickLine(SOCIAL_LINES[kb] || SOCIAL_LINES.resident), "talk");
+      pushBubble(b.id, pickLine(SOCIAL_LINES[ka] || SOCIAL_LINES.resident), "talk");
+    }
+
+    if (prev !== rel.status) {
+      if (rel.status === "love") {
+        addLog("「" + a.name + "」和「" + b.name + "」在庭院里走到了一起。", "good");
+        toast(a.name + " 和 " + b.name + " 恋爱了。", "good", "heart");
+      } else if (rel.status === "rival") {
+        addLog("「" + a.name + "」和「" + b.name + "」吵了一架，谁也不理谁。", "bad");
+        toast(a.name + " 和 " + b.name + " 闹翻了。", "bad", "hammer");
+      }
+    }
+  }
+
+  function triggerRaidAlert(soldiers, need, stolen) {
+    const count = Math.min(4, Math.max(2, need - soldiers + 1));
+    window.__castleRaid = { until: Date.now() + 12000, count: count, stolen: !!stolen };
+    const el = $("#raidAlert");
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove("show");
+    const title = $("#raidTitle");
+    const text = $("#raidText");
+    if (title) title.textContent = stolen ? "袭击！仓库被抢" : "袭击！守卫在院墙外拦住了他们";
+    if (text) {
+      text.textContent = stolen
+        ? "士兵 " + soldiers + " / 需要 " + need + " · 有人闯进院子，尽快补兵"
+        : "士兵 " + soldiers + " / 需要 " + need + " · 他们还在围墙外徘徊";
+    }
+    void el.offsetWidth;
+    el.classList.add("show");
+    clearTimeout(ui.raidTimer);
+    ui.raidTimer = setTimeout(function () {
+      el.hidden = true;
+      el.classList.remove("show");
+      if (window.__castleRaid) window.__castleRaid.until = 0;
+    }, 10000);
   }
 
   function inviteGuest(klassId) {
