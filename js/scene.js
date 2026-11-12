@@ -2994,8 +2994,9 @@ window.CastleScene = (function () {
       ctx.font = "9px 'PingFang SC', 'Microsoft YaHei', monospace";
       const tw = ctx.measureText(b.text).width;
       const w = Math.min(160, Math.max(36, tw + 12));
-      const x = Math.max(6, Math.min(W - w - 6, pt.x - w / 2));
-      const y = Math.max(8, pt.y - 52);
+      const shift = Math.abs(pt.x - 360) < 70 ? (pt.x >= 360 ? 54 : -54) : 0;
+      const x = Math.max(6, Math.min(W - w - 6, pt.x - w / 2 + shift));
+      const y = Math.max(8, pt.y - 58 - (k % 3) * 18);
       ctx.globalAlpha = 0.94;
       R(ctx, x, y, w, 16, "#1d140e");
       ctx.globalAlpha = 1;

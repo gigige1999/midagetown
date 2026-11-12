@@ -4,7 +4,9 @@
 
 **在线试玩：<https://gigige1999.github.io/midagetown/>**
 
-![高阶段城堡外观](preview.png)
+![高阶段城堡外观与角色对话](preview.png)
+![角色关系与随机对话](preview-social.png)
+![袭击警示与城门外的袭击者](preview-raid.png)
 ![多层扩建、房间尺寸与客人职业](preview-expansion.png)
 ![领地农田扩建与播种](preview-land.png)
 ![所有居民与客人聚集的丰收庆典](preview-festival.png)
