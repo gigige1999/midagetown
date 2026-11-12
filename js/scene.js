@@ -2365,100 +2365,294 @@ window.CastleScene = (function () {
   function interiorWoodFloor(x, y, w, h) {
     R(ctx, x, y, w, h, IN.floorWood);
     const rng = mulberry32((x * 7 + y * 23) | 0);
-    for (let yy = y + 5; yy < y + h; yy += 7) {
-      R(ctx, x, yy, w, 1, "rgba(50,32,20,0.4)");
-      for (let xx = x + 3; xx < x + w; xx += 9) {
-        if (rng() < 0.25) R(ctx, xx, yy - 6, 8, 1, "rgba(210,167,115,0.11)");
+    for (let yy = y + 6; yy < y + h; yy += 8) {
+      R(ctx, x, yy, w, 1, "rgba(48,30,18,0.45)");
+      R(ctx, x, yy + 1, w, 1, "rgba(214,170,116,0.10)");
+      for (let xx = x + 14 + (yy % 16); xx < x + w; xx += 26) {
+        R(ctx, xx, yy - 6, 1, 6, "rgba(53,35,22,0.28)");
       }
-      for (let xx = x + 12 + (yy % 14); xx < x + w; xx += 22) R(ctx, xx, yy - 5, 1, 5, "rgba(53,35,22,0.2)");
+      for (let xx = x + 3; xx < x + w; xx += 11) {
+        if (rng() < 0.22) R(ctx, xx, yy - 5, 7, 1, "rgba(214,170,116,0.13)");
+        if (rng() < 0.05) {
+          R(ctx, xx, yy - 4, 3, 2, "rgba(62,40,25,0.35)");
+        }
+      }
     }
-    R(ctx, x, y, w, 2, IN.floorWoodLight);
+    R(ctx, x, y, w, 2, "rgba(228,190,140,0.22)");
+    R(ctx, x, y + h - 3, w, 3, "rgba(35,22,14,0.30)");
   }
 
-  function interiorRug(x, y, w, h) {
-    R(ctx, x, y, w, h, "#4a2e24");
-    R(ctx, x + 2, y + 2, w - 4, h - 4, IN.rug);
-    R(ctx, x + 4, y + 4, w - 8, h - 8, "rgba(220,160,88,0.16)");
-    for (let xx = x + 8; xx < x + w - 8; xx += 14) {
-      R(ctx, xx, y + 5, 5, 2, "rgba(241,205,137,0.45)");
-      R(ctx, xx, y + h - 7, 5, 2, "rgba(241,205,137,0.45)");
+  function interiorRug(x, y, w, h, color) {
+    const c = color || IN.rug;
+    const dark = c === "#8a4c3c" ? "#5d2f26" : "#3f2a22";
+    R(ctx, x - 1, y - 1, w + 2, h + 2, "rgba(18,11,7,0.30)");
+    R(ctx, x, y, w, h, "#3d2a22");
+    R(ctx, x + 2, y + 2, w - 4, h - 4, c);
+    R(ctx, x + 4, y + 4, w - 8, h - 8, dark);
+    R(ctx, x + 5, y + 5, w - 10, h - 10, c);
+    R(ctx, x + 5, y + 5, w - 10, 2, "rgba(255,236,196,0.18)");
+    R(ctx, x + 5, y + h - 7, w - 10, 2, "rgba(20,12,8,0.22)");
+    for (let xx = x + 8; xx < x + w - 8; xx += 12) {
+      R(ctx, xx, y + 6, 5, 2, "#e0b45e");
+      R(ctx, xx, y + h - 8, 5, 2, "#e0b45e");
+    }
+    const cx = x + Math.floor(w / 2);
+    const cy = y + Math.floor(h / 2);
+    if (w > 30 && h > 18) {
+      for (let i = 0; i < 3; i++) {
+        R(ctx, cx - 7 + i * 7, cy - 2, 4, 4, "rgba(240,204,126,0.42)");
+        R(ctx, cx - 6 + i * 7, cy - 1, 2, 2, "rgba(255,238,190,0.5)");
+      }
+    }
+    for (let yy = y + 4; yy < y + h - 4; yy += 5) {
+      R(ctx, x - 2, yy, 2, 2, "#c9a25e");
+      R(ctx, x + w, yy, 2, 2, "#c9a25e");
     }
   }
 
   function interiorBed(x, y, w, h, side) {
-    R(ctx, x - 2, y - 2, w + 4, h + 4, IN.ink);
-    R(ctx, x, y, w, h, IN.wood);
-    R(ctx, x, y, w, 2, IN.woodLight);
-    R(ctx, x + 2, y + 3, w - 4, h - 6, "#d9c69c");
-    R(ctx, x + 3, y + 3, w - 6, h - 11, "#b6c0ab");
-    R(ctx, x + 3, y + 3, w - 6, 4, "#e7dcc0");
-    R(ctx, x + 2, y + h - 10, w - 4, 7, side === "red" ? "#9c4439" : "#4d6479");
-    R(ctx, x + 2, y + h - 5, w - 4, 2, "#6e302a");
-    R(ctx, x + 3, y + 5, w - 6, 2, "#f0e6ce");
-    R(ctx, x + 1, y - 1, 3, 2, IN.gold);
+    const blanket = side === "red" ? "#9c4439" : "#4d6479";
+    const blanketLo = side === "red" ? "#7c332b" : "#3a4d60";
+    R(ctx, x - 1, y, w + 3, h + 3, "rgba(16,10,7,0.32)");
+    R(ctx, x, y, w, h, IN.ink);
+    R(ctx, x + 1, y + 1, w - 2, h - 2, IN.woodDark);
+    R(ctx, x + 2, y + 2, w - 4, h - 4, IN.wood);
+    R(ctx, x + 3, y + 4, w - 6, h - 8, "#e2d2ac");
+    R(ctx, x + 2, y + 2, w - 4, 2, IN.woodLight);
+    // 枕头
+    R(ctx, x + 4, y + 5, w - 8, 8, "#f4ead2");
+    R(ctx, x + 5, y + 6, w - 10, 3, "#fff8e6");
+    R(ctx, x + 4, y + 11, w - 8, 1, "#c9b894");
+    // 被子
+    R(ctx, x + 3, y + 14, w - 6, h - 20, blanket);
+    R(ctx, x + 3, y + 14, w - 6, 2, "rgba(255,235,200,0.20)");
+    R(ctx, x + 3, y + h - 8, w - 6, 3, blanketLo);
+    R(ctx, x + 3, y + 14, 2, h - 20, "rgba(0,0,0,0.12)");
+    // 被角翻折
+    R(ctx, x + w - 12, y + 14, 9, 5, "#e8dcc0");
+    R(ctx, x + w - 12, y + 17, 9, 1, "#c6b492");
+    // 床柱
+    R(ctx, x, y - 2, 3, h + 2, IN.woodDark);
+    R(ctx, x + w - 3, y - 2, 3, h + 2, IN.woodDark);
+    R(ctx, x, y - 2, 3, 2, IN.gold);
+    R(ctx, x + w - 3, y - 2, 3, 2, IN.gold);
   }
 
   function interiorTable(x, y, w, h) {
+    R(ctx, x - 1, y + h, w + 2, 4, "rgba(16,10,7,0.26)");
+    R(ctx, x + 2, y + h, 3, 5, IN.woodDark);
+    R(ctx, x + w - 5, y + h, 3, 5, IN.woodDark);
     R(ctx, x - 1, y - 1, w + 2, h + 2, IN.ink);
     R(ctx, x, y, w, h, IN.wood);
     R(ctx, x, y, w, 2, IN.woodLight);
     R(ctx, x + 2, y + h - 2, w - 4, 1, "#4c301f");
-    // 桌上的汤与蜡烛
-    R(ctx, x + w * 0.32, y + h * 0.4, 4, 3, "#b88a4f");
-    R(ctx, x + w * 0.32 + 1, y + h * 0.28, 2, 2, "#eac578");
-    R(ctx, x + w * 0.68, y + h * 0.35, 2, 2, IN.candle);
+    for (let xx = x + 3; xx < x + w - 3; xx += 7) {
+      R(ctx, xx, y + 3, 4, 1, "rgba(60,38,22,0.20)");
+    }
+    R(ctx, x, y + Math.floor(h / 2), w, 1, "rgba(60,38,22,0.16)");
   }
 
   function interiorChair(x, y, face) {
-    R(ctx, x, y, 9, 10, IN.ink);
-    R(ctx, x + 1, y + 1, 7, 8, IN.wood);
-    R(ctx, x + 2, y + 2, 5, 2, IN.woodLight);
-    if (face === "down") R(ctx, x + 1, y, 7, 2, IN.woodDark);
-    if (face === "up") R(ctx, x + 1, y + 8, 7, 2, IN.woodDark);
+    R(ctx, x, y + 10, 11, 3, "rgba(16,10,7,0.26)");
+    R(ctx, x, y, 11, 12, IN.ink);
+    R(ctx, x + 1, y + 1, 9, 10, IN.wood);
+    R(ctx, x + 1, y + 1, 9, 2, IN.woodLight);
+    R(ctx, x + 2, y + 4, 7, 5, "#7a5334");
+    R(ctx, x + 2, y + 10, 2, 4, IN.woodDark);
+    R(ctx, x + 7, y + 10, 2, 4, IN.woodDark);
+    if (face === "down" || face === "up") {
+      const by = face === "down" ? y - 5 : y + 8;
+      R(ctx, x, by, 11, 5, IN.ink);
+      R(ctx, x + 1, by + 1, 9, 3, IN.woodDark);
+      R(ctx, x + 2, by + 1, 7, 1, IN.woodLight);
+    } else {
+      const bx = face === "right" ? x - 5 : x + 9;
+      R(ctx, bx, y - 1, 5, 11, IN.ink);
+      R(ctx, bx + 1, y, 3, 9, IN.woodDark);
+      R(ctx, bx + 1, y + 1, 1, 7, IN.woodLight);
+    }
   }
 
   function interiorShelf(x, y, w, h) {
+    R(ctx, x - 2, y + h, w + 4, 3, "rgba(16,10,7,0.24)");
     R(ctx, x - 2, y - 2, w + 4, h + 4, IN.ink);
     R(ctx, x, y, w, h, IN.woodDark);
-    R(ctx, x + 1, y + 1, w - 2, h - 2, IN.wood);
-    for (let yy = y + 5; yy < y + h - 2; yy += 6) {
-      R(ctx, x + 2, yy, w - 4, 1, "#3d2718");
-      for (let xx = x + 4; xx < x + w - 4; xx += 5) {
-        R(ctx, xx, yy - 4, 3, 4, ["#b45142", "#4e6d82", "#d0a34d", "#6c7d54"][(xx + yy) % 4]);
+    R(ctx, x + 1, y + 1, w - 2, h - 2, "#5a3c26");
+    const rows = Math.max(1, Math.floor((h - 4) / 12));
+    for (let r = 0; r < rows; r++) {
+      const sy = y + 3 + r * 12;
+      if (sy + 10 > y + h) break;
+      R(ctx, x + 2, sy + 9, w - 4, 2, "#3a2414");
+      R(ctx, x + 2, sy + 9, w - 4, 1, "#7a5535");
+      let bx = x + 4;
+      while (bx < x + w - 5) {
+        const bw = 2 + Math.floor(((bx * 7 + r * 13) % 3));
+        const bh = 5 + ((bx + r * 5) % 4);
+        const col = ["#b45142", "#4e6d82", "#d0a34d", "#6c7d54", "#8e5d7a"][(bx + r) % 5];
+        R(ctx, bx, sy + 9 - bh, bw, bh, col);
+        R(ctx, bx, sy + 9 - bh, bw, 1, "rgba(255,240,205,0.30)");
+        bx += bw + 1;
       }
     }
   }
 
   function interiorBarrel(x, y) {
-    R(ctx, x, y, 12, 14, IN.ink);
-    R(ctx, x + 1, y + 1, 10, 12, "#8a5c37");
+    R(ctx, x - 1, y + 14, 14, 3, "rgba(16,10,7,0.28)");
+    R(ctx, x, y, 12, 15, IN.ink);
+    R(ctx, x + 1, y + 1, 10, 13, "#8a5c37");
+    R(ctx, x + 2, y + 2, 8, 11, "#9c6a40");
     R(ctx, x + 1, y + 4, 10, 1, "#4c3320");
     R(ctx, x + 1, y + 9, 10, 1, "#4c3320");
-    R(ctx, x + 3, y + 2, 2, 9, "#ad7b4d");
+    R(ctx, x + 1, y + 1, 10, 1, "#b3814f");
+    R(ctx, x + 3, y + 2, 2, 11, "#ad7b4d");
+    R(ctx, x + 7, y + 2, 1, 11, "#6f4527");
+    R(ctx, x + 1, y, 10, 2, "#6a4429");
+    R(ctx, x + 2, y + 1, 8, 1, "#a8794c");
   }
 
   function interiorCrate(x, y, s) {
+    R(ctx, x, y + s, s, 2, "rgba(16,10,7,0.26)");
     R(ctx, x, y, s, s, IN.ink);
     R(ctx, x + 1, y + 1, s - 2, s - 2, "#7d5637");
+    R(ctx, x + 2, y + 2, s - 4, s - 4, "#8d6440");
     R(ctx, x + 1, y + 1, s - 2, 1, "#a77b4d");
     R(ctx, x + 2, y + 2, 1, s - 4, "#5a3b25");
     R(ctx, x + s - 3, y + 2, 1, s - 4, "#5a3b25");
+    R(ctx, x + 2, y + 2, s - 4, 1, "#4a2f1d");
+    R(ctx, x + 2, y + s - 3, s - 4, 1, "#4a2f1d");
+    R(ctx, x + 2, y + 2, 2, 2, "#c8a06a");
+    R(ctx, x + s - 4, y + 2, 2, 2, "#c8a06a");
   }
 
   function interiorSack(x, y) {
+    R(ctx, x, y + 9, 11, 2, "rgba(16,10,7,0.24)");
     R(ctx, x, y, 11, 9, IN.ink);
     R(ctx, x + 1, y + 1, 9, 7, "#c1aa7d");
-    R(ctx, x + 2, y, 7, 3, "#d5bf8e");
-    R(ctx, x + 4, y + 2, 3, 1, "#8e744d");
+    R(ctx, x + 2, y + 2, 7, 4, "#d5bf8e");
+    R(ctx, x + 2, y + 6, 7, 2, "#a98f61");
+    R(ctx, x + 3, y, 5, 2, "#b39a6c");
+    R(ctx, x + 4, y + 1, 3, 1, "#8e744d");
+    R(ctx, x + 4, y - 1, 3, 1, "#6d5636");
   }
 
   function interiorCandle(x, y, t, bright) {
+    const glow = bright ? 0.12 : 0.06;
+    drawGlow(x + 1, y - 2, 9, "#ffcf72", glow);
+    R(ctx, x - 1, y + 7, 5, 2, "#3b2a1e");
     R(ctx, x, y, 3, 7, "#efe1bd");
-    R(ctx, x + 1, y - 2, 1, 3, bright ? IN.candle : "#6f6046");
+    R(ctx, x + 1, y + 1, 1, 5, "#fff7dd");
     if (bright) {
-      R(ctx, x, y - 1, 2, 1, "#ffecad");
       const flick = Math.sin(t * 7 + x) > 0 ? 1 : 0;
-      R(ctx, x + 1, y - 3 - flick, 1, 1, IN.fireLight);
+      R(ctx, x + 1, y - 4 - flick, 1, 4, IN.fire);
+      R(ctx, x, y - 3 - flick, 3, 2, IN.fireLight);
+      R(ctx, x + 1, y - 5 - flick, 1, 1, "#fff2b8");
+    } else {
+      R(ctx, x + 1, y - 2, 1, 3, "#6f6046");
+    }
+  }
+
+  function interiorStool(x, y) {
+    R(ctx, x, y + 6, 10, 2, "rgba(16,10,7,0.24)");
+    R(ctx, x, y, 10, 7, IN.ink);
+    R(ctx, x + 1, y + 1, 8, 5, IN.wood);
+    R(ctx, x + 1, y + 1, 8, 1, IN.woodLight);
+    R(ctx, x + 2, y + 7, 2, 4, IN.woodDark);
+    R(ctx, x + 6, y + 7, 2, 4, IN.woodDark);
+  }
+
+  function interiorPlant(x, y) {
+    R(ctx, x, y + 14, 14, 2, "rgba(16,10,7,0.24)");
+    R(ctx, x + 2, y + 8, 10, 8, IN.ink);
+    R(ctx, x + 3, y + 9, 8, 6, "#9a5f38");
+    R(ctx, x + 3, y + 9, 8, 1, "#c08454");
+    R(ctx, x + 5, y + 2, 2, 7, "#4f6e3d");
+    R(ctx, x + 8, y + 1, 2, 8, "#5f7f47");
+    R(ctx, x + 3, y + 4, 3, 2, "#6e904f");
+    R(ctx, x + 9, y + 3, 3, 2, "#6e904f");
+    R(ctx, x + 6, y - 1, 3, 3, "#7fa35c");
+    R(ctx, x + 11, y + 5, 3, 2, "#5c7c44");
+  }
+
+  function interiorPainting(x, y, w, h, art) {
+    R(ctx, x - 1, y - 1, w + 2, h + 2, IN.ink);
+    R(ctx, x, y, w, h, "#8e6e45");
+    R(ctx, x + 1, y + 1, w - 2, h - 2, "#b08a55");
+    R(ctx, x + 2, y + 2, w - 4, h - 4, art || "#4e6d82");
+    R(ctx, x + 2, y + 2, w - 4, 1, "rgba(255,240,200,0.25)");
+    R(ctx, x + 3, y + h - 6, w - 6, 3, "#3f5f3a");
+    R(ctx, x + Math.floor(w / 2) - 3, y + 4, 6, 4, "#e0c06a");
+  }
+
+  function interiorWindow(x, y, w, h, warm) {
+    R(ctx, x - 2, y - 2, w + 4, h + 4, "#2b1e17");
+    R(ctx, x, y, w, h, "#6f563d");
+    const sky = warm ? "#f0c877" : "#b9cbd0";
+    R(ctx, x + 2, y + 2, w - 4, h - 4, sky);
+    R(ctx, x + 3, y + 3, w - 6, 2, warm ? "#ffe6a8" : "#e4eef0");
+    R(ctx, x + Math.floor(w / 2) - 1, y + 2, 2, h - 4, "#6f563d");
+    R(ctx, x + 2, y + Math.floor(h / 2) - 1, w - 4, 2, "#6f563d");
+    R(ctx, x + w - 2, y + 3, 2, h - 6, "rgba(90,64,44,0.35)");
+  }
+
+  function interiorJars(x, y, w, h) {
+    R(ctx, x - 2, y - 2, w + 4, h + 4, IN.ink);
+    R(ctx, x, y, w, h, IN.woodDark);
+    R(ctx, x + 1, y + 1, w - 2, h - 2, "#5a3c26");
+    const rows = Math.max(1, Math.floor((h - 2) / 10));
+    for (let r = 0; r < rows; r++) {
+      const sy = y + 2 + r * 10;
+      R(ctx, x + 2, sy + 8, w - 4, 2, "#3a2414");
+      let bx = x + 3;
+      while (bx < x + w - 6) {
+        const bw = 4 + ((bx + r) % 3);
+        const col = ["#b45142", "#4e6d82", "#d0a34d", "#6c7d54"][(bx + r) % 4];
+        R(ctx, bx, sy + 2, bw, 6, col);
+        R(ctx, bx, sy + 2, bw, 1, "rgba(255,240,205,0.35)");
+        R(ctx, bx + 1, sy + 1, bw - 2, 1, "#6d5636");
+        bx += bw + 2;
+      }
+    }
+  }
+
+  function interiorWeaponRack(x, y, w, h) {
+    R(ctx, x, y + h, w, 2, "rgba(16,10,7,0.24)");
+    R(ctx, x, y, w, 3, IN.ink);
+    R(ctx, x + 1, y + 1, w - 2, 1, IN.woodLight);
+    R(ctx, x + 1, y + h - 4, w - 2, 3, IN.ink);
+    R(ctx, x + 2, y + h - 3, w - 4, 1, IN.wood);
+    for (let i = 0; i < 4; i++) {
+      const px = x + 5 + i * Math.floor((w - 10) / 3.6);
+      if (i % 2 === 0) {
+        R(ctx, px, y + 3, 2, h - 8, "#c9cfcb");
+        R(ctx, px - 3, y + 1, 8, 2, "#9aa0a0");
+        R(ctx, px, y + h - 9, 2, 4, IN.woodDark);
+      } else {
+        R(ctx, px, y + 3, 2, h - 8, "#8a623b");
+        R(ctx, px - 2, y + 1, 6, 3, "#c9cfcb");
+        R(ctx, px - 2, y + 1, 2, 6, "#6f7d8b");
+      }
+    }
+  }
+
+  function interiorPew(x, y, w) {
+    R(ctx, x, y, w, 3, "rgba(16,10,7,0.24)");
+    R(ctx, x, y, w, 6, IN.ink);
+    R(ctx, x + 1, y + 1, w - 2, 4, IN.wood);
+    R(ctx, x + 1, y + 1, w - 2, 1, IN.woodLight);
+    R(ctx, x, y - 6, w, 5, IN.ink);
+    R(ctx, x + 1, y - 5, w - 2, 3, IN.woodDark);
+    R(ctx, x + 2, y + 6, 3, 5, IN.woodDark);
+    R(ctx, x + w - 5, y + 6, 3, 5, IN.woodDark);
+    R(ctx, x + 4, y + 5, w - 8, 1, "rgba(255,236,200,0.14)");
+  }
+
+  function interiorBookStack(x, y) {
+    const cols = ["#a54b3c", "#4e6d82", "#d0a34d"];
+    R(ctx, x, y + 10, 18, 2, "rgba(16,10,7,0.24)");
+    for (let i = 0; i < 3; i++) {
+      R(ctx, x + i, y + 8 - i * 3, 16, 3, IN.ink);
+      R(ctx, x + i + 1, y + 8 - i * 3 + 1, 14, 1, cols[i]);
+      R(ctx, x + i + 1, y + 8 - i * 3, 14, 1, "rgba(255,240,200,0.28)");
     }
   }
 
@@ -2585,252 +2779,383 @@ window.CastleScene = (function () {
     R(ctx, 348, 5, 24, 4, "#2b1e17");
   }
 
+  function withRoom(r, fn) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+    fn();
+    ctx.restore();
+  }
+
   function drawStudy(t, built) {
     const r = { x: 26, y: 28, w: 176, h: 116 };
     interiorWoodFloor(r.x, r.y, r.w, r.h);
-    interiorRug(r.x + 58, r.y + 53, 66, 46);
-    if (built) {
-      interiorShelf(r.x + 6, r.y + 6, 54, 22);
-      interiorShelf(r.x + 6, r.y + 32, 26, 44);
-      interiorTable(r.x + 76, r.y + 62, 44, 18);
-      interiorChair(r.x + 92, r.y + 84, "down");
-      interiorCandle(r.x + 103, r.y + 66, t, true);
-      interiorCandle(r.x + 52, r.y + 40, t, true);
-      drawFlowerVase(r.x + 24, r.y + 94, t);
-      // 散落的书
-      R(ctx, r.x + 125, r.y + 35, 9, 3, "#a54b3c");
-      R(ctx, r.x + 128, r.y + 39, 9, 3, "#4e6d82");
-      R(ctx, r.x + 131, r.y + 43, 8, 2, "#d0a34d");
-      drawCharacter(ctx, r.x + 148, r.y + 108, WORKER_BY_ID.ink.look, { phase: t * 1.3, staffed: true, role: "scholar", dir: -1, sparkle: true });
-    } else {
+    if (!built) {
       interiorRubble(r.x + 20, r.y + 20, r.w - 35, r.h - 38, 501);
       interiorRoomDark(r, 0.58);
       R(ctx, r.x + 44, r.y + 18, 30, 3, IN.woodDark);
       R(ctx, r.x + 48, r.y + 21, 3, 18, IN.woodDark);
+      return;
     }
+    withRoom(r, function () {
+      interiorRug(r.x + 54, r.y + 50, 74, 44, "#7a4038");
+      interiorWindow(r.x + 126, r.y + 4, 38, 16, true);
+      interiorShelf(r.x + 6, r.y + 6, 58, 26);
+      // 挂钟
+      R(ctx, r.x + 96, r.y + 4, 16, 16, IN.ink);
+      circle(ctx, r.x + 104, r.y + 12, 7, "#e8ddc4");
+      circle(ctx, r.x + 104, r.y + 12, 6, "#f5ecd8");
+      R(ctx, r.x + 104, r.y + 8, 1, 4, "#3b2a1a");
+      R(ctx, r.x + 104, r.y + 12, 4, 1, "#3b2a1a");
+      R(ctx, r.x + 103, r.y + 2, 2, 3, IN.gold);
+      interiorShelf(r.x + 6, r.y + 36, 28, 38);
+      // 书桌
+      interiorTable(r.x + 70, r.y + 58, 54, 20);
+      R(ctx, r.x + 74, r.y + 62, 17, 9, "#efe3c4");
+      R(ctx, r.x + 75, r.y + 63, 15, 6, "#f7eed7");
+      for (let i = 0; i < 3; i++) R(ctx, r.x + 76, r.y + 65 + i * 2, 12, 1, "#b9a888");
+      R(ctx, r.x + 95, r.y + 61, 5, 5, "#2c2118");
+      R(ctx, r.x + 96, r.y + 60, 3, 2, "#6f5c44");
+      R(ctx, r.x + 101, r.y + 56, 1, 8, "#e8ddc4");
+      R(ctx, r.x + 100, r.y + 55, 3, 2, "#8a6a45");
+      interiorCandle(r.x + 112, r.y + 59, t, true);
+      interiorChair(r.x + 92, r.y + 80);
+      interiorBookStack(r.x + 136, r.y + 72);
+      // 地球仪
+      R(ctx, r.x + 140, r.y + 44, 2, 12, "#5b3e29");
+      R(ctx, r.x + 136, r.y + 55, 10, 2, "#3b2a1a");
+      circle(ctx, r.x + 141, r.y + 38, 8, "#3d5670");
+      circle(ctx, r.x + 141, r.y + 38, 7, "#4e6d82");
+      R(ctx, r.x + 137, r.y + 35, 4, 3, "#6f8a5b");
+      R(ctx, r.x + 143, r.y + 40, 4, 3, "#6f8a5b");
+      interiorPlant(r.x + 150, r.y + 92);
+      drawCharacter(ctx, r.x + 148, r.y + 110, WORKER_BY_ID.ink.look, { phase: t * 1.3, staffed: true, role: "scholar", dir: -1, sparkle: true });
+    });
   }
 
   function drawChapel(t, built) {
     const r = { x: 220, y: 28, w: 280, h: 116 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#645346");
-    interiorRug(r.x + 114, r.y + 14, 52, 98);
-    if (built) {
-      // 祭坛
-      R(ctx, r.x + 116, r.y + 20, 48, 20, IN.ink);
-      R(ctx, r.x + 118, r.y + 21, 44, 16, "#d3c196");
-      R(ctx, r.x + 122, r.y + 24, 36, 3, "#f2e2bb");
-      R(ctx, r.x + 136, r.y + 14, 8, 7, IN.gold);
-      R(ctx, r.x + 138, r.y + 16, 4, 3, "#fff0b0");
-      interiorCandle(r.x + 121, r.y + 36, t, true);
-      interiorCandle(r.x + 157, r.y + 36, t, true);
-      // 两侧长椅
-      for (let i = 0; i < 3; i++) {
-        R(ctx, r.x + 54, r.y + 60 + i * 18, 42, 5, IN.ink);
-        R(ctx, r.x + 55, r.y + 61 + i * 18, 40, 3, IN.wood);
-        R(ctx, r.x + 55, r.y + 61 + i * 18, 40, 1, IN.woodLight);
-        R(ctx, r.x + 186, r.y + 60 + i * 18, 42, 5, IN.ink);
-        R(ctx, r.x + 187, r.y + 61 + i * 18, 40, 3, IN.wood);
-        R(ctx, r.x + 187, r.y + 61 + i * 18, 40, 1, IN.woodLight);
-      }
-      // 彩色窗与立柱
-      R(ctx, r.x + 125, r.y - 2, 30, 22, "#3a3027");
-      for (let i = 0; i < 3; i++) {
-        R(ctx, r.x + 128 + i * 8, r.y + 1, 6, 17, ["#b95d51", "#4e6d82", "#d0a34d"][i]);
-        R(ctx, r.x + 129 + i * 8, r.y + 2, 4, 4, "#f2dfa5");
-      }
-      interiorBanner(r.x + 14, r.y + 10, 18, 42, "#8e3731");
-      interiorBanner(r.x + r.w - 34, r.y + 10, 18, 42, "#8e3731");
-      interiorCandle(r.x + 34, r.y + 50, t, true);
-      interiorCandle(r.x + r.w - 36, r.y + 50, t, true);
-    } else {
+    if (!built) {
       interiorRubble(r.x + 30, r.y + 24, r.w - 60, r.h - 40, 902);
       interiorRoomDark(r, 0.52);
       R(ctx, r.x + 112, r.y + 25, 54, 3, IN.woodDark);
       R(ctx, r.x + 120, r.y + 28, 3, 20, IN.woodDark);
+      return;
     }
+    withRoom(r, function () {
+      // 彩窗与地面光斑
+      interiorWindow(r.x + 112, r.y + 2, 56, 20, true);
+      ctx.globalAlpha = 0.10;
+      R(ctx, r.x + 118, r.y + 22, 44, 34, "#ffe6a8");
+      ctx.globalAlpha = 0.05;
+      R(ctx, r.x + 122, r.y + 22, 36, 82, "#ffe6a8");
+      ctx.globalAlpha = 1;
+      // 中央走道地毯
+      interiorRug(r.x + 128, r.y + 44, 24, 64, "#7a3f38");
+      // 祭坛
+      R(ctx, r.x + 112, r.y + 22, 56, 20, IN.ink);
+      R(ctx, r.x + 114, r.y + 23, 52, 17, "#d3c196");
+      R(ctx, r.x + 114, r.y + 23, 52, 3, "#f2e2bb");
+      R(ctx, r.x + 118, r.y + 27, 44, 1, "#b9a478");
+      R(ctx, r.x + 136, r.y + 26, 8, 6, IN.gold);
+      R(ctx, r.x + 138, r.y + 23, 4, 4, "#fff0b0");
+      R(ctx, r.x + 139, r.y + 18, 2, 6, IN.gold);
+      R(ctx, r.x + 136, r.y + 20, 8, 2, IN.gold);
+      interiorCandle(r.x + 116, r.y + 34, t, true);
+      interiorCandle(r.x + 160, r.y + 34, t, true);
+      // 长椅三排
+      for (let i = 0; i < 3; i++) {
+        interiorPew(r.x + 38, r.y + 54 + i * 20, 66);
+        interiorPew(r.x + 176, r.y + 54 + i * 20, 66);
+        R(ctx, r.x + 44, r.y + 66 + i * 20, 54, 2, "#5d3a2c");
+      }
+      // 侧墙旗帜与烛台
+      interiorBanner(r.x + 12, r.y + 10, 18, 40, "#8e3731");
+      interiorBanner(r.x + r.w - 30, r.y + 10, 18, 40, "#8e3731");
+      interiorCandle(r.x + 30, r.y + 58, t, true);
+      interiorCandle(r.x + r.w - 32, r.y + 58, t, true);
+      // 洗礼盆
+      R(ctx, r.x + 236, r.y + 88, 18, 10, IN.ink);
+      R(ctx, r.x + 237, r.y + 89, 16, 8, "#8e97a0");
+      R(ctx, r.x + 239, r.y + 90, 12, 3, "#b9cdd4");
+      R(ctx, r.x + 241, r.y + 86, 8, 4, "#a9b8bd");
+    });
   }
 
   function drawBarracks(t, built) {
     const r = { x: 518, y: 28, w: 176, h: 116 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#6a594a");
-    interiorRug(r.x + 58, r.y + 64, 64, 36);
-    if (built) {
-      // 武器架与盾
-      R(ctx, r.x + 20, r.y + 8, 55, 4, IN.ink);
-      for (let i = 0; i < 4; i++) {
-        R(ctx, r.x + 24 + i * 12, r.y + 10, 2, 22, "#6e4a2e");
-        R(ctx, r.x + 22 + i * 12, r.y + 9, 5, 3, "#a5afa8");
-      }
-      R(ctx, r.x + 124, r.y + 9, 22, 24, IN.ink);
-      R(ctx, r.x + 126, r.y + 11, 18, 20, "#5d6e7a");
-      R(ctx, r.x + 130, r.y + 15, 10, 3, "#d6a449");
-      interiorBed(r.x + 20, r.y + 62, 38, 44, "red");
-      interiorBed(r.x + 122, r.y + 62, 38, 44, "blue");
-      interiorCrate(r.x + 77, r.y + 88, 18);
-      interiorCandle(r.x + 148, r.y + 44, t, true);
-      drawCharacter(ctx, r.x + 158, r.y + 108, WORKER_BY_ID.irondan.look, { phase: t * 1.1, staffed: true, role: "guard", dir: -1, sparkle: true });
-    } else {
+    if (!built) {
       interiorRubble(r.x + 18, r.y + 26, r.w - 40, r.h - 44, 1201);
       interiorRoomDark(r, 0.58);
+      return;
     }
+    withRoom(r, function () {
+      interiorRug(r.x + 56, r.y + 64, 68, 34, "#6f4a3a");
+      R(ctx, r.x + 10, r.y + 4, 70, 32, IN.ink);
+      R(ctx, r.x + 11, r.y + 5, 68, 30, "#4a3524");
+      R(ctx, r.x + 11, r.y + 5, 68, 1, "#6f5437");
+      interiorWeaponRack(r.x + 12, r.y + 7, 66, 26);
+      interiorWindow(r.x + 86, r.y + 2, 28, 14, true);
+      // 盾与盔甲
+      R(ctx, r.x + 118, r.y + 8, 30, 28, IN.ink);
+      R(ctx, r.x + 119, r.y + 9, 28, 26, "#3f4a4f");
+      R(ctx, r.x + 122, r.y + 12, 22, 20, "#5d6e7a");
+      R(ctx, r.x + 131, r.y + 18, 4, 10, IN.gold);
+      R(ctx, r.x + 124, r.y + 21, 18, 2, IN.gold);
+      R(ctx, r.x + 150, r.y + 12, 22, 34, IN.ink);
+      R(ctx, r.x + 152, r.y + 14, 18, 30, "#7c878a");
+      R(ctx, r.x + 156, r.y + 8, 10, 8, "#9aa6a6");
+      R(ctx, r.x + 158, r.y + 22, 6, 2, "#d6a449");
+      interiorBed(r.x + 12, r.y + 56, 40, 46, "red");
+      interiorBed(r.x + 120, r.y + 56, 40, 46, "blue");
+      interiorChest(r.x + 74, r.y + 64);
+      interiorTable(r.x + 64, r.y + 90, 38, 12);
+      R(ctx, r.x + 70, r.y + 86, 6, 4, "#e8ddc4");
+      R(ctx, r.x + 82, r.y + 86, 5, 5, "#b45142");
+      interiorCandle(r.x + 106, r.y + 82, t, true);
+      interiorCrate(r.x + 104, r.y + 98, 14);
+      drawCharacter(ctx, r.x + 152, r.y + 112, WORKER_BY_ID.irondan.look, { phase: t * 1.1, staffed: true, role: "guard", dir: -1, sparkle: true });
+    });
   }
 
   function drawStoreroom(t, built) {
     const r = { x: 26, y: 158, w: 176, h: 98 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#665547");
-    if (built) {
-      interiorShelf(r.x + 8, r.y + 8, 76, 30);
-      interiorShelf(r.x + 8, r.y + 44, 34, 40);
-      interiorBarrel(r.x + 112, r.y + 54);
-      interiorBarrel(r.x + 128, r.y + 52);
-      interiorSack(r.x + 145, r.y + 34);
-      interiorSack(r.x + 148, r.y + 46);
-      interiorCrate(r.x + 60, r.y + 74, 16);
-      interiorCrate(r.x + 80, r.y + 76, 14);
-      interiorTable(r.x + 92, r.y + 16, 30, 13);
-      interiorCandle(r.x + 108, r.y + 19, t, true);
-      drawCharacter(ctx, r.x + 158, r.y + 92, WORKER_BY_ID.goldbell.look, { phase: t * 1.2, staffed: true, role: "market", dir: -1, sparkle: true });
-    } else {
+    if (!built) {
       interiorRubble(r.x + 18, r.y + 16, r.w - 36, r.h - 30, 1401);
       interiorRoomDark(r, 0.58);
+      return;
     }
+    withRoom(r, function () {
+      interiorJars(r.x + 6, r.y + 6, 84, 26);
+      interiorShelf(r.x + 6, r.y + 38, 34, 34);
+      interiorShelf(r.x + 44, r.y + 38, 24, 34);
+      interiorBarrel(r.x + 106, r.y + 52);
+      interiorBarrel(r.x + 122, r.y + 50);
+      interiorSack(r.x + 144, r.y + 28);
+      interiorSack(r.x + 148, r.y + 42);
+      interiorCrate(r.x + 58, r.y + 68, 18);
+      interiorCrate(r.x + 80, r.y + 70, 15);
+      interiorSack(r.x + 104, r.y + 72);
+      interiorSack(r.x + 118, r.y + 76);
+      // 绳圈
+      for (let i = 0; i < 3; i++) {
+        R(ctx, r.x + 60, r.y + 40 + i * 4, 18, 2, "#8a6a3c");
+        R(ctx, r.x + 62, r.y + 40 + i * 4, 3, 2, "#c1a06a");
+      }
+      R(ctx, r.x + 84, r.y + 44, 2, 16, "#6b4a2c");
+      R(ctx, r.x + 82, r.y + 42, 6, 3, "#b9b3a4");
+      interiorTable(r.x + 92, r.y + 10, 32, 14);
+      R(ctx, r.x + 96, r.y + 13, 12, 7, "#efe3c4");
+      R(ctx, r.x + 97, r.y + 14, 10, 5, "#f7eed7");
+      for (let i = 0; i < 2; i++) R(ctx, r.x + 98, r.y + 15 + i * 2, 8, 1, "#b9a888");
+      interiorCandle(r.x + 112, r.y + 11, t, true);
+      drawCharacter(ctx, r.x + 150, r.y + 92, WORKER_BY_ID.goldbell.look, { phase: t * 1.2, staffed: true, role: "market", dir: -1, sparkle: true });
+    });
   }
 
   function drawKitchen(t, built) {
     const r = { x: 26, y: 272, w: 176, h: 104 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#5f5043");
-    if (built) {
-      interiorFireplace(r.x + 10, r.y + 16, 42, 42, t, true);
-      // 大锅
-      R(ctx, r.x + 62, r.y + 32, 24, 12, IN.ink);
-      R(ctx, r.x + 63, r.y + 33, 22, 9, "#66665c");
-      R(ctx, r.x + 66, r.y + 30, 16, 2, "#88867a");
-      R(ctx, r.x + 69, r.y + 28, 10, 2, "#3e3e37");
-      // 操作台与食材
-      interiorTable(r.x + 70, r.y + 58, 68, 26);
-      R(ctx, r.x + 81, r.y + 54, 7, 5, "#5d7c4a");
-      R(ctx, r.x + 91, r.y + 53, 7, 6, "#c05d4c");
-      R(ctx, r.x + 104, r.y + 55, 8, 4, "#d6b55f");
-      R(ctx, r.x + 119, r.y + 53, 5, 7, "#d8d0b8");
-      // 挂锅
-      for (let i = 0; i < 3; i++) {
-        R(ctx, r.x + 120 + i * 12, r.y + 22, 7, 3, "#3d3024");
-        R(ctx, r.x + 122 + i * 12, r.y + 25, 3, 4, "#7b5a3b");
-      }
-      interiorBarrel(r.x + 148, r.y + 72);
-      interiorCandle(r.x + 144, r.y + 42, t, true);
-      drawCharacter(ctx, r.x + 146, r.y + 100, WORKER_BY_ID.pudding.look, { phase: t * 1.4, staffed: true, role: "tavern", dir: -1, sparkle: true });
-    } else {
+    if (!built) {
       interiorRubble(r.x + 18, r.y + 20, r.w - 36, r.h - 34, 1601);
       interiorRoomDark(r, 0.58);
+      return;
     }
+    withRoom(r, function () {
+      interiorFireplace(r.x + 8, r.y + 10, 46, 44, t, true);
+      // 烟罩
+      R(ctx, r.x + 4, r.y + 2, 54, 10, "#3b2f26");
+      R(ctx, r.x + 4, r.y + 2, 54, 2, "#6f5a45");
+      R(ctx, r.x + 12, r.y + 12, 38, 4, "#2a211a");
+      // 炉上大锅
+      R(ctx, r.x + 18, r.y + 34, 26, 11, IN.ink);
+      R(ctx, r.x + 19, r.y + 35, 24, 9, "#5d5d55");
+      R(ctx, r.x + 21, r.y + 33, 20, 3, "#7d7d72");
+      R(ctx, r.x + 24, r.y + 30, 14, 3, "#3e3e37");
+      R(ctx, r.x + 14, r.y + 36, 5, 3, "#3e3e37");
+      R(ctx, r.x + 43, r.y + 36, 5, 3, "#3e3e37");
+      // 灶口拱与铁三脚架
+      R(ctx, r.x + 16, r.y + 44, 30, 3, "#2a211a");
+      R(ctx, r.x + 18, r.y + 42, 2, 5, "#2a211a");
+      R(ctx, r.x + 42, r.y + 42, 2, 5, "#2a211a");
+      ctx.globalAlpha = 0.18 + 0.05 * Math.sin(t * 4);
+      circle(ctx, r.x + 31, r.y + 44, 10, "#ff9a3c");
+      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.16 + 0.05 * Math.sin(t * 3);
+      circle(ctx, r.x + 31, r.y + 27, 7, "#efe1c4");
+      ctx.globalAlpha = 1;
+      // 挂锅
+      for (let i = 0; i < 3; i++) {
+        R(ctx, r.x + 70 + i * 14, r.y + 16, 8, 3, "#3d3024");
+        R(ctx, r.x + 72 + i * 14, r.y + 19, 4, 5, "#7b5a3b");
+        R(ctx, r.x + 72 + i * 14, r.y + 18, 4, 1, "#a3794d");
+      }
+      interiorJars(r.x + 112, r.y + 6, 54, 20);
+      // 操作台
+      interiorTable(r.x + 64, r.y + 56, 76, 22);
+      R(ctx, r.x + 68, r.y + 60, 20, 13, "#a37b4d");
+      R(ctx, r.x + 69, r.y + 61, 18, 11, "#c09663");
+      for (let i = 0; i < 3; i++) R(ctx, r.x + 71, r.y + 64 + i * 3, 14, 1, "#8a623b");
+      R(ctx, r.x + 92, r.y + 61, 7, 5, "#5d7c4a");
+      R(ctx, r.x + 101, r.y + 60, 7, 6, "#c05d4c");
+      R(ctx, r.x + 110, r.y + 62, 8, 4, "#d6b55f");
+      R(ctx, r.x + 120, r.y + 60, 5, 7, "#d8d0b8");
+      R(ctx, r.x + 127, r.y + 62, 6, 3, "#b7bcbc");
+      interiorCandle(r.x + 144, r.y + 58, t, true);
+      interiorBarrel(r.x + 150, r.y + 78);
+      // 面包篮
+      R(ctx, r.x + 60, r.y + 86, 24, 10, "#3b2a1a");
+      R(ctx, r.x + 61, r.y + 87, 22, 8, "#a3794d");
+      for (let i = 0; i < 3; i++) {
+        R(ctx, r.x + 63 + i * 7, r.y + 84, 6, 4, "#d9a84f");
+        R(ctx, r.x + 64 + i * 7, r.y + 83, 4, 2, "#e8bf67");
+      }
+      drawCharacter(ctx, r.x + 146, r.y + 104, WORKER_BY_ID.pudding.look, { phase: t * 1.4, staffed: true, role: "tavern", dir: -1, sparkle: true });
+    });
   }
 
   function drawHall(t) {
     const r = { x: 220, y: 158, w: 280, h: 218 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#6b5a4b");
-    interiorRug(r.x + 54, r.y + 66, 172, 132);
-    // 壁炉
-    interiorFireplace(r.x + 108, r.y + 3, 64, 34, t, true);
-    // 纹章与旗帜
-    R(ctx, r.x + 132, r.y + 8, 16, 18, "#4e3a25");
-    R(ctx, r.x + 134, r.y + 10, 12, 14, IN.gold);
-    R(ctx, r.x + 138, r.y + 13, 4, 6, "#8e3731");
-    interiorBanner(r.x + 30, r.y + 16, 20, 48, "#8e3731");
-    interiorBanner(r.x + 230, r.y + 16, 20, 48, "#8e3731");
-    // 长桌与椅子
-    R(ctx, r.x + 78, r.y + 104, 124, 38, "rgba(37,24,15,0.22)");
-    interiorTable(r.x + 80, r.y + 102, 120, 36);
-    for (let i = 0; i < 4; i++) {
-      interiorChair(r.x + 76, r.y + 104 + i * 10, "right");
-      interiorChair(r.x + 202, r.y + 104 + i * 10, "left");
-    }
-    interiorChair(r.x + 104, r.y + 88, "down");
-    interiorChair(r.x + 166, r.y + 88, "down");
-    interiorCandle(r.x + 118, r.y + 110, t, true);
-    interiorCandle(r.x + 160, r.y + 110, t, true);
-    // 餐具与花
-    for (let i = 0; i < 4; i++) {
-      R(ctx, r.x + 92 + i * 24, r.y + 112, 7, 4, "#d7c69d");
-      R(ctx, r.x + 94 + i * 24, r.y + 111, 3, 1, "#f1e3b6");
-      R(ctx, r.x + 100 + i * 24, r.y + 115, 2, 2, "#9b6b36");
-    }
-    drawFlowerVase(r.x + 150, r.y + 92, t);
-    drawFlowerVase(r.x + 42, r.y + 150, t);
-    // 书架与盔甲
-    interiorShelf(r.x + 14, r.y + 82, 40, 42);
-    R(ctx, r.x + 244, r.y + 88, 7, 30, "#3b3026");
-    R(ctx, r.x + 240, r.y + 108, 15, 8, "#777f7a");
-    R(ctx, r.x + 242, r.y + 117, 11, 15, "#5d6664");
-    R(ctx, r.x + 245, r.y + 126, 5, 11, "#4e5754");
-    R(ctx, r.x + 247, r.y + 94, 2, 15, "#9a6a3f");
-    R(ctx, r.x + 244, r.y + 92, 7, 3, "#b9b7a5");
-    // 吊灯
-    R(ctx, r.x + 137, r.y + 58, 2, 14, "#3f3122");
-    R(ctx, r.x + 120, r.y + 68, 40, 2, "#3f3122");
-    for (let i = 0; i < 5; i++) {
-      R(ctx, r.x + 123 + i * 8, r.y + 66, 2, 4, IN.candle);
-      R(ctx, r.x + 123 + i * 8, r.y + 64, 2, 1, IN.fireLight);
-    }
-    // 大门
-    R(ctx, r.x + 92, r.y + 188, 56, 30, "#2a1d16");
-    R(ctx, r.x + 96, r.y + 190, 48, 28, "#5b3d26");
-    R(ctx, r.x + 100, r.y + 192, 40, 2, "#8b623b");
-    for (let i = 0; i < 4; i++) R(ctx, r.x + 99 + i * 12, r.y + 194, 2, 24, "#452f1e");
-    R(ctx, r.x + 118, r.y + 208, 3, 3, IN.gold);
-    // 火把
-    R(ctx, r.x + 84, r.y + 176, 2, 14, "#3d3024");
-    R(ctx, r.x + 80, r.y + 170, 9, 7, "#3d3024");
-    R(ctx, r.x + 83, r.y + 172, 3, 3, IN.fire);
-    R(ctx, r.x + 154, r.y + 176, 2, 14, "#3d3024");
-    R(ctx, r.x + 150, r.y + 170, 9, 7, "#3d3024");
-    R(ctx, r.x + 153, r.y + 172, 3, 3, IN.fire);
-    // 主角与猫
-    drawCharacter(ctx, 449, 360, D.NPCS.player.look, { phase: t * 1.4, staffed: false, role: "player", dir: -1 });
-    drawCat(292, 361, t);
+    withRoom(r, function () {
+      interiorRug(r.x + 44, r.y + 56, 192, 146, "#7a4038");
+      interiorFireplace(r.x + 104, r.y + 2, 72, 36, t, true);
+      interiorBanner(r.x + 24, r.y + 14, 20, 48, "#8e3731");
+      interiorBanner(r.x + 236, r.y + 14, 20, 48, "#8e3731");
+      interiorPainting(r.x + 56, r.y + 8, 26, 20, "#4e6d82");
+      interiorPainting(r.x + 198, r.y + 8, 26, 20, "#6c7d54");
+      // 长桌
+      interiorTable(r.x + 72, r.y + 100, 136, 40);
+      // 桌旗
+      R(ctx, r.x + 78, r.y + 116, 124, 8, "#8e3731");
+      R(ctx, r.x + 78, r.y + 116, 124, 1, "#d6a449");
+      R(ctx, r.x + 78, r.y + 123, 124, 1, "#d6a449");
+      for (let i = 0; i < 4; i++) {
+        interiorChair(r.x + 54, r.y + 104 + i * 10, "right");
+        interiorChair(r.x + 216, r.y + 104 + i * 10, "left");
+      }
+      interiorChair(r.x + 98, r.y + 82, "down");
+      interiorChair(r.x + 162, r.y + 82, "down");
+      // 餐具：盘、杯、刀叉
+      for (let i = 0; i < 4; i++) {
+        const px = r.x + 86 + i * 30;
+        R(ctx, px, r.y + 106, 11, 7, "#b9ad8e");
+        R(ctx, px + 1, r.y + 107, 9, 5, "#efe6c8");
+        R(ctx, px + 3, r.y + 108, 5, 3, "#c9a25e");
+        R(ctx, px + 4, r.y + 109, 3, 1, "#f7efd4");
+        R(ctx, px + 15, r.y + 105, 4, 5, "#c9a25e");
+        R(ctx, px + 16, r.y + 104, 2, 1, "#f0dfb2");
+        R(ctx, px + 7, r.y + 120, 1, 8, "#c9d0d0");
+        R(ctx, px + 13, r.y + 120, 1, 8, "#c9d0d0");
+        R(ctx, px + 14, r.y + 120, 3, 2, "#c9d0d0");
+      }
+      interiorCandle(r.x + 110, r.y + 104, t, true);
+      interiorCandle(r.x + 168, r.y + 104, t, true);
+      drawFlowerVase(r.x + 138, r.y + 88, t);
+      drawFlowerVase(r.x + 40, r.y + 152, t);
+      // 吊灯
+      R(ctx, r.x + 138, r.y + 56, 2, 14, "#3f3122");
+      R(ctx, r.x + 118, r.y + 66, 44, 2, "#3f3122");
+      for (let i = 0; i < 5; i++) {
+        R(ctx, r.x + 122 + i * 9, r.y + 64, 2, 5, IN.candle);
+        R(ctx, r.x + 122 + i * 9, r.y + 62, 2, 2, IN.fireLight);
+      }
+      // 书架与盔甲架
+      interiorShelf(r.x + 10, r.y + 82, 40, 44);
+      R(ctx, r.x + 246, r.y + 86, 8, 32, "#3b3026");
+      R(ctx, r.x + 241, r.y + 108, 18, 9, "#777f7a");
+      R(ctx, r.x + 243, r.y + 117, 14, 18, "#5d6664");
+      R(ctx, r.x + 246, r.y + 128, 8, 12, "#4e5754");
+      R(ctx, r.x + 249, r.y + 92, 2, 17, "#9a6a3f");
+      R(ctx, r.x + 246, r.y + 90, 8, 4, "#b9b7a5");
+      // 大门
+      R(ctx, r.x + 92, r.y + 190, 60, 30, "#2a1d16");
+      R(ctx, r.x + 96, r.y + 192, 52, 28, "#5b3d26");
+      R(ctx, r.x + 100, r.y + 194, 44, 2, "#8b623b");
+      for (let i = 0; i < 4; i++) R(ctx, r.x + 101 + i * 13, r.y + 196, 2, 24, "#452f1e");
+      R(ctx, r.x + 119, r.y + 210, 4, 4, IN.gold);
+      // 门边火把
+      R(ctx, r.x + 82, r.y + 176, 2, 15, "#3d3024");
+      R(ctx, r.x + 78, r.y + 170, 9, 7, "#3d3024");
+      R(ctx, r.x + 81, r.y + 172, 3, 3, IN.fire);
+      R(ctx, r.x + 156, r.y + 176, 2, 15, "#3d3024");
+      R(ctx, r.x + 152, r.y + 170, 9, 7, "#3d3024");
+      R(ctx, r.x + 155, r.y + 172, 3, 3, IN.fire);
+      // 主角与猫
+      drawCharacter(ctx, 449, 360, D.NPCS.player.look, { phase: t * 1.4, staffed: false, role: "player", dir: -1 });
+      drawCat(292, 361, t);
+    });
   }
 
   function drawBedroom(t) {
     const r = { x: 518, y: 158, w: 176, h: 98 };
     interiorWoodFloor(r.x, r.y, r.w, r.h);
-    interiorRug(r.x + 38, r.y + 58, 100, 30);
-    // 四柱床
-    R(ctx, r.x + 12, r.y + 14, 50, 52, IN.ink);
-    R(ctx, r.x + 14, r.y + 16, 46, 48, IN.wood);
-    R(ctx, r.x + 16, r.y + 20, 42, 40, "#d9c69c");
-    R(ctx, r.x + 17, r.y + 34, 40, 24, "#9c4439");
-    R(ctx, r.x + 19, r.y + 18, 36, 7, "#e8ddc4");
-    R(ctx, r.x + 12, r.y + 10, 4, 58, IN.woodDark);
-    R(ctx, r.x + 58, r.y + 10, 4, 58, IN.woodDark);
-    R(ctx, r.x + 12, r.y + 8, 50, 4, "#3c2a1d");
-    // 梳妆台与浴桶
-    interiorShelf(r.x + 76, r.y + 12, 30, 24);
-    R(ctx, r.x + 118, r.y + 46, 26, 18, IN.ink);
-    R(ctx, r.x + 119, r.y + 47, 24, 15, "#806b56");
-    R(ctx, r.x + 122, r.y + 49, 18, 4, "#9cac9d");
-    interiorCandle(r.x + 150, r.y + 30, t, true);
-    interiorCandle(r.x + 48, r.y + 70, t, true);
-    drawCat(r.x + 146, r.y + 82, t);
+    withRoom(r, function () {
+      interiorRug(r.x + 46, r.y + 58, 86, 28, "#7a4038");
+      interiorWindow(r.x + 88, r.y + 2, 34, 16, true);
+      interiorPainting(r.x + 18, r.y + 1, 28, 12, "#6d5b74");
+      interiorBed(r.x + 10, r.y + 14, 52, 52, "red");
+      interiorTable(r.x + 68, r.y + 20, 18, 14);
+      R(ctx, r.x + 71, r.y + 17, 8, 5, "#e8ddc4");
+      interiorCandle(r.x + 79, r.y + 20, t, true);
+      // 洗手台
+      R(ctx, r.x + 90, r.y + 20, 22, 14, IN.ink);
+      R(ctx, r.x + 91, r.y + 21, 20, 12, "#7a6450");
+      R(ctx, r.x + 93, r.y + 23, 16, 6, "#b9cdd4");
+      R(ctx, r.x + 94, r.y + 24, 14, 2, "#e2eef0");
+      R(ctx, r.x + 96, r.y + 17, 10, 4, "#9aa6a6");
+      // 衣柜
+      R(ctx, r.x + 122, r.y + 10, 40, 46, IN.ink);
+      R(ctx, r.x + 123, r.y + 11, 38, 44, IN.wood);
+      R(ctx, r.x + 124, r.y + 12, 36, 2, IN.woodLight);
+      R(ctx, r.x + 140, r.y + 12, 1, 42, "#4c301f");
+      R(ctx, r.x + 132, r.y + 30, 2, 4, IN.gold);
+      R(ctx, r.x + 148, r.y + 30, 2, 4, IN.gold);
+      R(ctx, r.x + 126, r.y + 16, 12, 10, "#8d6440");
+      R(ctx, r.x + 143, r.y + 16, 12, 10, "#8d6440");
+      interiorCandle(r.x + 56, r.y + 72, t, true);
+      drawCat(r.x + 140, r.y + 82, t);
+    });
   }
 
   function drawQuarters(t) {
     const r = { x: 518, y: 272, w: 176, h: 104 };
     interiorStoneFloor(r.x, r.y, r.w, r.h, "#665648");
-    interiorRug(r.x + 44, r.y + 54, 92, 34);
-    interiorBed(r.x + 16, r.y + 14, 34, 38, "blue");
-    interiorBed(r.x + 130, r.y + 14, 34, 38, "red");
-    interiorChest(r.x + 76, r.y + 24);
-    interiorBarrel(r.x + 148, r.y + 72);
-    interiorCandle(r.x + 97, r.y + 42, t, true);
-    drawCat(r.x + 68, r.y + 92, t);
+    withRoom(r, function () {
+      interiorRug(r.x + 50, r.y + 52, 76, 32, "#6f4a3a");
+      interiorBed(r.x + 12, r.y + 12, 40, 42, "blue");
+      interiorBed(r.x + 124, r.y + 12, 40, 42, "red");
+      interiorChest(r.x + 72, r.y + 18);
+      interiorTable(r.x + 64, r.y + 64, 48, 18);
+      R(ctx, r.x + 70, r.y + 67, 8, 7, "#efe3c4");
+      R(ctx, r.x + 71, r.y + 68, 6, 5, "#f7eed7");
+      R(ctx, r.x + 84, r.y + 68, 4, 4, "#b45142");
+      R(ctx, r.x + 92, r.y + 67, 4, 5, "#4e6d82");
+      interiorCandle(r.x + 102, r.y + 64, t, true);
+      interiorStool(r.x + 56, r.y + 84);
+      interiorStool(r.x + 100, r.y + 84);
+      interiorBarrel(r.x + 148, r.y + 76);
+      interiorCrate(r.x + 20, r.y + 80, 16);
+      drawCat(r.x + 70, r.y + 96, t);
+    });
   }
 
   function interiorChest(x, y) {
-    R(ctx, x, y, 24, 15, IN.ink);
-    R(ctx, x + 1, y + 1, 22, 13, "#7d5637");
-    R(ctx, x + 2, y + 2, 20, 4, "#a1794d");
-    R(ctx, x + 2, y + 6, 20, 1, "#4e3420");
-    R(ctx, x + 11, y + 5, 3, 6, IN.gold);
+    R(ctx, x, y + 15, 26, 2, "rgba(16,10,7,0.26)");
+    R(ctx, x, y, 26, 17, IN.ink);
+    R(ctx, x + 1, y + 1, 24, 15, "#7d5637");
+    R(ctx, x + 2, y + 2, 22, 6, "#a1794d");
+    R(ctx, x + 2, y + 2, 22, 1, "#c09563");
+    R(ctx, x + 2, y + 8, 22, 1, "#4e3420");
+    R(ctx, x + 2, y + 9, 22, 5, "#8a5f3c");
+    R(ctx, x + 4, y + 3, 2, 12, "#4e3420");
+    R(ctx, x + 20, y + 3, 2, 12, "#4e3420");
+    R(ctx, x + 11, y + 8, 4, 6, IN.gold);
+    R(ctx, x + 12, y + 10, 2, 2, "#3a2a14");
   }
 
   function drawInteriorDust(t) {
@@ -3170,78 +3495,32 @@ window.CastleScene = (function () {
 
   function drawRoomUpgradeFurniture(type, level, x, y, w, h, t) {
     if (level <= 1) return;
-    const cx = x + w / 2;
-    // 地毯：二级起明显出现
-    const rug = type.id === "chapel" ? "#6d5b74" : type.id === "armory" ? "#6d4a39" : "#8a4c3c";
-    R(ctx, x + 7, y + h - 26, w - 14, 13, "#3d2a1c");
-    R(ctx, x + 9, y + h - 24, w - 18, 9, rug);
-    R(ctx, x + 11, y + h - 22, w - 22, 1, "rgba(242,208,135,.55)");
-    // 盆栽
-    R(ctx, x + w - 22, y + 14, 10, 8, "#a86e43");
-    R(ctx, x + w - 21, y + 11, 8, 7, "#61834e");
-    R(ctx, x + w - 18, y + 8, 4, 5, "#7a9b5d");
-    // 边桌与烛台
-    R(ctx, x + 8, y + 24, 13, 3, "#5a3d25");
-    R(ctx, x + 9, y + 27, 2, 9, "#4a3220");
-    R(ctx, x + 18, y + 27, 2, 9, "#4a3220");
-    R(ctx, x + 13, y + 17, 2, 7, "#d9c18e");
-    R(ctx, x + 12, y + 15, 4, 3, "#f2c56d");
+    // 墙面升级装饰：只做贴墙元素，避免盖住房间家具
+    R(ctx, x + 6, y + 1, w - 12, 1, "rgba(224,182,96,0.62)");
+    R(ctx, x + 6, y + 2, w - 12, 1, "rgba(120,86,40,0.35)");
+    interiorSconce(x + 12, y + 8, t);
+    interiorSconce(x + w - 14, y + 8, t);
     if (level >= 3) {
-      // 三级：吊灯、壁旗、柜子
-      R(ctx, cx - 13, y + 7, 26, 2, "#4a3220");
-      for (let i = 0; i < 4; i++) {
-        R(ctx, cx - 11 + i * 7, y + 9, 2, 6, "#6e4a2c");
-        R(ctx, cx - 12 + i * 7, y + 15, 4, 2, "#f2c56d");
-      }
-      R(ctx, x + 7, y + 10, 2, 18, "#3b2a1a");
-      R(ctx, x + 9, y + 11, 12, 12, type.id === "chapel" ? "#8d668c" : "#a54a3c");
-      R(ctx, x + 11, y + 13, 8, 8, type.id === "chapel" ? "#d9c18e" : "#e0b05a");
-      R(ctx, x + w - 26, y + h - 45, 18, 17, "#5b3e29");
-      R(ctx, x + w - 24, y + h - 43, 14, 5, "#8a623b");
-    }
-    // 容量房：升级后多出床
-    if (type.capacity) {
-      const extra = level - 1;
-      for (let i = 0; i < extra; i++) {
-        const bx = x + 8 + i * 28;
-        const by = y + 42 + (i % 2) * 9;
-        if (bx + 26 > x + w - 8) break;
-        R(ctx, bx, by, 25, 13, "#3b2a1a");
-        R(ctx, bx + 2, by + 2, 21, 9, "#b89a6e");
-        R(ctx, bx + 4, by + 3, 12, 3, "#eee2c4");
-        R(ctx, bx + 2, by + 9, 21, 2, type.id === "soldier_quarters" ? "#59616c" : "#8a4c3c");
-        R(ctx, bx - 2, by + 16, 2, 4, "#5b3e29");
-      }
-    } else if (type.defense) {
-      // 武器架
-      R(ctx, x + w - 30, y + 38, 3, 28, "#4a3220");
-      R(ctx, x + w - 24, y + 40, 18, 2, "#8b6e48");
-      R(ctx, x + w - 20, y + 42, 2, 18, "#9aa0a0");
-      R(ctx, x + w - 14, y + 42, 2, 20, "#9aa0a0");
-    } else if (type.id === "library" || type.id === "study" || type.id === "minister_office") {
-      R(ctx, x + 7, y + h - 58, 26, 20, "#5b3e29");
-      for (let i = 0; i < 3; i++) R(ctx, x + 9, y + h - 55 + i * 6, 21, 1, "#c9a26a");
+      R(ctx, x + Math.floor(w / 2) - 7, y + 4, 14, 11, "#3b2a1a");
+      R(ctx, x + Math.floor(w / 2) - 6, y + 5, 12, 9, "#8e6e45");
+      R(ctx, x + Math.floor(w / 2) - 4, y + 7, 8, 5, "#e0b452");
+      R(ctx, x + Math.floor(w / 2) - 1, y + 6, 2, 2, "#fff0b0");
+      R(ctx, x + 5, y + 5, 2, 2, "#e0b45e");
+      R(ctx, x + w - 7, y + 5, 2, 2, "#e0b45e");
     }
   }
-
   function drawRoomLevelDecor(level, x, y, w, h, t) {
     if (!level || level <= 1) return;
-    // 升级后的金边、地毯与烛光
-    R(ctx, x + 4, y + 3, w - 8, 2, level >= 3 ? "#e6c675" : "#a98b5d");
-    R(ctx, x + 4, y + 5, w - 8, 1, "rgba(255,240,190,.25)");
-    if (level >= 2) {
-      interiorCandle(x + 12, y + h - 14, t, true);
-      interiorCandle(x + w - 16, y + h - 14, t, true);
-      drawGlow(x + w / 2, y + h / 2, Math.min(w, h) * 0.35, "#ffb45e", 0.08);
-    }
+    // 暖光与金色饰边（不放置家具，避免与房间陈设重叠）
+    R(ctx, x + 4, y + 3, w - 8, 1, level >= 3 ? "#e6c675" : "#a98b5d");
+    drawGlow(x + w / 2, y + h / 2, Math.min(w, h) * 0.32, "#ffb45e", level >= 3 ? 0.10 : 0.06);
     if (level >= 3) {
-      R(ctx, x + w - 18, y + 8, 4, 4, "#d6a449");
-      R(ctx, x + w - 16, y + 6, 1, 2, "#ffe5a0");
-      R(ctx, x + 7, y + 8, 3, 10, "#8e3731");
-      R(ctx, x + 8, y + 9, 1, 8, "#f0d28a");
+      R(ctx, x + w - 20, y + 6, 4, 4, "#d6a449");
+      R(ctx, x + w - 18, y + 4, 1, 2, "#ffe5a0");
+      R(ctx, x + 7, y + 5, 3, 12, "#8e3731");
+      R(ctx, x + 8, y + 6, 1, 10, "#f0d28a");
     }
   }
-
   function drawExpansionRoom(type, slot, t, level, skin) {
     const x = slot.x, y = slot.y, w = slot.w, h = slot.h;
     R(ctx, x - 4, y - 4, w + 8, h + 8, "#2a1d17");
@@ -3267,11 +3546,22 @@ window.CastleScene = (function () {
       interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#625347");
       const cx = x + w / 2;
       if (type.id === "toilet") {
-        R(ctx, cx - 13, y + 22, 26, 48, "#d9d5c7");
-        R(ctx, cx - 10, y + 28, 20, 16, "#f3eedf");
-        R(ctx, cx - 8, y + 46, 16, 16, "#b7b3a6");
-        R(ctx, cx - 5, y + 38, 10, 4, "#9d9a8e");
-        R(ctx, cx - 10, y + 20, 20, 3, "#5d5347");
+        // 隔间
+        R(ctx, cx - 13, y + 20, 26, 50, "#3b332b");
+        R(ctx, cx - 12, y + 21, 24, 48, "#d9d5c7");
+        R(ctx, cx - 10, y + 26, 20, 15, "#f3eedf");
+        R(ctx, cx - 8, y + 44, 16, 17, "#c9c4b5");
+        R(ctx, cx - 6, y + 47, 12, 8, "#efeade");
+        R(ctx, cx - 5, y + 36, 10, 4, "#9d9a8e");
+        R(ctx, cx - 10, y + 18, 20, 3, "#5d5347");
+        R(ctx, cx + 7, y + 30, 3, 6, "#f0e7d2");
+        // 洗手台与镜子
+        R(ctx, cx - 27, y + 30, 12, 12, "#3b2a1c");
+        R(ctx, cx - 26, y + 31, 10, 10, "#c7d2d2");
+        R(ctx, cx - 27, y + 22, 12, 7, "#7f9aa0");
+        R(ctx, cx - 26, y + 23, 10, 5, "#b9cdd4");
+        R(ctx, cx - 27, y + 42, 12, 3, "#8a623b");
+        interiorPlant(cx + 18, y + 58);
       } else if (type.id === "dining") {
         R(ctx, cx - 22, y + 38, 44, 16, "#3b2a1a");
         R(ctx, cx - 20, y + 39, 40, 12, "#8a623b");
@@ -3321,12 +3611,31 @@ window.CastleScene = (function () {
         R(ctx, cx - 18, y + 58, 34, 14, "#8a623b");
         interiorCandle(cx + 18, y + 48, t, true);
       } else if (type.id === "bath") {
-        R(ctx, cx - 26, y + 36, 52, 20, "#3b2a1a");
-        R(ctx, cx - 24, y + 38, 48, 16, "#d8d3c2");
-        R(ctx, cx - 20, y + 40, 40, 4, "#eef3ef");
-        R(ctx, cx - 12, y + 30, 1, 6, "#bfc9bd");
-        R(ctx, cx, y + 28, 1, 8, "#bfc9bd");
-        R(ctx, cx + 12, y + 30, 1, 6, "#bfc9bd");
+        // 瓷砖墙
+        for (let ty = y + 8; ty < y + 26; ty += 6) {
+          for (let tx = x + 6; tx < x + w - 6; tx += 6) {
+            R(ctx, tx, ty, 5, 5, ((tx + ty) / 6) % 2 ? "#8fa7a3" : "#9db5b1");
+          }
+        }
+        R(ctx, cx - 26, y + 38, 52, 22, "#3b2a1a");
+        R(ctx, cx - 24, y + 39, 48, 19, "#d8d3c2");
+        R(ctx, cx - 22, y + 41, 44, 9, "#8fb7bf");
+        R(ctx, cx - 20, y + 42, 40, 3, "#cfe6e8");
+        R(ctx, cx - 24, y + 52, 48, 3, "#b7b3a6");
+        R(ctx, cx - 22, y + 58, 2, 6, "#5b4029");
+        R(ctx, cx + 20, y + 58, 2, 6, "#5b4029");
+        // 蒸汽
+        ctx.globalAlpha = 0.35;
+        for (let i = 0; i < 3; i++) {
+          const sx = cx - 12 + i * 12;
+          circle(ctx, sx, y + 32 - ((t * 6 + i * 9) % 12), 3, "#e8f1f0");
+        }
+        ctx.globalAlpha = 1;
+        // 毛巾与桶
+        R(ctx, cx + 28, y + 34, 2, 18, "#6b4a2c");
+        R(ctx, cx + 30, y + 35, 10, 14, "#e9e2cd");
+        R(ctx, cx + 30, y + 41, 10, 2, "#b9ae94");
+        interiorBarrel(cx - 36, y + 62);
       } else {
         R(ctx, cx - 22, y + 38, 44, 15, "#3b2a1c");
         R(ctx, cx - 20, y + 39, 40, 11, "#8a623b");
@@ -3409,18 +3718,33 @@ window.CastleScene = (function () {
       drawFlowerVase(x + 14, y + 86, t);
     } else if (type.id === "dining") {
       interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#6a5747");
-      interiorTable(x + 28, y + 42, 104, 28);
-      for (let i = 0; i < 4; i++) {
-        interiorChair(x + 20, y + 44 + i * 10, "right");
-        interiorChair(x + 136, y + 44 + i * 10, "left");
+      // 墙上餐具架
+      interiorJars(x + 26, y + 10, Math.min(108, w - 52), 20);
+      // 吊灯
+      R(ctx, x + Math.floor(w / 2), y + 6, 2, 12, "#3f3122");
+      R(ctx, x + Math.floor(w / 2) - 14, y + 18, 30, 2, "#3f3122");
+      for (let i = 0; i < 3; i++) {
+        R(ctx, x + Math.floor(w / 2) - 12 + i * 10, y + 16, 2, 5, "#e8dcc0");
+        R(ctx, x + Math.floor(w / 2) - 12 + i * 10, y + 14, 2, 2, "#ffd98a");
       }
-      interiorCandle(x + 62, y + 44, t, true);
-      interiorCandle(x + 100, y + 44, t, true);
-      interiorCandle(x + 80, y + 30, t, true);
-      for (let i = 0; i < 4; i++) {
-        R(ctx, x + 39 + i * 22, y + 48, 7, 3, "#d7c69d");
-        R(ctx, x + 42 + i * 22, y + 47, 2, 1, "#f1e3b6");
+      interiorTable(x + 26, y + 46, w - 52, 26);
+      // 桌旗与餐具
+      R(ctx, x + 32, y + 56, w - 64, 7, "#8e3731");
+      R(ctx, x + 32, y + 56, w - 64, 1, "#d6a449");
+      for (let i = 0; i < 3; i++) {
+        const px = x + 40 + i * Math.floor((w - 92) / 2);
+        R(ctx, px, y + 50, 9, 6, "#d7c69d");
+        R(ctx, px + 1, y + 51, 7, 4, "#efe6c8");
+        R(ctx, px + 3, y + 52, 3, 2, "#b98a4f");
+        R(ctx, px + 12, y + 49, 3, 4, "#c9a25e");
       }
+      interiorCandle(x + 44, y + 46, t, true);
+      interiorCandle(x + w - 48, y + 46, t, true);
+      for (let i = 0; i < 3; i++) {
+        interiorChair(x + 16, y + 48 + i * 10, "right");
+        interiorChair(x + w - 27, y + 48 + i * 10, "left");
+      }
+      interiorStool(x + Math.floor(w / 2) - 5, y + 78);
     } else if (type.id === "workshop") {
       interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
       interiorTable(x + 24, y + 30, 60, 22);
@@ -3459,22 +3783,27 @@ window.CastleScene = (function () {
       drawFlowerVase(x + 14, y + 84, t);
     } else if (type.id === "soldier_quarters") {
       interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#5d5b52");
-      for (let i = 0; i < 2; i++) {
-        const px = x + 12 + i * 52;
-        R(ctx, px, y + 28, 42, 24, "#3b2a1c");
-        R(ctx, px + 2, y + 30, 38, 20, "#6b4c30");
-        R(ctx, px + 5, y + 34, 18, 12, "#d8d3c2");
-        R(ctx, px + 7, y + 35, 14, 3, "#efe5cc");
-        R(ctx, px + 26, y + 34, 12, 12, "#c9c2af");
-        R(ctx, px + 6, y + 52, 2, 8, "#3b2a1a");
-        R(ctx, px + 34, y + 52, 2, 8, "#3b2a1a");
+      interiorRug(x + 16, y + 62, w - 60, 26, "#6f4a3a");
+      // 墙上挂点：头盔与披风
+      for (let i = 0; i < 3; i++) {
+        const px = x + 20 + i * 22;
+        R(ctx, px, y + 12, 2, 6, "#3b2a1a");
+        R(ctx, px - 5, y + 16, 12, 5, "#8d9495");
+        R(ctx, px - 4, y + 17, 10, 2, "#aeb3a7");
+        R(ctx, px - 4, y + 21, 10, 10, i % 2 ? "#59616c" : "#6e5a48");
       }
-      R(ctx, x + w - 36, y + 58, 20, 26, "#3b2a1a");
-      R(ctx, x + w - 34, y + 60, 16, 22, "#6f7d8b");
-      R(ctx, x + w - 27, y + 65, 3, 10, "#d6a449");
-      R(ctx, x + 18, y + 70, 34, 3, "#3b2a1a");
-      R(ctx, x + 20, y + 72, 30, 1, "#8a623b");
-      interiorCandle(x + 70, y + 24, t, true);
+      // 两张行军床
+      interiorBed(x + 12, y + 34, 40, 38, "blue");
+      interiorBed(x + 60, y + 34, 40, 38, "red");
+      interiorChest(x + 108, y + 40);
+      // 武器架
+      R(ctx, x + w - 34, y + 30, 3, 42, "#3b2a1a");
+      R(ctx, x + w - 33, y + 31, 1, 40, "#8a623b");
+      for (let i = 0; i < 3; i++) {
+        R(ctx, x + w - 36, y + 34 + i * 12, 10, 2, "#4b3725");
+        R(ctx, x + w - 32, y + 30 + i * 12, 2, 20, "#b9b3a4");
+      }
+      interiorCandle(x + 100, y + 24, t, true);
     } else if (type.id === "minister_office") {
       interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
       interiorShelf(x + 10, y + 12, 48, 28);
@@ -3548,20 +3877,26 @@ window.CastleScene = (function () {
       R(ctx, x + w / 2 - 4, y + 24, 8, 2, "#d6a449");
     } else if (type.id === "chapel") {
       interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#6b5c4f");
-      drawChapelWindow(x + w / 2 - 22, y + 8, 44, 28, t);
+      interiorRug(x + w / 2 - 14, y + 36, 28, h - 52, "#7a3f38");
+      drawChapelWindow(x + w / 2 - 24, y + 8, 48, 30, t);
+      ctx.globalAlpha = 0.09;
+      R(ctx, x + w / 2 - 20, y + 40, 40, 40, "#ffe6a8");
+      ctx.globalAlpha = 1;
+      // 祭坛
+      R(ctx, x + w / 2 - 22, y + 40, 44, 16, "#3b2a1a");
+      R(ctx, x + w / 2 - 20, y + 41, 40, 13, "#d7c69d");
+      R(ctx, x + w / 2 - 20, y + 41, 40, 2, "#f1e6c8");
+      R(ctx, x + w / 2 - 1, y + 32, 2, 9, "#d6a449");
+      R(ctx, x + w / 2 - 5, y + 35, 10, 2, "#d6a449");
+      interiorCandle(x + w / 2 - 26, y + 36, t, true);
+      interiorCandle(x + w / 2 + 23, y + 36, t, true);
       // 长椅
       for (let i = 0; i < 3; i++) {
-        R(ctx, x + 22, y + 64 + i * 13, w - 44, 5, "#3b2a1a");
-        R(ctx, x + 24, y + 64 + i * 13, w - 48, 2, "#8a623b");
-        R(ctx, x + 22, y + 69 + i * 13, 3, 6, "#5b4029");
-        R(ctx, x + w - 25, y + 69 + i * 13, 3, 6, "#5b4029");
+        interiorPew(x + 30, y + 66 + i * 15, 46);
+        interiorPew(x + w - 76, y + 66 + i * 15, 46);
       }
-      R(ctx, x + w / 2 - 20, y + 46, 40, 14, "#3b2a1a");
-      R(ctx, x + w / 2 - 18, y + 47, 36, 11, "#d7c69d");
-      R(ctx, x + w / 2 - 1, y + 40, 2, 10, "#d6a449");
-      R(ctx, x + w / 2 - 5, y + 43, 10, 2, "#d6a449");
-      interiorCandle(x + 18, y + 46, t, true);
-      interiorCandle(x + w - 18, y + 46, t, true);
+      interiorBanner(x + 12, y + 12, 14, 32, "#8e3731");
+      interiorBanner(x + w - 26, y + 12, 14, 32, "#8e3731");
     }
     drawSkinRoomOverlay(skin, x, y, w, h);
     drawRoomUpgradeFurniture(type, level, x, y, w, h, t);
@@ -3809,43 +4144,25 @@ window.CastleScene = (function () {
   }
 
   function drawInteriorRoomUpgrade(b, level, t) {
-    const r = b.rect;
     if (level <= 1) return;
-    // 房间地毯
-    const rug = b.id === "chapel" ? "#6d5b74" : b.id === "barracks" ? "#6d4a39" : b.id === "kitchen" ? "#a25b45" : "#8a4c3c";
-    R(ctx, r.x + 12, r.y + r.h - 28, r.w - 24, 13, "#3d2a1c");
-    R(ctx, r.x + 14, r.y + r.h - 26, r.w - 28, 9, rug);
-    R(ctx, r.x + 16, r.y + r.h - 24, r.w - 32, 1, "rgba(242,208,135,.55)");
-    R(ctx, r.x + 14, r.y + r.h - 26, r.w - 28, 2, "#d6a449");
-    R(ctx, r.x + 14, r.y + r.h - 17, r.w - 28, 2, "#d6a449");
-    // 挂毯与额外烛台
-    R(ctx, r.x + r.w / 2 - 10, r.y + 8, 20, 3, "#3b2a1a");
-    R(ctx, r.x + r.w / 2 - 8, r.y + 11, 16, 16, rug);
-    R(ctx, r.x + r.w / 2 - 6, r.y + 13, 12, 12, "#d6a449");
-    R(ctx, r.x + r.w / 2 - 4, r.y + 15, 8, 8, rug);
-    for (let i = 0; i < 2; i++) {
-      R(ctx, r.x + 18 + i * (r.w - 36), r.y + r.h - 34, 3, 8, "#3b2a1a");
-      R(ctx, r.x + 17 + i * (r.w - 36), r.y + r.h - 37, 5, 4, "#f2c56d");
-    }
-    // 盆栽 / 边柜
-    R(ctx, r.x + r.w - 24, r.y + 14, 9, 8, "#a86e43");
-    R(ctx, r.x + r.w - 23, r.y + 10, 8, 8, "#61834e");
-    R(ctx, r.x + r.w - 20, r.y + 7, 4, 5, "#7a9b5d");
-    R(ctx, r.x + 10, r.y + 18, 18, 15, "#5b3e29");
-    R(ctx, r.x + 12, r.y + 20, 14, 4, "#8a623b");
-    R(ctx, r.x + 12, r.y + 27, 14, 4, "#8a623b");
+    const r = b.rect;
+    // 墙面金线
+    R(ctx, r.x + 6, r.y + 1, r.w - 12, 1, "rgba(224,182,96,0.60)");
+    R(ctx, r.x + 6, r.y + 2, r.w - 12, 1, "rgba(120,86,40,0.35)");
+    // 墙上烛台
+    interiorSconce(r.x + 12, r.y + 7, t);
+    interiorSconce(r.x + r.w - 14, r.y + 7, t);
     if (level >= 3) {
-      R(ctx, r.x + r.w / 2 - 16, r.y + 7, 32, 2, "#4a3220");
-      for (let i = 0; i < 5; i++) {
-        R(ctx, r.x + r.w / 2 - 14 + i * 7, r.y + 9, 2, 6, "#6e4a2c");
-        R(ctx, r.x + r.w / 2 - 15 + i * 7, r.y + 15, 4, 2, "#f2c56d");
-      }
-      R(ctx, r.x + r.w - 32, r.y + 42, 20, 24, "#5b3e29");
-      R(ctx, r.x + r.w - 30, r.y + 44, 16, 5, "#8a623b");
-      R(ctx, r.x + r.w - 30, r.y + 52, 16, 5, "#8a623b");
+      R(ctx, r.x + r.w / 2 - 10, r.y + 1, 20, 1, "rgba(255,226,152,0.8)");
+      interiorSconce(r.x + Math.floor(r.w / 2) - 1, r.y + 5, t);
+      R(ctx, r.x + 5, r.y + 5, 2, 2, "#e0b45e");
+      R(ctx, r.x + r.w - 7, r.y + 5, 2, 2, "#e0b45e");
+    }
+    if (level >= 4) {
+      R(ctx, r.x + 14, r.y + 1, 3, 3, "#f0d28a");
+      R(ctx, r.x + r.w - 17, r.y + 1, 3, 3, "#f0d28a");
     }
   }
-
   function drawInterior(state, dt) {
     // 背景与外墙
     R(ctx, 0, 0, W, H, "#1b1310");
@@ -3925,10 +4242,13 @@ window.CastleScene = (function () {
     interiorSconce(506, 62, time);
     interiorSconce(506, 204, time);
     interiorSconce(506, 326, time);
-    drawIndoorWindow(70, 13, 32, 20, "#b6c7a5");
-    drawIndoorWindow(592, 13, 32, 20, "#b8c7a9");
 
     // 房间装饰
+    D.BUILDINGS.filter(function (b) { return b.scene === "indoor"; }).forEach(function (b) {
+      const bs = st[b.id];
+      if (bs && bs.status === "built") drawInteriorRoomUpgrade(b, bs.level || 1, time);
+    });
+
     drawStudy(time, built("study"));
     drawChapel(time, built("chapel"));
     drawBarracks(time, built("barracks"));
@@ -3937,27 +4257,6 @@ window.CastleScene = (function () {
     drawHall(time);
     drawBedroom(time);
     drawQuarters(time);
-
-    // 房间升级：金色饰边与额外烛光
-    D.BUILDINGS.filter(function (b) { return b.scene === "indoor"; }).forEach(function (b) {
-      const bs = st[b.id];
-      if (!bs || bs.status !== "built" || (bs.level || 1) <= 1) return;
-      const r = b.rect;
-      R(ctx, r.x + 4, r.y + 4, r.w - 8, 1, "rgba(216,174,92,0.55)");
-      const lv = Math.min(3, bs.level - 1);
-      for (let i = 0; i < lv; i++) {
-        interiorCandle(r.x + 16 + i * 26, r.y + r.h - 16, time, true);
-      }
-      if (bs.level >= 4) {
-        R(ctx, r.x + r.w - 22, r.y + 8, 4, 4, "#d6a449");
-        R(ctx, r.x + r.w - 20, r.y + 6, 1, 2, "#ffe5a0");
-      }
-    });
-
-    D.BUILDINGS.filter(function (b) { return b.scene === "indoor"; }).forEach(function (b) {
-      const bs = st[b.id];
-      if (bs && bs.status === "built") drawInteriorRoomUpgrade(b, bs.level || 1, time);
-    });
 
     // 礼拜堂彩窗与暖色空气
     drawChapelWindow(time);

@@ -2260,9 +2260,14 @@
     let extra = "";
     let actions = '<button class="btn btn-ghost" data-action="close-modal">关闭</button>';
     if (bs.status === "built") {
+      const lvl = bs.level || 1;
       extra = '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
         (workerActive ? "现在由 " + w.name + " 自动运作 · " + output : "这个区域已经修复。" ) +
         "</div>" + '<div class="modal-flavor">“' + b.flavor + '”</div>';
+      if (lvl < D.MAX_BUILDING_LEVEL) {
+        actions = '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+          '<button class="btn btn-wood" data-action="upgrade-open" data-id="' + b.id + '"><img src="' + I.icon("arrow") + '" alt="">升级房间 · Lv.' + lvl + '</button>';
+      }
     } else if (bs.status === "building") {
       extra = '<div class="progress-bar staffed"><i style="width:' + Math.floor(bs.progress * 100) + '%"></i></div>' +
         '<div class="progress-label"><span>施工进度</span><span>' + Math.floor(bs.progress * 100) + "%</span></div>";
@@ -2291,7 +2296,7 @@
       '<div class="modal-stat"><img src="' + I.icon("hammer") + '" alt=""><span>状态<b>' + status + "</b></span></div>" +
       '<div class="modal-stat"><img src="' + I.icon("people") + '" alt=""><span>居民<b>' + (w ? w.name : "无") + "</b></span></div>" +
       '<div class="modal-stat"><img src="' + I.icon("sparkle") + '" alt=""><span>效果<b>' + (b.effect || "生产 " + output) + "</b></span></div>" +
-      '<div class="modal-stat"><img src="' + I.icon("clock") + '" alt=""><span>工期<b>' + b.time + " 秒</b></span></div>" +
+      '<div class="modal-stat"><img src="' + I.icon("clock") + '" alt=""><span>等级<b>Lv.' + (bs.level || 1) + "</b></span></div>" +
       "</div>" +
       (bs.status === "available" ? '<div class="cost-row" style="margin-top:9px"><span class="cost-label">所需材料</span>' + costHTML(b.cost, true) + "</div>" : "") +
       extra +
