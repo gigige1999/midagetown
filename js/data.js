@@ -651,6 +651,16 @@ window.GameData = (function () {
     { id: "candle", name: "烛台", icon: "sun", cost: { gold: 18 }, w: 14, h: 22, desc: "三支蜡烛的铜烛台。" }
   ];
 
+  const TILE_PACKS = [
+    { id: "stone", name: "灰石砖", count: 20, cost: { gold: 40 }, tone: "#8d8474", desc: "最百搭的石砖，适合任何房间。" },
+    { id: "wood", name: "暖木地板", count: 20, cost: { gold: 60 }, tone: "#a9764a", desc: "暖色木地板，铺在卧室或书房格外舒服。" },
+    { id: "checker", name: "黑白棋盘", count: 20, cost: { gold: 80 }, tone: "#cfc4ad", desc: "黑白相间，适合大厅与宴会区。" },
+    { id: "moss", name: "青苔石砖", count: 20, cost: { gold: 70 }, tone: "#7d8a63", desc: "带苔痕的旧砖，适合花园与礼拜堂。" },
+    { id: "royal", name: "皇家红石", count: 20, cost: { gold: 110 }, tone: "#8e5a51", desc: "深红与金色拼花，最贵也最气派。" }
+  ];
+
+  const TILE_CELL = 24;
+
   const DECOR_SETS = [
     { id: "royal", name: "皇家红金", cost: { gold: 320 }, skin: "royal", desc: "深红地毯、金线墙饰与成排烛台。", props: ["carpet", "banner", "candles"] },
     { id: "wood", name: "暖木田园", cost: { gold: 240 }, skin: "wood", desc: "暖木地板、盆栽与风景挂画。", props: ["plant", "painting", "rug"] },
@@ -791,6 +801,8 @@ window.GameData = (function () {
     FLOOR_GRID: FLOOR_GRID,
     DECOR_ITEMS: DECOR_ITEMS,
     DECOR_SETS: DECOR_SETS,
+    TILE_PACKS: TILE_PACKS,
+    TILE_CELL: TILE_CELL,
     LAND_PLOT_RECTS: LAND_PLOT_RECTS,
     LAND_SHOP_RECTS: LAND_SHOP_RECTS,
     LAND_SHOPS: LAND_SHOPS,

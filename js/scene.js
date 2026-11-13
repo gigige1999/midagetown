@@ -3691,22 +3691,30 @@ window.CastleScene = (function () {
       interiorCandle(x + 136, y + 40, t, true);
     } else if (type.id === "dorm") {
       interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
-      // 四张上下铺
+      // 四张上下铺：按房间实际宽度均分，留出边距
+      const padX = 10;
+      const innerW = w - padX * 2;
+      const bedW = Math.min(58, Math.floor((innerW - 8) / 2));
+      const bedH = 28;
+      const gapX = Math.max(4, Math.floor((innerW - bedW * 2) / 3));
+      const startX = x + padX + gapX;
       for (let i = 0; i < 4; i++) {
-        const px = x + 10 + (i % 2) * 76;
-        const py = y + 18 + Math.floor(i / 2) * 38;
-        R(ctx, px, py, 68, 30, "#3b2a1c");
-        R(ctx, px + 2, py + 2, 64, 26, "#6b4c30");
-        R(ctx, px + 6, py + 8, 26, 18, "#d8d3c2");
-        R(ctx, px + 8, py + 9, 22, 4, "#efe5cc");
-        R(ctx, px + 6, py + 22, 26, 2, "#a35f4e");
-        R(ctx, px + 38, py + 8, 24, 18, "#c9c2af");
-        R(ctx, px + 40, py + 9, 20, 4, "#e8dfc8");
-        R(ctx, px + 38, py + 22, 24, 2, "#5b7a50");
+        const px = startX + (i % 2) * (bedW + gapX);
+        const py = y + 16 + Math.floor(i / 2) * (bedH + 14);
+        R(ctx, px, py, bedW, bedH, "#3b2a1c");
+        R(ctx, px + 2, py + 2, bedW - 4, bedH - 4, "#6b4c30");
+        R(ctx, px + 5, py + 7, bedW - 12, 14, "#d8d3c2");
+        R(ctx, px + 6, py + 8, bedW - 16, 3, "#efe5cc");
+        R(ctx, px + 5, py + 20, bedW - 12, 2, "#a35f4e");
+        R(ctx, px + 3, py + 3, 3, bedH - 6, "#4b3324");
+        R(ctx, px + bedW - 6, py + 3, 3, bedH - 6, "#4b3324");
       }
-      R(ctx, x + 150, y + 10, 2, 20, "#3b2a1c");
-      R(ctx, x + 144, y + 8, 12, 9, "#e2c58d");
-      R(ctx, x + 147, y + 11, 6, 2, "#7a5a38");
+      // 墙边小灯与木箱
+      R(ctx, x + w - 14, y + 10, 2, 16, "#3b2a1c");
+      R(ctx, x + w - 19, y + 7, 10, 6, "#e2c58d");
+      R(ctx, x + 8, y + h - 22, 20, 12, "#3b2a1c");
+      R(ctx, x + 9, y + h - 21, 18, 10, "#8a623b");
+      R(ctx, x + 9, y + h - 16, 18, 1, "#5b4029");
     } else if (type.id === "library") {
       interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
       interiorShelf(x + 14, y + 14, 58, 34);
@@ -3991,6 +3999,30 @@ window.CastleScene = (function () {
     ctx.textAlign = "left";
     ctx.fillText("F" + (floor + 1) + " · 第 " + (floor + 1) + " 层 · " + skinData.name, 32, 34);
     ctx.textAlign = "left";
+    // 已铺地砖
+    const tiles = (state && state.floorTiles && state.floorTiles[floor]) || {};
+    const tileCell = D.TILE_CELL || 24;
+    Object.keys(tiles).forEach(function (key) {
+      const parts = key.split(",");
+      const cx = Number(parts[0]), cy = Number(parts[1]);
+      if (!isFinite(cx) || !isFinite(cy)) return;
+      const x = 20 + cx * tileCell;
+      const y = 40 + cy * tileCell;
+      const id = tiles[key];
+      const pal = { stone: ["#8d8474", "#7c7364"], wood: ["#a9764a", "#8f5f3a"], checker: ["#cfc4ad", "#4e4942"], moss: ["#7d8a63", "#64714e"], royal: ["#8e5a51", "#6b3f3a"] }[id] || ["#8d8474", "#7c7364"];
+      R(ctx, x, y, tileCell, tileCell, pal[1]);
+      R(ctx, x + 1, y + 1, tileCell - 2, tileCell - 2, pal[0]);
+      if (id === "checker") R(ctx, x + 1, y + 1, tileCell / 2 - 1, tileCell / 2 - 1, "#3f3a34");
+      if (id === "wood") R(ctx, x + 1, y + tileCell / 2, tileCell - 2, 1, "rgba(70,40,20,.35)");
+      if (id === "royal") R(ctx, x + 3, y + 3, tileCell - 6, 1, "#d6a449");
+    });
+    if (window.__decorMode) {
+      ctx.globalAlpha = 0.18;
+      for (let gx = 20; gx <= 700; gx += tileCell) R(ctx, gx, 40, 1, 336, "#f0d28a");
+      for (let gy = 40; gy <= 376; gy += tileCell) R(ctx, 20, gy, 680, 1, "#f0d28a");
+      ctx.globalAlpha = 1;
+    }
+
     sceneFloorRooms(floor).forEach(function (entry) {
       drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
     });

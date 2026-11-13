@@ -55,7 +55,10 @@
     sidebarCollapsed: false,
     tradeTab: "sell",
     debugMode: false,
-    placement: null
+    placement: null,
+    decorMode: false,
+    dragRoom: null,
+    tileBrush: null
   };
 
   /* =========================================================
@@ -186,6 +189,8 @@
       expansionFloorCount: 1,
       nextRoomId: 1,
       decor: [[]],
+      floorTiles: [{}],
+      tileStock: [{}],
       interiorDecor: null,
       floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       interiorSkin: { owned: ["stone"], selected: "stone" },
@@ -347,6 +352,24 @@
       }));
     }
     s.interiorDecor = D.DECOR_SETS.some(function (set) { return set.id === raw.interiorDecor; }) ? raw.interiorDecor : null;
+    // 地砖：每层独立购买与铺设
+    const rawTiles = Array.isArray(raw.floorTiles) ? raw.floorTiles : [];
+    const rawStock = Array.isArray(raw.tileStock) ? raw.tileStock : [];
+    s.floorTiles = [];
+    s.tileStock = [];
+    for (let i = 0; i < D.MAX_FLOORS; i++) {
+      const tiles = rawTiles[i] && typeof rawTiles[i] === "object" ? rawTiles[i] : {};
+      const clean = {};
+      Object.keys(tiles).forEach(function (key) {
+        const id = tiles[key];
+        if (D.TILE_PACKS.some(function (p) { return p.id === id; }) && /^\d+,\d+$/.test(key)) clean[key] = id;
+      });
+      s.floorTiles.push(clean);
+      const stock = rawStock[i] && typeof rawStock[i] === "object" ? rawStock[i] : {};
+      const cleanStock = {};
+      D.TILE_PACKS.forEach(function (p) { cleanStock[p.id] = Math.max(0, Math.floor(Number(stock[p.id]) || 0)); });
+      s.tileStock.push(cleanStock);
+    }
     s.expansionFloorCount = clamp(Math.floor(Number(raw.expansionFloorCount) || 1), 1, D.MAX_FLOORS);
     // 有房间的楼层必须计入解锁层数
     s.expansionFloors.forEach(function (floor, i) {
@@ -3270,6 +3293,198 @@
     if (id) cancelPlacement();
   }
 
+  function tileStockOf(floor) {
+    if (!state.tileStock[floor]) state.tileStock[floor] = {};
+    D.TILE_PACKS.forEach(function (p) {
+      if (typeof state.tileStock[floor][p.id] !== "number") state.tileStock[floor][p.id] = 0;
+    });
+    return state.tileStock[floor];
+  }
+
+  function buyTilePack(id, count) {
+    const pack = D.TILE_PACKS.filter(function (p) { return p.id === id; })[0];
+    if (!pack) return;
+    const floor = state.currentFloor || 0;
+    const n = Math.max(1, Math.floor(count || 1));
+    const cost = { gold: pack.cost.gold * n };
+    if (!canAfford(cost)) { toast("金币不够，还差：" + missingCostsText(cost), "bad", "coin"); return; }
+    payCost(cost);
+    const stock = tileStockOf(floor);
+    stock[id] += pack.count * n;
+    toast("买到 " + pack.count * n + " 块「" + pack.name + "」地砖。", "good", "sparkle");
+    addLog("第 " + (floor + 1) + " 层补充了 " + pack.name + " 地砖。", "good");
+    renderAll(true);
+    saveState();
+    if (ui.modalOpen) openTileShopModal();
+  }
+
+  function tileAt(floor, lx, ly) {
+    const cell = D.TILE_CELL;
+    const cx = Math.floor((lx - D.FLOOR_GRID.left) / cell);
+    const cy = Math.floor((ly - D.FLOOR_GRID.top) / cell);
+    if (cx < 0 || cy < 0) return null;
+    return { key: cx + "," + cy, cx: cx, cy: cy };
+  }
+
+  function paintTileAt(lx, ly) {
+    if (!ui.tileBrush) { toast("先在「地砖」里选一种砖。", "neutral", "sparkle"); return; }
+    const t = tileAt(state.currentFloor || 0, lx, ly);
+    if (!t) return;
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    if ((stock[ui.tileBrush] || 0) <= 0) { toast("这种地砖用完了，去「地砖」补货。", "bad", "coin"); return; }
+    if (state.floorTiles[floor][t.key] === ui.tileBrush) return;
+    stock[ui.tileBrush] -= 1;
+    state.floorTiles[floor][t.key] = ui.tileBrush;
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+  }
+
+  function enterDecorMode() {
+    if (!state.expansionUnlocked) { toast("修好所有房间后，装修模式才会开放。", "bad", "lock"); return; }
+    if (state.view !== "expansion") switchView("expansion");
+    ui.decorMode = true;
+    window.__decorMode = true;
+    ui.placement = null;
+    const layer = $("#placementLayer");
+    if (layer) layer.hidden = false;
+    document.body.classList.add("placement-on");
+    const bar = $("#placementHint");
+    if (bar) bar.textContent = "装修模式：拖动房间调整位置 · 选中地砖后点击地面铺设";
+    toast("装修模式：可拖动房间、铺设地砖。", "gold", "sparkle");
+    renderAll(true);
+  }
+
+  function exitDecorMode() {
+    ui.decorMode = false;
+    window.__decorMode = false;
+    ui.dragRoom = null;
+    ui.tileBrush = null;
+    const layer = $("#placementLayer");
+    if (layer) layer.hidden = true;
+    document.body.classList.remove("placement-on");
+    renderAll(true);
+  }
+
+  function roomAtPoint(lx, ly) {
+    const floor = state.currentFloor || 0;
+    const list = floorRoomList(floor);
+    for (let i = list.length - 1; i >= 0; i--) {
+      const r = roomRectOf(list[i]);
+      if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) return list[i];
+    }
+    return null;
+  }
+
+  function beginRoomDrag(room, lx, ly) {
+    const r = roomRectOf(room);
+    ui.dragRoom = { id: room.id, dx: lx - r.x, dy: ly - r.y, x: r.x, y: r.y, w: r.w, h: r.h };
+  }
+
+  function updateRoomDrag(lx, ly) {
+    const d = ui.dragRoom;
+    if (!d) return;
+    let x = snapGrid(lx - d.dx);
+    let y = snapGrid(ly - d.dy);
+    const g = D.FLOOR_GRID;
+    x = Math.max(g.left, Math.min(g.right - d.w, x));
+    y = Math.max(g.top, Math.min(g.bottom - d.h, y));
+    d.x = x; d.y = y;
+    const ok = roomPlacementValid(state.currentFloor || 0, { x: x, y: y, w: d.w, h: d.h }, d.id);
+    d.valid = ok;
+    const ghost = $("#placementGhost");
+    if (ghost) {
+      ghost.hidden = false;
+      ghost.className = "placement-ghost " + (ok ? "valid" : "invalid");
+      ghost.style.left = (x / 720 * 100) + "%";
+      ghost.style.top = (y / 405 * 100) + "%";
+      ghost.style.width = (d.w / 720 * 100) + "%";
+      ghost.style.height = (d.h / 405 * 100) + "%";
+    }
+  }
+
+  function commitRoomDrag() {
+    const d = ui.dragRoom;
+    ui.dragRoom = null;
+    const ghost = $("#placementGhost");
+    if (ghost) ghost.hidden = true;
+    if (!d || d.valid === false) { renderAll(true); return; }
+    const floor = state.currentFloor || 0;
+    const room = floorRooms(floor)[d.id];
+    if (!room) return;
+    if (room.x === d.x && room.y === d.y) { renderAll(true); return; }
+    room.x = d.x; room.y = d.y;
+    A.sfx("build");
+    toast("房间位置已调整。", "good", "hammer");
+    renderAll(true);
+    saveState();
+  }
+
+  function openRoomCatalogModal() {
+    const floor = state.currentFloor || 0;
+    const full = floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms;
+    const cards = D.EXPANSION_ROOMS.map(function (type) {
+      const can = canAfford(type.cost) && !full;
+      const fp = roomFootprint(type);
+      return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
+        '<div class="catalog-preview size-' + type.size + '"><span>' + type.size + '</span><em>' + fp.w + "×" + fp.h + "</em></div>" +
+        '<div class="catalog-copy"><b>' + type.name + '</b><span>' + type.desc + "</span>" +
+        '<em>' + costHTML(type.cost, true) + "</em></div>" +
+        '<button class="btn btn-gold btn-small" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + ">购买并放置</button></div>";
+    }).join("");
+    openModal(
+      modalHead("hammer", "扩建层 · 房间商店", "买一间房，自己摆", full ? "本层已放满 " + D.FLOOR_GRID.maxRooms + " 间" : "小型 / 中型 / 大型，占地不同") +
+      '<div class="modal-body"><div class="catalog-grid">' + cards + "</div>" +
+      '<div class="modal-actions"><span class="modal-note">购买后进入放置模式，绿色才能放下</span>' +
+      '<button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-catalog" }
+    );
+  }
+
+  function openDecorCatalogModal() {
+    const floor = state.currentFloor || 0;
+    const stock = state.decor[floor] || [];
+    const cards = D.DECOR_ITEMS.map(function (item) {
+      const can = canAfford(item.cost);
+      return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
+        '<div class="catalog-preview decor"><img src="' + I.icon(item.icon) + '" alt=""></div>' +
+        '<div class="catalog-copy"><b>' + item.name + '</b><span>' + item.desc + "</span>" +
+        '<em>' + costHTML(item.cost, true) + "</em></div>" +
+        '<button class="btn btn-gold btn-small" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + ">购买并摆放</button></div>";
+    }).join("");
+    openModal(
+      modalHead("sparkle", "扩建层 · 装饰商店", "买一件，摆一件", "已摆 " + stock.length + " 件 · 只属于本层") +
+      '<div class="modal-body"><div class="catalog-grid">' + cards + "</div>" +
+      '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-catalog" }
+    );
+  }
+
+  function openTileShopModal() {
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    const rows = D.TILE_PACKS.map(function (pack) {
+      const owned = stock[pack.id] || 0;
+      const can = canAfford(pack.cost);
+      return '<div class="tile-row">' +
+        '<div class="tile-swatch ' + pack.id + '"></div>' +
+        '<div class="tile-copy"><b>' + pack.name + '</b><span>' + pack.desc + '</span>' +
+        '<em>每包 ' + pack.count + ' 块 · 本层已有 ' + owned + ' 块</em></div>' +
+        '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
+        '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '"' + (can ? "" : " disabled") + '>买一包</button>' +
+        '<button class="btn btn-gold btn-small" data-action="brush-tile" data-id="' + pack.id + '">铺这种</button>' +
+        '</div></div>';
+    }).join("");
+    openModal(
+      modalHead("sparkle", "扩建层 · 地砖", "按块铺满这一层", "买一包 20 块，选「铺这种」后点击地面逐块铺设。") +
+      '<div class="modal-body"><div class="tile-list">' + rows + "</div>" +
+      '<div class="modal-actions"><span class="modal-note">已铺 ' + Object.keys(state.floorTiles[floor] || {}).length + " 块</span>" +
+      '<button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-tiles" }
+    );
+  }
+
   function ensureFloorProgression(notify) {
     if (!state || !state.expansionUnlocked) return;
     const floor = state.currentFloor || 0;
@@ -3325,23 +3540,14 @@
       html += '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">这一层还空着，从下面的房间商店买一间放上去。</div>';
     }
 
-    // 房间商店
-    html += '<div class="guest-recruit-head"><b>房间商店</b><span>购买后自由摆放</span></div>';
-    html += '<div class="room-shop-grid">' + D.EXPANSION_ROOMS.map(function (type) {
-      const can = canAfford(type.cost) && built < D.FLOOR_GRID.maxRooms;
-      return '<button class="room-shop-item" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + '>' +
-        '<span class="room-chip-size ' + type.size + '">' + type.size + '</span>' +
-        '<b>' + type.name + '</b><em>' + costShort(type.cost) + '</em></button>';
-    }).join("") + "</div>";
-
-    // 装饰商店
+    // 商店入口
+    html += '<div class="store-entry-grid">' +
+      '<button class="store-entry" data-action="open-room-catalog"><img src="' + I.icon("hammer") + '" alt=""><b>房间商店</b><span>' + built + "/" + D.FLOOR_GRID.maxRooms + '</span></button>' +
+      '<button class="store-entry" data-action="open-decor-catalog"><img src="' + I.icon("sparkle") + '" alt=""><b>装饰商店</b><span>' + (state.decor[floor] || []).length + ' 件</span></button>' +
+      '<button class="store-entry" data-action="open-tile-shop"><img src="' + I.icon("leaf") + '" alt=""><b>地砖</b><span>' + Object.keys(state.floorTiles[floor] || {}).length + ' 块</span></button>' +
+      '<button class="store-entry" data-action="decor-mode"><img src="' + I.icon("arrow") + '" alt=""><b>' + (ui.decorMode ? "退出装修" : "装修模式") + '</b><span>拖动/铺砖</span></button>' +
+      "</div>";
     const decors = state.decor[floor] || [];
-    html += '<div class="guest-recruit-head"><b>装饰商店</b><span>每件只能摆一次 · 仅本层</span></div>';
-    html += '<div class="decor-shop-grid">' + D.DECOR_ITEMS.map(function (item) {
-      const can = canAfford(item.cost);
-      return '<button class="decor-shop-item" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + '>' +
-        '<b>' + item.name + '</b><em>' + costShort(item.cost) + '</em></button>';
-    }).join("") + "</div>";
     if (decors.length) {
       html += '<div class="decor-placed-list">' + decors.map(function (d) {
         const item = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
@@ -4158,24 +4364,30 @@
     if (expandBtn) expandBtn.addEventListener("click", function () { setSidebarCollapsed(false); });
     const placeLayer = $("#placementLayer");
     if (placeLayer) {
-      placeLayer.addEventListener("pointermove", function (e) {
-        if (!ui.placement) return;
+      function layerPoint(e) {
         const frame = $("#sceneFrame");
-        if (!frame) return;
+        if (!frame) return null;
         const r = frame.getBoundingClientRect();
-        movePlacement((e.clientX - r.left) / r.width * 720, (e.clientY - r.top) / r.height * 405);
+        return { x: (e.clientX - r.left) / r.width * 720, y: (e.clientY - r.top) / r.height * 405 };
+      }
+      placeLayer.addEventListener("pointermove", function (e) {
+        const p = layerPoint(e);
+        if (!p) return;
+        if (ui.placement) { movePlacement(p.x, p.y); return; }
+        if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); }
       });
       placeLayer.addEventListener("pointerdown", function (e) {
-        if (!ui.placement) return;
-        const frame = $("#sceneFrame");
-        if (!frame) return;
-        const r = frame.getBoundingClientRect();
-        movePlacement((e.clientX - r.left) / r.width * 720, (e.clientY - r.top) / r.height * 405);
+        const p = layerPoint(e);
+        if (!p) return;
+        if (ui.placement) { movePlacement(p.x, p.y); return; }
+        if (!ui.decorMode) return;
+        const room = roomAtPoint(p.x, p.y);
+        if (room) { beginRoomDrag(room, p.x, p.y); return; }
+        if (ui.tileBrush) { paintTileAt(p.x, p.y); }
       });
       placeLayer.addEventListener("click", function (e) {
-        if (!ui.placement) return;
-        e.preventDefault();
-        commitPlacement();
+        if (ui.placement) { e.preventDefault(); commitPlacement(); return; }
+        if (ui.decorMode && ui.dragRoom) { e.preventDefault(); commitRoomDrag(); }
       });
     }
     $("#viewSwitch").addEventListener("click", function (e) {
@@ -4221,6 +4433,12 @@
       else if (action === "buy-menu") buyMenu(el.dataset.id);
       else if (action === "shop-build") buyShop(el.dataset.id);
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
+      else if (action === "open-room-catalog") openRoomCatalogModal();
+      else if (action === "open-decor-catalog") openDecorCatalogModal();
+      else if (action === "open-tile-shop") openTileShopModal();
+      else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
+      else if (action === "brush-tile") { ui.tileBrush = el.dataset.id; closeModal(true); enterDecorMode(); }
+      else if (action === "decor-mode") { if (ui.decorMode) exitDecorMode(); else enterDecorMode(); }
       else if (action === "place-room-start") startPlacement("room", el.dataset.type);
       else if (action === "place-decor-start") startPlacement("decor", el.dataset.type);
       else if (action === "decor-remove") removeDecorItem(el.dataset.decor);
@@ -4290,6 +4508,7 @@
       }
       if (e.key === "Escape") {
         if (ui.placement) { e.preventDefault(); cancelPlacement(); return; }
+        if (ui.decorMode) { e.preventDefault(); exitDecorMode(); return; }
         if (ui.modalOpen) { e.preventDefault(); closeModal(); }
         return;
       }

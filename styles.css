@@ -3248,3 +3248,46 @@ body.placement-on .interior-hotspots { pointer-events: none; }
 .decor-set-copy em { display: block; margin-top: 2px; font-style: normal; font-size: 9px; color: #9a7a4f; }
 .decor-set-action { flex: 0 0 auto; }
 .room-shop-item { overflow: hidden; }
+
+/* 商店入口 */
+.store-entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0 8px; }
+.store-entry { display: flex; align-items: center; gap: 4px; padding: 5px 6px; min-width: 0; white-space: nowrap; background: #f4e7cc; border: 2px solid #c2a678; font-family: var(--px); cursor: pointer; text-align: left; }
+.store-entry img { width: 20px; height: 20px; flex: 0 0 20px; }
+.store-entry b { font-size: 11px; font-weight: 400; color: #3f2b19; white-space: nowrap; }
+.store-entry span { font-size: 9px; color: #8a6b48; margin-left: auto; white-space: nowrap; }
+.store-entry:hover { background: #fbf0d8; border-color: #a98654; }
+
+/* 可视化商店弹窗 */
+.catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.catalog-card { display: grid; grid-template-columns: 54px minmax(0,1fr); grid-template-rows: auto auto; gap: 5px 7px; padding: 7px; background: #f4e7cc; border: 2px solid #c2a678; }
+.catalog-card.locked { opacity: .62; }
+.catalog-preview { grid-row: 1 / span 2; width: 54px; height: 54px; display: grid; place-items: center; background: #d9c8a6; border: 2px solid #8a6a44; color: #4a3320; font-family: var(--px); }
+.catalog-preview span { font-size: 18px; }
+.catalog-preview em { font-style: normal; font-size: 8px; }
+.catalog-preview.size-S { background: #cfd9bd; }
+.catalog-preview.size-M { background: #e0cfa4; }
+.catalog-preview.size-L { background: #e3b9a4; }
+.catalog-preview.decor img { width: 40px; height: 40px; }
+.catalog-copy b { display: block; font-size: 13px; font-weight: 400; color: #3f2b19; }
+.catalog-copy span { display: block; font-size: 9px; color: #7c6041; line-height: 1.35; }
+.catalog-copy em { display: block; margin-top: 2px; font-style: normal; font-size: 9px; color: #8a6b48; }
+.catalog-card .btn { grid-column: 2; justify-self: start; }
+
+/* 地砖商店 */
+.tile-list { display: flex; flex-direction: column; gap: 5px; }
+.tile-row { display: flex; align-items: center; gap: 8px; padding: 6px; background: #f4e7cc; border: 2px solid #c2a678; }
+.tile-swatch { width: 36px; height: 30px; flex: 0 0 36px; border: 2px solid #4b3320; }
+.tile-swatch.stone { background: repeating-linear-gradient(0deg, #8d8474 0 6px, #766e60 6px 7px), repeating-linear-gradient(90deg, #8d8474 0 8px, #766e60 8px 9px); }
+.tile-swatch.wood { background: repeating-linear-gradient(0deg, #a9764a 0 6px, #8f5f3a 6px 7px); }
+.tile-swatch.checker { background: conic-gradient(#cfc4ad 25%, #4e4942 0 50%, #cfc4ad 0 75%, #49443d 0); background-size: 12px 12px; }
+.tile-swatch.moss { background: repeating-linear-gradient(135deg, #7d8a63 0 5px, #64714e 5px 8px, #8b9a70 8px 10px); }
+.tile-swatch.royal { background: repeating-linear-gradient(45deg, #8e5a51 0 7px, #5d3a36 7px 9px, #c19951 9px 10px); }
+.tile-copy { flex: 1; min-width: 0; }
+.tile-copy b { display: block; font-size: 12px; font-weight: 400; color: #3f2b19; }
+.tile-copy span { display: block; font-size: 9px; color: #7c6041; }
+.tile-copy em { display: block; font-style: normal; font-size: 9px; color: #8a6b48; }
+.tile-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.tile-price { font-size: 10px; color: #8a6b48; }
+.modal-catalog .modal, .modal-tiles .modal { width: min(720px, 94vw); }
+.catalog-copy em { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.catalog-copy em .cost { display: inline-flex; margin: 0; }
