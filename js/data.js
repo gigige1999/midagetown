@@ -141,7 +141,7 @@ window.GameData = (function () {
       desc: "从沉睡的山岩里凿出下一座城堡。",
       flavor: "花岗说，石头只是睡得很沉的云。",
       completionGold: 15,
-      plot: { x: 536, y: 244, w: 118, h: 88, baseY: 326, labelY: 244 }
+      plot: { x: 536, y: 150, w: 118, h: 88, baseY: 238, labelY: 150 }
     },
     {
       id: "kitchen", name: "厨房", icon: "tavern", scene: "indoor",
@@ -447,35 +447,35 @@ window.GameData = (function () {
 
   const SHOPS = [
     {
-      id: "bakery", name: "面包房", icon: "tavern", plot: { x: 162, y: 214, w: 110, h: 96, baseY: 300 },
+      id: "bakery", name: "面包房", icon: "tavern", plot: { x: 178, y: 186, w: 104, h: 114, baseY: 300 },
       cost: { wood: 30, stone: 20, gold: 60 }, income: 0.20, residentBonus: 0.05,
       unlock: "kitchen", unlockText: "修复厨房后开放",
       desc: "面包香会顺着风飘进每一个房间。",
       flavor: "每天清晨，第一炉面包会被放在窗台上。"
     },
     {
-      id: "smithy", name: "铁匠铺", icon: "tower", plot: { x: 568, y: 178, w: 106, h: 102, baseY: 274 },
+      id: "smithy", name: "铁匠铺", icon: "tower", plot: { x: 584, y: 206, w: 72, h: 70, baseY: 274 },
       cost: { wood: 35, stone: 40, gold: 80 }, income: 0.26, productionBonus: 0.05,
       unlock: "barracks", unlockText: "修复兵营后开放",
       desc: "钉马蹄、修刀剑、顺便听守卫抱怨。",
       flavor: "铁锤落下的节奏，听久了像一首歌。"
     },
     {
-      id: "general", name: "杂货铺", icon: "market", plot: { x: 470, y: 314, w: 154, h: 74, baseY: 386 },
+      id: "general", name: "杂货铺", icon: "market", plot: { x: 490, y: 300, w: 150, h: 86, baseY: 386 },
       cost: { wood: 50, stone: 35, gold: 100 }, income: 0.35, residentBonus: 0.10,
       unlock: "allrooms", unlockText: "修复所有房间后开放",
       desc: "货架上什么都有，包括你昨天卖掉的那把勺子。",
       flavor: "金铃说，一家好的杂货铺应该让客人空手进来，满载出去。"
     },
     {
-      id: "fishmonger", name: "鱼摊", icon: "market", plot: { x: 470, y: 210, w: 98, h: 60, baseY: 270 },
+      id: "fishmonger", name: "鱼摊", icon: "market", plot: { x: 470, y: 210, w: 90, h: 60, baseY: 270 },
       cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, residentBonus: 0.05,
       unlock: "stage5", unlockText: "城堡阶段 5 开放",
       desc: "清晨的河鱼，带着水草和冰块的味道。",
       flavor: "鱼摊老板说，最好的鱼要留给最早来的人。"
     },
     {
-      id: "flower", name: "花摊", icon: "farm", plot: { x: 214, y: 318, w: 88, h: 64, baseY: 382 },
+      id: "flower", name: "花摊", icon: "farm", plot: { x: 214, y: 326, w: 88, h: 56, baseY: 382 },
       cost: { wood: 30, stone: 15, gold: 90 }, income: 0.22, residentBonus: 0.03,
       unlock: "floor2", unlockText: "扩建到第 2 层开放",
       desc: "花摊把颜色带进石头城堡。",
@@ -628,6 +628,36 @@ window.GameData = (function () {
     { id: "s10", x: 594, y: 226, w: 92, h: 108, size: "S" }
   ];
 
+  const ROOM_FOOTPRINTS = {
+    S: { w: 88, h: 104 },
+    M: { w: 136, h: 104 },
+    L: { w: 208, h: 104 }
+  };
+
+  const FLOOR_GRID = {
+    cell: 8,
+    left: 20, right: 700, top: 40, bottom: 376,
+    stairs: { x: 296, y: 336, w: 128, h: 52 },
+    maxRooms: 12
+  };
+
+  const DECOR_ITEMS = [
+    { id: "lamp", name: "立灯", icon: "sparkle", cost: { gold: 30 }, w: 16, h: 26, desc: "走廊边的暖黄立灯。" },
+    { id: "plant", name: "盆栽", icon: "leaf", cost: { gold: 22 }, w: 18, h: 24, desc: "一盆常青绿植，给石墙添点生气。" },
+    { id: "weapon", name: "武器架", icon: "hammer", cost: { gold: 45, wood: 12 }, w: 30, h: 26, desc: "陈列长矛与盾的架子。" },
+    { id: "painting", name: "挂画", icon: "scroll", cost: { gold: 40 }, w: 26, h: 22, desc: "画着旧日风息堡的风景。" },
+    { id: "statue", name: "小雕像", icon: "crest", cost: { gold: 70, stone: 16 }, w: 22, h: 30, desc: "沉默的石制守护者。" },
+    { id: "rug", name: "小地毯", icon: "bunting", cost: { gold: 36 }, w: 40, h: 24, desc: "织着家族纹样的小毯。" },
+    { id: "candle", name: "烛台", icon: "sun", cost: { gold: 18 }, w: 14, h: 22, desc: "三支蜡烛的铜烛台。" }
+  ];
+
+  const DECOR_SETS = [
+    { id: "royal", name: "皇家红金", cost: { gold: 320 }, skin: "royal", desc: "深红地毯、金线墙饰与成排烛台。", props: ["carpet", "banner", "candles"] },
+    { id: "wood", name: "暖木田园", cost: { gold: 240 }, skin: "wood", desc: "暖木地板、盆栽与风景挂画。", props: ["plant", "painting", "rug"] },
+    { id: "checker", name: "棋盘书卷", cost: { gold: 280 }, skin: "checker", desc: "黑白棋盘地面、书卷与挂钟。", props: ["books", "clock", "candle"] },
+    { id: "moss", name: "苔石礼拜", cost: { gold: 260 }, skin: "moss", desc: "青苔石地面、礼拜旗帜与绿植。", props: ["banner", "plant", "candles"] }
+  ];
+
   const MASK_TYPES = [
     { id: "merchant", name: "面具商人", mask: "#d6a44e", income: 0.06, quirk: "口袋里总有一枚不属于自己的硬币。" },
     { id: "bard", name: "面具乐师", mask: "#5b7b9d", income: 0.05, quirk: "没人见过面具下的脸，但大家都记得那首歌。" },
@@ -757,6 +787,10 @@ window.GameData = (function () {
     EVENTS: EVENTS,
     MENUS: MENUS,
     FLOOR_SKINS: FLOOR_SKINS,
+    ROOM_FOOTPRINTS: ROOM_FOOTPRINTS,
+    FLOOR_GRID: FLOOR_GRID,
+    DECOR_ITEMS: DECOR_ITEMS,
+    DECOR_SETS: DECOR_SETS,
     LAND_PLOT_RECTS: LAND_PLOT_RECTS,
     LAND_SHOP_RECTS: LAND_SHOP_RECTS,
     LAND_SHOPS: LAND_SHOPS,

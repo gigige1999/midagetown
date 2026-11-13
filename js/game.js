@@ -54,7 +54,8 @@
     hintIndex: 0,
     sidebarCollapsed: false,
     tradeTab: "sell",
-    debugMode: false
+    debugMode: false,
+    placement: null
   };
 
   /* =========================================================
@@ -183,6 +184,9 @@
       shops: { bakery: { status: "locked" }, smithy: { status: "locked" }, general: { status: "locked" }, fishmonger: { status: "locked" }, flower: { status: "locked" } },
       expansionFloors: [{}],
       expansionFloorCount: 1,
+      nextRoomId: 1,
+      decor: [[]],
+      interiorDecor: null,
       floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       interiorSkin: { owned: ["stone"], selected: "stone" },
       land: { plots: [
@@ -287,19 +291,40 @@
       const saved = raw.shops && raw.shops[shop.id] && raw.shops[shop.id].status;
       s.shops[shop.id] = { status: ["locked", "available", "built"].indexOf(saved) >= 0 ? saved : "locked" };
     });
+    let roomSeq = 0;
     function cleanFloor(src) {
       const out = {};
-      D.EXPANSION_SLOTS.forEach(function (slot) {
-        const saved = src && src[slot.id];
-        const type = saved && D.EXPANSION_ROOMS.some(function (r) { return r.id === saved.type; }) ? saved.type : null;
-        out[slot.id] = type ? { type: type, level: clamp(Math.floor(Number(saved.level) || 1), 1, 5) } : null;
-      });
+      const slotsById = {};
+      D.EXPANSION_SLOTS.forEach(function (slot) { slotsById[slot.id] = slot; });
+      const assign = function (saved, fallbackSlot) {
+        if (!saved) return;
+        const type = D.EXPANSION_ROOMS.some(function (r) { return r.id === saved.type; }) ? saved.type : null;
+        if (!type) return;
+        const fp = D.ROOM_FOOTPRINTS[(D.EXPANSION_ROOMS.filter(function (r) { return r.id === type; })[0] || {}).size || "S"];
+        const x = Number(saved.x);
+        const y = Number(saved.y);
+        const ok = isFinite(x) && isFinite(y) &&
+          x >= D.FLOOR_GRID.left && y >= D.FLOOR_GRID.top &&
+          x + fp.w <= D.FLOOR_GRID.right && y + fp.h <= D.FLOOR_GRID.bottom;
+        const fx = ok ? x : (fallbackSlot ? fallbackSlot.x : D.FLOOR_GRID.left);
+        const fy = ok ? y : (fallbackSlot ? fallbackSlot.y : D.FLOOR_GRID.top);
+        roomSeq += 1;
+        const id = "r" + roomSeq;
+        out[id] = { id: id, type: type, level: clamp(Math.floor(Number(saved.level) || 1), 1, 3), x: fx, y: fy };
+      };
+      if (src && !Array.isArray(src)) {
+        Object.keys(src).forEach(function (key) {
+          const saved = src[key];
+          if (!saved) return;
+          // 旧槽位存档：按槽位坐标迁移；新存档自带 x/y
+          assign(saved, slotsById[key] || null);
+        });
+      }
       return out;
     }
     if (Array.isArray(raw.expansionFloors) && raw.expansionFloors.length) {
       s.expansionFloors = raw.expansionFloors.slice(0, D.MAX_FLOORS).map(cleanFloor);
     } else if (raw.expansionRooms) {
-      // v3 存档迁移：6 个旧位置 → 第一层前 6 个位置
       const legacy = {};
       ["e1","e2","e3","e4","e5","e6"].forEach(function (id, i) {
         if (raw.expansionRooms[id]) legacy["s" + (i + 1)] = raw.expansionRooms[id];
@@ -309,6 +334,19 @@
       s.expansionFloors = [cleanFloor({})];
     }
     if (!s.expansionFloors.length) s.expansionFloors = [cleanFloor({})];
+    s.nextRoomId = Math.max(Number(raw.nextRoomId) || 0, roomSeq + 1);
+    // 每层装饰
+    const rawDecor = Array.isArray(raw.decor) ? raw.decor : [];
+    s.decor = [];
+    for (let i = 0; i < D.MAX_FLOORS; i++) {
+      const list = Array.isArray(rawDecor[i]) ? rawDecor[i] : [];
+      s.decor.push(list.filter(function (d) {
+        return d && D.DECOR_ITEMS.some(function (it) { return it.id === d.type; }) && isFinite(Number(d.x)) && isFinite(Number(d.y));
+      }).map(function (d, k) {
+        return { id: "d" + i + "_" + k + "_" + Math.floor(Math.random() * 1000), type: d.type, x: Number(d.x), y: Number(d.y) };
+      }));
+    }
+    s.interiorDecor = D.DECOR_SETS.some(function (set) { return set.id === raw.interiorDecor; }) ? raw.interiorDecor : null;
     s.expansionFloorCount = clamp(Math.floor(Number(raw.expansionFloorCount) || 1), 1, D.MAX_FLOORS);
     // 有房间的楼层必须计入解锁层数
     s.expansionFloors.forEach(function (floor, i) {
@@ -743,9 +781,7 @@
 
   function countExpansionRoomsAll() {
     let n = 0;
-    state.expansionFloors.forEach(function (rooms) {
-      D.EXPANSION_SLOTS.forEach(function (slot) { if (rooms[slot.id]) n++; });
-    });
+    state.expansionFloors.forEach(function (rooms, i) { n += floorRoomList(i).length; });
     return n;
   }
 
@@ -766,10 +802,8 @@
       if (state.shops[sh.id] && state.shops[sh.id].status === "built") p += 12;
     });
     p += countExpansionRoomsAll() * 8;
-    state.expansionFloors.forEach(function (rooms) {
-      D.EXPANSION_SLOTS.forEach(function (slot) {
-        if (rooms[slot.id]) p += (roomLevel(rooms[slot.id]) - 1) * 6;
-      });
+    state.expansionFloors.forEach(function (rooms, i) {
+      floorRoomList(i).forEach(function (room) { p += (roomLevel(room) - 1) * 6; });
     });
     p += Math.max(0, state.expansionFloorCount - 1) * 30;
     p += state.menus.length * 4;
@@ -831,24 +865,41 @@
     return floorRooms(state.currentFloor || 0);
   }
 
+  function roomTypeOf(room) {
+    if (!room) return null;
+    return D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] || null;
+  }
+
+  function roomFootprint(type) {
+    return D.ROOM_FOOTPRINTS[(type && type.size) || "S"] || D.ROOM_FOOTPRINTS.S;
+  }
+
+  function roomRectOf(room) {
+    const type = roomTypeOf(room);
+    const fp = roomFootprint(type);
+    return { x: Number(room.x) || 0, y: Number(room.y) || 0, w: fp.w, h: fp.h };
+  }
+
+  function floorRoomList(index) {
+    const rooms = floorRooms(index);
+    return Object.keys(rooms).map(function (id) {
+      const room = rooms[id];
+      if (!room || !room.type || !roomTypeOf(room)) return null;
+      room.id = id;
+      return room;
+    }).filter(Boolean);
+  }
+
   function floorRoomCount(index) {
-    const rooms = state.expansionFloors[index] || {};
-    return D.EXPANSION_SLOTS.filter(function (slot) { return !!rooms[slot.id]; }).length;
+    return floorRoomList(index).length;
   }
 
   function floorHasType(index, typeId) {
-    const rooms = state.expansionFloors[index] || {};
-    return D.EXPANSION_SLOTS.some(function (slot) {
-      return rooms[slot.id] && rooms[slot.id].type === typeId;
-    });
+    return floorRoomList(index).some(function (room) { return room.type === typeId; });
   }
 
   function floorRoomTypes(index) {
-    const rooms = state.expansionFloors[index] || {};
-    return D.EXPANSION_SLOTS.map(function (slot) {
-      const room = rooms[slot.id];
-      return room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-    }).filter(Boolean);
+    return floorRoomList(index).map(roomTypeOf).filter(Boolean);
   }
 
   function roomLevel(room) {
@@ -865,13 +916,37 @@
   }
 
   function floorRoomsDetailed(index) {
-    const rooms = state.expansionFloors[index] || {};
-    return D.EXPANSION_SLOTS.map(function (slot) {
-      const room = rooms[slot.id];
-      if (!room) return null;
-      const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
-      return type ? { slot: slot, room: room, type: type } : null;
-    }).filter(Boolean);
+    return floorRoomList(index).map(function (room) {
+      const type = roomTypeOf(room);
+      const rect = roomRectOf(room);
+      return { slot: { id: room.id, x: rect.x, y: rect.y, w: rect.w, h: rect.h, size: type.size }, room: room, type: type };
+    });
+  }
+
+  function rectsOverlap(a, b, pad) {
+    const p = pad || 0;
+    return a.x < b.x + b.w + p && a.x + a.w + p > b.x && a.y < b.y + b.h + p && a.y + a.h + p > b.y;
+  }
+
+  function roomPlacementValid(index, rect, ignoreId) {
+    const g = D.FLOOR_GRID;
+    if (rect.x < g.left || rect.y < g.top || rect.x + rect.w > g.right || rect.y + rect.h > g.bottom) return false;
+    if (rectsOverlap(rect, g.stairs, 4)) return false;
+    return !floorRoomList(index).some(function (room) {
+      if (ignoreId && room.id === ignoreId) return false;
+      return rectsOverlap(rect, roomRectOf(room), 6);
+    });
+  }
+
+  function decorPlacementValid(index, item, x, y, ignoreId) {
+    const g = D.FLOOR_GRID;
+    if (x < g.left || y < g.top || x + item.w > g.right || y + item.h > g.bottom) return false;
+    if (rectsOverlap({ x: x, y: y, w: item.w, h: item.h }, g.stairs, 2)) return false;
+    return !(state.decor[index] || []).some(function (d) {
+      if (ignoreId && d.id === ignoreId) return false;
+      const it = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
+      return it && rectsOverlap({ x: x, y: y, w: item.w, h: item.h }, { x: d.x, y: d.y, w: it.w, h: it.h }, 2);
+    });
   }
 
   function floorFacilities(index) {
@@ -955,10 +1030,8 @@
   function defenseValue() {
     let defense = classCount("soldier") * 15;
     state.expansionFloors.forEach(function (rooms, floorIndex) {
-      D.EXPANSION_SLOTS.forEach(function (slot) {
-        const room = rooms[slot.id];
-        if (!room) return;
-        const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+      floorRoomList(floorIndex).forEach(function (room) {
+        const type = roomTypeOf(room);
         if (type && type.defense) defense += type.defense + (roomLevel(room) - 1) * 3;
       });
     });
@@ -1016,10 +1089,8 @@
   function expansionBonuses() {
     let capacity = 0, residentBonus = 0, productionBonus = 0, foodBonus = 0, satisfaction = 0;
     state.expansionFloors.forEach(function (rooms, index) {
-      D.EXPANSION_SLOTS.forEach(function (slot) {
-        const room = rooms[slot.id];
-        if (!room) return;
-        const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
+      floorRoomList(index).forEach(function (room) {
+        const type = roomTypeOf(room);
         if (!type) return;
         const scale = roomScale(room);
         capacity += type.capacity ? roomCapacity(type, room) : 0;
@@ -2097,6 +2168,7 @@
      ========================================================= */
   function switchView(view) {
     if (!started) return;
+    if (ui.placement) cancelPlacement();
     if (view === "indoor" && !state.interiorUnlocked) {
       toast("先建成两座庭院建筑，城堡内部才会开放。", "bad", "lock");
       return;
@@ -2657,6 +2729,25 @@
     openInteriorSkinModal();
   }
 
+  function buyDecorSet(id) {
+    const set = D.DECOR_SETS.filter(function (x) { return x.id === id; })[0];
+    if (!set) return;
+    if (state.interiorDecor === id) { toast("这套装修已经在用了。", "neutral", "sparkle"); return; }
+    if (!canAfford(set.cost)) { toast("金币不够，还差：" + missingCostsText(set.cost), "bad", "coin"); return; }
+    payCost(set.cost);
+    state.interiorDecor = id;
+    const st = interiorSkinState();
+    if (st.owned.indexOf(set.skin) < 0) st.owned.push(set.skin);
+    st.selected = set.skin;
+    addLog("城堡大厅换上了「" + set.name + "」装修套装。", "good");
+    toast("「" + set.name + "」已布置到城堡大厅。", "gold", "sparkle");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+    openInteriorSkinModal();
+  }
+
   function openInteriorSkinModal() {
     const st = currentInteriorSkin();
     const rows = D.FLOOR_SKINS.map(function (skin) {
@@ -2675,8 +2766,20 @@
         "</div></div>";
     }).join("");
     openModal(
-      modalHead("sparkle", "城堡内部 · 装修", "地板与样式", "一次购买应用于整个城堡内部，不影响扩建层各层皮肤。") +
-      '<div class="modal-body"><div class="floor-skin-list">' + rows + "</div>" +
+      modalHead("sparkle", "城堡内部 · 装修", "套装与地板", "套装包含地板与陈设；单买地板只换地面。") +
+      '<div class="modal-body">' +
+      '<div class="decor-set-list">' + D.DECOR_SETS.map(function (set) {
+        const active = state.interiorDecor === set.id;
+        const can = canAfford(set.cost);
+        return '<div class="decor-set-row' + (active ? " active" : "") + '">' +
+          '<div class="decor-set-copy"><b>' + set.name + '</b><span>' + set.desc + "</span>" +
+          "<em>" + (active ? "大厅正在使用" : "套装价 " + costShort(set.cost)) + "</em></div>" +
+          '<div class="decor-set-action">' + (active
+            ? '<span class="menu-check">已布置</span>'
+            : '<button class="btn btn-gold btn-small" data-action="buy-decor-set" data-set="' + set.id + '"' + (can ? "" : " disabled") + ">购买套装</button>") +
+          "</div></div>";
+      }).join("") + "</div>" +
+      '<div class="floor-skin-list">' + rows + "</div>" +
       '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b></span>" +
       '<button class="btn btn-primary" data-action="close-modal">完成</button></div></div>',
       { className: "modal-floor-skin" }
@@ -3005,10 +3108,172 @@
     return html;
   }
 
+  function snapGrid(v) {
+    const c = D.FLOOR_GRID.cell;
+    return Math.round(v / c) * c;
+  }
+
+  function findFreeSpot(floor, typeId) {
+    const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
+    if (!type) return null;
+    const fp = roomFootprint(type);
+    const g = D.FLOOR_GRID;
+    for (let y = g.top; y + fp.h <= g.bottom; y += g.cell) {
+      for (let x = g.left; x + fp.w <= g.right; x += g.cell) {
+        if (roomPlacementValid(floor, { x: x, y: y, w: fp.w, h: fp.h })) return { x: x, y: y };
+      }
+    }
+    return null;
+  }
+
+  function placeRoomAt(typeId, x, y, free) {
+    const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
+    if (!type) return null;
+    const floor = state.currentFloor || 0;
+    if (floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms) {
+      toast("这一层已经放满 " + D.FLOOR_GRID.maxRooms + " 间房，去下一层吧。", "bad", "lock");
+      return null;
+    }
+    const fp = roomFootprint(type);
+    const rect = { x: x, y: y, w: fp.w, h: fp.h };
+    if (!roomPlacementValid(floor, rect)) return null;
+    if (!free) {
+      if (!canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return null; }
+      payCost(type.cost);
+    }
+    const id = "r" + (state.nextRoomId++);
+    floorRooms(floor)[id] = { id: id, type: typeId, level: 1, x: x, y: y };
+    addLog("第 " + (floor + 1) + " 层新建了「" + type.name + "」。", "good");
+    toast("「" + type.name + "」已放下。" + type.desc, "gold", type.icon);
+    const fac = floorFacilities(floor);
+    if (fac.rooms > 0 && !fac.toilet && type.id !== "toilet") {
+      setTimeout(function () { toast("第 " + (floor + 1) + " 层还没有厕所。", "bad", "toilet"); }, 500);
+    }
+    if (fac.rooms > 0 && !fac.dining && type.id !== "dining") {
+      setTimeout(function () { toast("第 " + (floor + 1) + " 层还没有餐厅。", "bad", "food"); }, 800);
+    }
+    A.sfx("complete");
+    ui.guideSig = "";
+    ensureFloorProgression(false);
+    renderAll(true);
+    saveState();
+    return id;
+  }
+
+  function placeDecorAt(typeId, x, y, free) {
+    const item = D.DECOR_ITEMS.filter(function (i) { return i.id === typeId; })[0];
+    if (!item) return null;
+    const floor = state.currentFloor || 0;
+    if (!free) {
+      if (!canAfford(item.cost)) { toast("还差：" + missingCostsText(item.cost), "bad", "coin"); return null; }
+      payCost(item.cost);
+    }
+    if (!state.decor[floor]) state.decor[floor] = [];
+    const id = "d" + floor + "_" + Date.now().toString(36) + Math.floor(Math.random() * 100);
+    state.decor[floor].push({ id: id, type: typeId, x: x, y: y });
+    addLog("第 " + (floor + 1) + " 层摆上了「" + item.name + "」。", "good");
+    toast("「" + item.name + "」已摆好。", "good", item.icon);
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+    return id;
+  }
+
+  function removeDecorItem(id) {
+    const floor = state.currentFloor || 0;
+    const list = state.decor[floor] || [];
+    const idx = list.findIndex(function (d) { return d.id === id; });
+    if (idx < 0) return;
+    const item = D.DECOR_ITEMS.filter(function (i) { return i.id === list[idx].type; })[0];
+    list.splice(idx, 1);
+    toast((item ? item.name : "装饰") + " 已移除。", "neutral", "hammer");
+    renderAll(true);
+    saveState();
+  }
+
+  function startPlacement(kind, typeId) {
+    if (!started) return;
+    if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
+    if (state.view !== "expansion") switchView("expansion");
+    const floor = state.currentFloor || 0;
+    let w, h;
+    if (kind === "room") {
+      const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
+      if (!type) return;
+      if (floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms) { toast("这一层已经放满房间了。", "bad", "lock"); return; }
+      if (!canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return; }
+      const fp = roomFootprint(type);
+      w = fp.w; h = fp.h;
+    } else {
+      const item = D.DECOR_ITEMS.filter(function (i) { return i.id === typeId; })[0];
+      if (!item) return;
+      if (!canAfford(item.cost)) { toast("还差：" + missingCostsText(item.cost), "bad", "coin"); return; }
+      w = item.w; h = item.h;
+    }
+    ui.placement = { kind: kind, typeId: typeId, w: w, h: h, x: null, y: null, valid: false };
+    closeModal(true);
+    const layer = $("#placementLayer");
+    if (layer) layer.hidden = false;
+    const hint = $("#placementHint");
+    if (hint) {
+      hint.textContent = kind === "room"
+        ? "移动光标选择位置，点击放置房间 · 绿色表示可放"
+        : "移动光标选择位置，点击摆放装饰 · 绿色表示可放";
+    }
+    const ghost = $("#placementGhost");
+    if (ghost) { ghost.hidden = true; ghost.className = "placement-ghost"; }
+    document.body.classList.add("placement-on");
+    toast(kind === "room" ? "选好位置后点击放置。" : "选好位置后点击摆放。", "neutral", "sparkle");
+  }
+
+  function cancelPlacement() {
+    ui.placement = null;
+    const layer = $("#placementLayer");
+    if (layer) layer.hidden = true;
+    document.body.classList.remove("placement-on");
+  }
+
+  function movePlacement(lx, ly) {
+    const p = ui.placement;
+    if (!p) return;
+    const g = D.FLOOR_GRID;
+    let x = snapGrid(lx - p.w / 2);
+    let y = snapGrid(ly - p.h / 2);
+    x = Math.max(g.left, Math.min(g.right - p.w, x));
+    y = Math.max(g.top, Math.min(g.bottom - p.h, y));
+    p.x = x; p.y = y;
+    const floor = state.currentFloor || 0;
+    if (p.kind === "room") {
+      p.valid = roomPlacementValid(floor, { x: x, y: y, w: p.w, h: p.h });
+    } else {
+      const item = D.DECOR_ITEMS.filter(function (i) { return i.id === p.typeId; })[0];
+      p.valid = item ? decorPlacementValid(floor, item, x, y) : false;
+    }
+    const ghost = $("#placementGhost");
+    if (ghost) {
+      ghost.hidden = false;
+      ghost.className = "placement-ghost " + (p.valid ? "valid" : "invalid");
+      ghost.style.left = (x / 720 * 100) + "%";
+      ghost.style.top = (y / 405 * 100) + "%";
+      ghost.style.width = (p.w / 720 * 100) + "%";
+      ghost.style.height = (p.h / 405 * 100) + "%";
+    }
+  }
+
+  function commitPlacement() {
+    const p = ui.placement;
+    if (!p || !p.valid || p.x === null) {
+      toast("这个位置放不下，换个地方试试。", "bad", "lock");
+      return;
+    }
+    const id = p.kind === "room" ? placeRoomAt(p.typeId, p.x, p.y) : placeDecorAt(p.typeId, p.x, p.y);
+    if (id) cancelPlacement();
+  }
+
   function ensureFloorProgression(notify) {
     if (!state || !state.expansionUnlocked) return;
     const floor = state.currentFloor || 0;
-    if (floorRoomCount(floor) < D.EXPANSION_SLOTS.length) return;
+    if (floorRoomCount(floor) < D.FLOOR_GRID.maxRooms) return;
     const nextCount = floor + 2;
     if (state.expansionFloorCount < nextCount) {
       state.expansionFloorCount = nextCount;
@@ -3025,7 +3290,6 @@
   function renderExpansionBuildTab() {
     ensureFloorProgression(false);
     const floor = state.currentFloor || 0;
-    const rooms = currentFloorRooms();
     const built = floorRoomCount(floor);
     const fac = floorFacilities(floor);
     const defense = defenseValue();
@@ -3037,25 +3301,55 @@
     if (fac.rooms > 0 && !fac.dining) missing.push("缺餐厅");
     if (need > 0 && soldiers < need) missing.push("缺士兵 " + soldiers + "/" + need);
     if (countResidents() > 0 && missionaryCount() === 0) missing.push("缺传教士");
-    let html = sectionHead("第 " + (floor + 1) + " 层", built + "/" + D.EXPANSION_SLOTS.length + " 房");
+
+    let html = sectionHead("第 " + (floor + 1) + " 层", built + " / " + D.FLOOR_GRID.maxRooms + " 房");
     html += '<div class="floor-compact-stats">' +
       '<div class="floor-stat"><span>床位</span><b>' + guests.length + " / " + floorBeds(floor) + "</b></div>" +
       '<div class="floor-stat"><span>传教</span><b>' + classCount("missionary") + "</b></div></div>";
     if (missing.length) html += '<div class="floor-warning">' + missing.join(" · ") + "</div>";
     html += '<div class="floor-actions"><button class="btn btn-gold btn-small" data-action="recruit-open"><img src="' + I.icon("people") + '" alt="">招募客人</button>' +
       '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传 " + classCountOnFloor(floor, "missionary") + " · 农 " + classCountOnFloor(floor, "farmer") + " · 厨 " + classCountOnFloor(floor, "cook") + "</span></div>";
-    html += '<div class="room-grid">';
-    D.EXPANSION_SLOTS.forEach(function (slot) {
-      const room = rooms[slot.id];
-      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      html += '<button class="room-tile ' + (type ? "built" : "empty") + '" data-action="expansion-slot" data-slot="' + slot.id + '">' +
-        '<span class="room-tile-id">' + slot.id.replace("s", "S") + " · " + slot.size + "</span>" +
-        '<b>' + (type ? type.name + " Lv." + roomLevel(room) : "空位 · 建造") + "</b></button>";
-    });
-    html += "</div>";
+
+    // 已建房间
+    const rooms = floorRoomList(floor);
+    html += '<div class="guest-recruit-head"><b>本层房间</b><span>点击管理</span></div>';
+    if (rooms.length) {
+      html += '<div class="room-chip-list">' + rooms.map(function (room) {
+        const type = roomTypeOf(room);
+        if (!type) return "";
+        return '<button class="room-chip" data-action="room-manage" data-room="' + room.id + '">' +
+          '<span class="room-chip-size ' + type.size + '">' + type.size + '</span>' +
+          '<b>' + type.name + '</b><em>Lv.' + roomLevel(room) + '</em></button>';
+      }).join("") + "</div>";
+    } else {
+      html += '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">这一层还空着，从下面的房间商店买一间放上去。</div>';
+    }
+
+    // 房间商店
+    html += '<div class="guest-recruit-head"><b>房间商店</b><span>购买后自由摆放</span></div>';
+    html += '<div class="room-shop-grid">' + D.EXPANSION_ROOMS.map(function (type) {
+      const can = canAfford(type.cost) && built < D.FLOOR_GRID.maxRooms;
+      return '<button class="room-shop-item" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + '>' +
+        '<span class="room-chip-size ' + type.size + '">' + type.size + '</span>' +
+        '<b>' + type.name + '</b><em>' + costShort(type.cost) + '</em></button>';
+    }).join("") + "</div>";
+
+    // 装饰商店
+    const decors = state.decor[floor] || [];
+    html += '<div class="guest-recruit-head"><b>装饰商店</b><span>每件只能摆一次 · 仅本层</span></div>';
+    html += '<div class="decor-shop-grid">' + D.DECOR_ITEMS.map(function (item) {
+      const can = canAfford(item.cost);
+      return '<button class="decor-shop-item" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + '>' +
+        '<b>' + item.name + '</b><em>' + costShort(item.cost) + '</em></button>';
+    }).join("") + "</div>";
+    if (decors.length) {
+      html += '<div class="decor-placed-list">' + decors.map(function (d) {
+        const item = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
+        return '<button class="decor-placed" data-action="decor-remove" data-decor="' + d.id + '">' + (item ? item.name : d.type) + " ×</button>";
+      }).join("") + "</div>";
+    }
     return html;
   }
-
   function openRecruitModal() {
     const floor = state.currentFloor || 0;
     const rows = D.GUEST_CLASSES.map(function (klass) {
@@ -3089,7 +3383,7 @@
       A.sfx("page");
       return;
     }
-    if (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length) {
+    if (floorRoomCount(state.currentFloor) >= D.FLOOR_GRID.maxRooms) {
       ensureFloorProgression(false);
       if (state.expansionFloorCount > next) {
         state.currentFloor = next;
@@ -3113,7 +3407,7 @@
     const floor = state.currentFloor || 0;
     let html = '<span class="floor-strip-label">楼层</span>';
     html += '<span class="floor-strip-stats">' +
-      "<span>房间 <b>" + floorRoomCount(floor) + "/" + D.EXPANSION_SLOTS.length + "</b></span>" +
+      "<span>房间 <b>" + floorRoomCount(floor) + "/" + D.FLOOR_GRID.maxRooms + "</b></span>" +
       "<span>床位 <b>" + guestsOnFloor(floor).length + "/" + floorBeds(floor) + "</b></span>" +
       "<span>防御 <b>" + defenseValue() + "</b> · 兵 <b>" + classCount("soldier") + "/" + requiredSoldiers() + "</b></span>" +
       "<span>传教 <b>" + classCount("missionary") + "</b></span></span>";
@@ -3143,8 +3437,17 @@
     refreshShopUnlocks();
     const anyUnlocked = D.SHOPS.some(function (s) { return state.shops[s.id].status !== "locked"; });
     if (!anyUnlocked) return "";
-    const built = D.SHOPS.filter(function (s) { return state.shops[s.id].status === "built"; }).length;
-    let html = '<div class="shop-section-head"><b>庭院商铺</b><span>' + built + " / " + D.SHOPS.length + " 营业中 · 增加金币收入</span></div>";
+    const builtShops = D.SHOPS.filter(function (s) { return state.shops[s.id].status === "built"; });
+    const built = builtShops.length;
+    const shopIncome = builtShops.reduce(function (n, s) { return n + (s.income || 0); }, 0) * 60;
+    const resBonus = builtShops.reduce(function (n, s) { return n + (s.residentBonus || 0); }, 0);
+    const prodBonus = builtShops.reduce(function (n, s) { return n + (s.productionBonus || 0); }, 0);
+    let html = '<div class="shop-section-head"><b>庭院商铺</b><span>' + built + " / " + D.SHOPS.length + " 营业中</span></div>";
+    html += '<div class="shop-income-summary">' +
+      '<div><span>金币收入</span><b>+' + shopIncome.toFixed(1) + "/分</b></div>" +
+      '<div><span>居民收入</span><b>+' + Math.round(resBonus * 100) + "%</b></div>" +
+      '<div><span>生产效率</span><b>+' + Math.round(prodBonus * 100) + "%</b></div>" +
+      "<div><span>每日食物</span><b>-" + built + "</b></div></div>";
     D.SHOPS.forEach(function (shop) {
       const st = state.shops[shop.id];
       const affordable = canAfford(shop.cost);
@@ -3441,9 +3744,8 @@
     if (!type) return;
     const floor = state.currentFloor;
     const remainingTypes = {};
-    D.EXPANSION_SLOTS.forEach(function (slot) {
-      const r = currentFloorRooms()[slot.id];
-      if (r && slot.id !== slotId) remainingTypes[r.type] = true;
+    floorRoomList(floor).forEach(function (r) {
+      if (r.id !== slotId) remainingTypes[r.type] = true;
     });
     const willLeave = guestsOnFloor(floor).filter(function (g) {
       const klass = guestClass(g.klass || "resident");
@@ -3465,6 +3767,13 @@
       '<div class="modal-actions"><button class="btn btn-ghost" data-action="close-modal">保留房间</button>' +
       '<button class="btn btn-danger" data-action="demolish-confirm" data-slot="' + slotId + '">确认拆除</button></div></div>'
     );
+  }
+
+  function costShort(cost) {
+    const names = { gold: "金", wood: "木", stone: "石", food: "食" };
+    return RES_ORDER.filter(function (k) { return cost[k]; }).map(function (k) {
+      return cost[k] + names[k];
+    }).join("·") || "免费";
   }
 
   function costTextOnly(cost) {
@@ -3518,101 +3827,34 @@
     saveState();
   }
 
-  function openExpansionSlotModal(slotId) {
+  function openExpansionRoomModal(roomId) {
     if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
-    const slot = D.EXPANSION_SLOTS.filter(function (s) { return s.id === slotId; })[0];
-    if (!slot) return;
-    const type = expansionRoomInfo(slotId);
-    if (type) {
-      const room = currentFloorRooms()[slotId];
-      const lv = roomLevel(room);
-      const cost = roomUpgradeCost(type, room);
-      const afford = canAfford(cost);
-      openModal(
-        modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name + " · Lv." + lv, "S" + slotId.replace("s", "") + " 号房间") +
-        '<div class="modal-body"><div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
-        '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
-        "当前加成：床位 " + roomCapacity(type, room) +
-        (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%" : "") +
-        (type.productionBonus ? " · 生产 +" + Math.round(type.productionBonus * roomScale(room) * 100) + "%" : "") +
-        (type.foodBonus ? " · 食物 +" + Math.round(type.foodBonus * roomScale(room) * 100) + "%" : "") +
-        (type.defense ? " · 防御 +" + (type.defense + (lv - 1) * 3) : "") +
-        " · 满意度 +" + ((type.satisfaction || 0) + (lv - 1) * 2) + "</div>" +
-        (lv < 3 ? '<div class="upgrade-next"><b>升级到 Lv.' + (lv + 1) + "</b><span>" + roomUpgradeEffect(type, room) + "</span>" +
-          '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
-        '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
-        '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
-        '<button class="btn btn-danger" data-action="demolish-open" data-slot="' + slotId + '">拆除</button>' +
-        (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-slot="' + slotId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
-        "</div></div>"
-      );
-      return;
-    }
-    const slotRank = D.ROOM_SIZE_RANK[slot.size] || 1;
-    const fitTypes = D.EXPANSION_ROOMS.filter(function (r) { return (D.ROOM_SIZE_RANK[r.size] || 1) <= slotRank; });
-    const rows = fitTypes.map(function (r) {
-      const afford = canAfford(r.cost);
-      return '<div class="menu-row">' +
-        '<div class="menu-icon"><img src="' + expansionIcon(r) + '" alt=""></div>' +
-        '<div class="menu-copy"><div class="menu-name">' + r.name + ' <span class="room-size-tag ' + r.size + '">' + r.size + "</span></div>" +
-        '<div class="menu-desc">' + r.desc + "</div>" +
-        '<div class="menu-meta">' + costHTML(r.cost, true) + "</div></div>" +
-        '<div class="menu-actions"><button class="btn btn-gold btn-small" data-action="build-expansion" data-slot="' + slotId + '" data-type="' + r.id + '"' + (afford ? "" : " disabled") + '>建造</button></div></div>';
-    }).join("");
+    const room = currentFloorRooms()[roomId];
+    if (!room) return;
+    const type = roomTypeOf(room);
+    if (!type) return;
+    const lv = roomLevel(room);
+    const cost = roomUpgradeCost(type, room);
+    const afford = canAfford(cost);
     openModal(
-      modalHead("sparkle", "扩建层 · 空房间", "选择这间房的用途", "房间类型可以重复；位置由你选择。") +
-      '<div class="modal-body"><p class="modal-copy">第 ' + (state.currentFloor + 1) + ' 层的这个位置是 <b>' + slot.size + '</b> 号。只能放置不超过该尺寸的房间；每层建议至少配置 1 间厕所和 1 间餐厅，并按客人需求准备武器库、会议室或小礼拜堂。</p>' +
-      '<div class="menu-list">' + rows + "</div>" +
-      '<div class="modal-actions"><span class="modal-note">当前空间：' + countResidents() + " / " + residentCapacity() + "</span>" +
-      '<button class="btn btn-ghost" data-action="close-modal">再想想</button></div></div>',
-      { className: "modal-menu" }
+      modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name + " · Lv." + lv, type.size + " 尺寸房间") +
+      '<div class="modal-body"><div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
+      '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
+      "当前加成：床位 " + roomCapacity(type, room) +
+      (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%" : "") +
+      (type.productionBonus ? " · 生产 +" + Math.round(type.productionBonus * roomScale(room) * 100) + "%" : "") +
+      (type.foodBonus ? " · 食物 +" + Math.round(type.foodBonus * roomScale(room) * 100) + "%" : "") +
+      (type.defense ? " · 防御 +" + (type.defense + (lv - 1) * 3) : "") +
+      " · 满意度 +" + ((type.satisfaction || 0) + (lv - 1) * 2) + "</div>" +
+      (lv < 3 ? '<div class="upgrade-next"><b>升级到 Lv.' + (lv + 1) + "</b><span>" + roomUpgradeEffect(type, room) + "</span>" +
+        '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
+      '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
+      '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+      '<button class="btn btn-danger" data-action="demolish-open" data-room="' + roomId + '">拆除</button>' +
+      (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-room="' + roomId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
+      "</div></div>"
     );
   }
-
-  function buildExpansionRoom(slotId, typeId) {
-    if (!started) return;
-    if (!state.expansionUnlocked) { toast("扩建层尚未开放。", "bad", "lock"); return; }
-    const floor = state.currentFloor || 0;
-    const rooms = floorRooms(floor);
-    if (rooms[slotId]) { toast("这间房已经建好了。", "bad", "lock"); return; }
-    const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === typeId; })[0];
-    if (!type) return;
-    const slot = D.EXPANSION_SLOTS.filter(function (s) { return s.id === slotId; })[0];
-    if (!slot) return;
-    if ((D.ROOM_SIZE_RANK[type.size] || 1) > (D.ROOM_SIZE_RANK[slot.size] || 1)) {
-      toast("这个位置太小，放不下「" + type.name + "」。", "bad", "lock");
-      return;
-    }
-    if (!canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return; }
-    payCost(type.cost);
-    rooms[slotId] = { type: typeId, level: 1 };
-    addLog("扩建层第 " + (floor + 1) + " 层新房间完成：" + type.name + "。", "good");
-    toast("「" + type.name + "」建成了！" + type.desc, "gold", "sparkle");
-    const fac = floorFacilities(floor);
-    if (fac.rooms > 0 && !fac.toilet && type.id !== "toilet") {
-      setTimeout(function () { toast("第 " + (floor + 1) + " 层还没有厕所，居民会不满意。", "bad", "toilet"); }, 500);
-    }
-    if (fac.rooms > 0 && !fac.dining && type.id !== "dining") {
-      setTimeout(function () { toast("第 " + (floor + 1) + " 层还没有餐厅，居民会不满意。", "bad", "food"); }, 850);
-    }
-    ensureFloorProgression(true);
-    A.sfx("complete");
-    ui.guideSig = "";
-    renderAll(true);
-    saveState();
-    closeModal();
-  }
-
-  const MASK_NAMES = ["阿灰", "铜扣", "小满", "青弦", "白羽", "栗子", "石南", "蜜糖", "夜莺", "七弦"];
-  const GUEST_NAMES = {
-    farmer: ["阿土", "麦穗", "青禾", "老犁"],
-    cook: ["汤勺", "布丁", "胡椒", "奶油"],
-    resident: ["阿灰", "铜扣", "小满", "青弦", "白羽", "栗子", "石南", "蜜糖", "夜莺", "七弦"],
-    soldier: ["铁牛", "石盾", "长枪", "灰狼", "铜盔", "黑岩", "短刃", "守夜"],
-    minister: ["金策", "青简", "白算", "墨衡", "文石", "长史"],
-    missionary: ["灯烛", "福音", "白衣", "安息", "晨钟", "盐光"]
-  };
-
   function guestPortraitFor(r) {
     const klass = guestClass(r.klass || "resident");
     if (klass.id === "resident") {
@@ -3821,27 +4063,20 @@
     if (!layer) return;
     if (!state || state.view !== "expansion" || !state.expansionUnlocked) { layer.hidden = true; layer.innerHTML = ""; return; }
     layer.hidden = false;
-    layer.innerHTML = D.EXPANSION_SLOTS.map(function (slot) {
-      const room = currentFloorRooms()[slot.id];
-      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      const style = "left:" + (slot.x / 720 * 100) + "%;top:" + (slot.y / 405 * 100) + "%;width:" + (slot.w / 720 * 100) + "%;height:" + (slot.h / 405 * 100) + "%;";
-      let plaque;
-      if (type) {
-        plaque = '<span class="room-plaque built expansion-plaque"><img src="' + expansionIcon(type) + '" alt="">' +
-          '<span><b>' + type.name + '</b></span></span>';
-      } else {
-        plaque = '<span class="room-plaque available"><b>空位置 · ' + slot.size + '</b><em>S' + slot.id.replace("s", "") + ' · 点击建造</em></span>';
-      }
-      return '<button class="room-hotspot ' + (type ? "built" : "available") + ' expansion-slot slot-' + slot.size + '" style="' + style + '" data-action="expansion-slot" data-slot="' + slot.id + '" data-size="' + slot.size + '">' + plaque + "</button>";
+    const floor = state.currentFloor || 0;
+    const rooms = floorRoomList(floor);
+    layer.innerHTML = rooms.map(function (room) {
+      const type = roomTypeOf(room);
+      if (!type) return "";
+      const r = roomRectOf(room);
+      const style = "left:" + (r.x / 720 * 100) + "%;top:" + (r.y / 405 * 100) + "%;width:" + (r.w / 720 * 100) + "%;height:" + (r.h / 405 * 100) + "%;";
+      return '<button class="room-hotspot built expansion-slot slot-' + type.size + '" style="' + style + '" data-action="room-manage" data-room="' + room.id + '" aria-label="' + type.name + '">' +
+        '<span class="room-plaque built expansion-plaque"><img src="' + expansionIcon(type) + '" alt=""><span><b>' + type.name + '</b></span></span></button>';
     }).join("") +
       '<button class="stair-hotspot" data-action="floor-stairs" title="点击楼梯前往下一层"><span>' +
-      (state.currentFloor + 1 < state.expansionFloorCount ? "下一层" : (floorRoomCount(state.currentFloor) >= D.EXPANSION_SLOTS.length ? "解锁下一层" : "建满本层")) +
+      (state.currentFloor + 1 < state.expansionFloorCount ? "下一层" : (floorRoomCount(state.currentFloor) >= D.FLOOR_GRID.maxRooms ? "解锁下一层" : "建满本层")) +
       '</span></button>';
   }
-
-  /* =========================================================
-     事件
-     ========================================================= */
   function setDebugMode(on) {
     ui.debugMode = !!on;
     const panel = $("#debugPanel");
@@ -3889,11 +4124,8 @@
       state.expansionUnlocked = true;
       let floor = 0, placed = false;
       for (; floor < state.expansionFloorCount && !placed; floor++) {
-        const rooms = state.expansionFloors[floor];
-        for (let i = 0; i < D.EXPANSION_SLOTS.length; i++) {
-          const id = D.EXPANSION_SLOTS[i].id;
-          if (!rooms[id]) { rooms[id] = { type: "guest" }; placed = true; state.currentFloor = floor; break; }
-        }
+        const spot = findFreeSpot(floor, "guest");
+        if (spot) { placeRoomAt("guest", spot.x, spot.y, true); state.currentFloor = floor; placed = true; }
       }
       if (!placed) toast("调试：本层没有空位，先切换楼层或用扩建功能。", "bad", "sparkle");
       else { inviteResident(); toast("调试：已加一间客房并邀请居民。", "gold", "people"); }
@@ -3924,6 +4156,28 @@
     if (collapseBtn) collapseBtn.addEventListener("click", function () { setSidebarCollapsed(true); });
     const expandBtn = $("#ledgerExpand");
     if (expandBtn) expandBtn.addEventListener("click", function () { setSidebarCollapsed(false); });
+    const placeLayer = $("#placementLayer");
+    if (placeLayer) {
+      placeLayer.addEventListener("pointermove", function (e) {
+        if (!ui.placement) return;
+        const frame = $("#sceneFrame");
+        if (!frame) return;
+        const r = frame.getBoundingClientRect();
+        movePlacement((e.clientX - r.left) / r.width * 720, (e.clientY - r.top) / r.height * 405);
+      });
+      placeLayer.addEventListener("pointerdown", function (e) {
+        if (!ui.placement) return;
+        const frame = $("#sceneFrame");
+        if (!frame) return;
+        const r = frame.getBoundingClientRect();
+        movePlacement((e.clientX - r.left) / r.width * 720, (e.clientY - r.top) / r.height * 405);
+      });
+      placeLayer.addEventListener("click", function (e) {
+        if (!ui.placement) return;
+        e.preventDefault();
+        commitPlacement();
+      });
+    }
     $("#viewSwitch").addEventListener("click", function (e) {
       const b = e.target.closest("[data-view]");
       if (b) switchView(b.dataset.view);
@@ -3966,9 +4220,12 @@
       else if (action === "menu") openMenuModal("");
       else if (action === "buy-menu") buyMenu(el.dataset.id);
       else if (action === "shop-build") buyShop(el.dataset.id);
-      else if (action === "expansion-slot") openExpansionSlotModal(el.dataset.slot);
-      else if (action === "build-expansion") buildExpansionRoom(el.dataset.slot, el.dataset.type);
-      else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.slot);
+      else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
+      else if (action === "place-room-start") startPlacement("room", el.dataset.type);
+      else if (action === "place-decor-start") startPlacement("decor", el.dataset.type);
+      else if (action === "decor-remove") removeDecorItem(el.dataset.decor);
+      else if (action === "placement-cancel") cancelPlacement();
+      else if (action === "upgrade-expansion") upgradeExpansionRoom(el.dataset.room);
       else if (action === "recruit-open") openRecruitModal();
       else if (action === "land-plot") openLandPlotModal(Number(el.dataset.plot));
       else if (action === "expand-land") expandLandPlot(Number(el.dataset.plot));
@@ -3987,8 +4244,9 @@
       else if (action === "apply-floor-skin") applyFloorSkin(el.dataset.id);
       else if (action === "apply-interior-skin") applyInteriorSkin(el.dataset.id);
       else if (action === "buy-interior-skin") buyInteriorSkin(el.dataset.id);
-      else if (action === "demolish-open") openDemolishConfirm(el.dataset.slot);
-      else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.slot);
+      else if (action === "buy-decor-set") buyDecorSet(el.dataset.set);
+      else if (action === "demolish-open") openDemolishConfirm(el.dataset.room);
+      else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.room);
       else if (action === "invite") inviteResident();
       else if (action === "go-recruit") { ui.tab = "build"; switchView("expansion"); }
       else if (action === "recruit-guest") inviteGuest(el.dataset.class);
@@ -4030,7 +4288,11 @@
         else if (e.key === "Escape") { e.preventDefault(); if (window.__dialogueFinish) window.__dialogueFinish(); }
         return;
       }
-      if (e.key === "Escape") { if (ui.modalOpen) { e.preventDefault(); closeModal(); } return; }
+      if (e.key === "Escape") {
+        if (ui.placement) { e.preventDefault(); cancelPlacement(); return; }
+        if (ui.modalOpen) { e.preventDefault(); closeModal(); }
+        return;
+      }
       if (!started) return;
       if (e.target && ["INPUT", "SELECT", "TEXTAREA"].indexOf(e.target.tagName) >= 0) return;
       if (e.key === "`" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d")) { e.preventDefault(); setDebugMode(!ui.debugMode); return; }
@@ -4153,7 +4415,7 @@
     enter: function () { enterCastle(); },
     menu: function (id) { buyMenu(id); },
     shop: function (id) { buyShop(id); },
-    expand: function (slot, type) { buildExpansionRoom(slot, type); },
+    expand: function (type) { startPlacement("room", type || "guest"); },
     upgrade: function (id) { upgradeBuilding(id); },
     invite: function () { inviteResident(); },
     fastForward: function (seconds) {

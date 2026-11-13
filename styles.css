@@ -3195,3 +3195,56 @@ body.debug-on .debug-panel { box-shadow: 0 0 0 2px #0d0805, 0 6px 0 rgba(0,0,0,.
 @media (max-width: 1360px) {
   .top-actions .square-btn.debug-toggle { display: grid; }
 }
+
+
+/* 自由摆放 */
+.placement-layer { position: absolute; inset: 0; z-index: 9; cursor: crosshair; }
+.placement-layer[hidden] { display: none !important; }
+.placement-ghost { position: absolute; border: 2px dashed #8fbf6a; background: rgba(140,200,110,.18); pointer-events: none; box-shadow: inset 0 0 0 1px rgba(20,30,12,.35); }
+.placement-ghost.invalid { border-color: #d0664a; background: rgba(208,102,74,.20); }
+.placement-ghost.valid { border-color: #9fd07a; }
+.placement-bar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: rgba(28,19,13,.94); border: 2px solid #8a6a44; box-shadow: 0 3px 0 rgba(0,0,0,.3); color: #f0ddb4; font-family: var(--px); font-size: 11px; white-space: nowrap; }
+body.placement-on .interior-hotspots { pointer-events: none; }
+
+.room-chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.room-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; background: #eef2df; border: 2px solid #a3b18b; font-family: var(--px); cursor: pointer; }
+.room-chip b { font-size: 11px; font-weight: 400; color: #3f2b19; }
+.room-chip em { font-style: normal; font-size: 9px; color: #7c6041; }
+.room-chip:hover { background: #f7fbee; }
+.room-chip-size { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; font-size: 9px; color: #3f2b19; background: #d9c8a6; border: 1px solid #8a6a44; }
+.room-chip-size.S { background: #cfd9bd; }
+.room-chip-size.M { background: #e0cfa4; }
+.room-chip-size.L { background: #e3b9a4; }
+.room-shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 8px; }
+@media (max-width: 1500px) { .room-shop-grid { grid-template-columns: 1fr; } }
+.room-shop-item { display: flex; align-items: center; gap: 3px; min-width: 0; padding: 3px 4px; background: #f4e7cc; border: 2px solid #c2a678; font-family: var(--px); cursor: pointer; text-align: left; }
+.room-shop-item b { flex: 1 1 auto; min-width: 0; font-size: 10px; font-weight: 400; color: #3f2b19; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-shop-item em { flex: 0 0 auto; font-style: normal; font-size: 8px; color: #8a6b48; white-space: nowrap; }
+.room-shop-item:hover:not(:disabled) { background: #fbf0d8; border-color: #a98654; }
+.room-shop-item:disabled { opacity: .5; cursor: not-allowed; }
+.decor-shop-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+.decor-shop-item { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 4px 5px; background: #efe3ca; border: 2px solid #c2a678; font-family: var(--px); cursor: pointer; text-align: left; }
+.decor-shop-item b { font-size: 10px; font-weight: 400; color: #3f2b19; }
+.decor-shop-item em { font-style: normal; font-size: 8px; color: #8a6b48; }
+.decor-shop-item:hover:not(:disabled) { background: #f8edd8; }
+.decor-shop-item:disabled { opacity: .5; cursor: not-allowed; }
+.decor-placed-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.decor-placed { padding: 3px 6px; background: #e8dfcd; border: 1px dashed #a98a5f; color: #6d5334; font-family: var(--px); font-size: 9px; cursor: pointer; }
+.decor-placed:hover { background: #f4e9d6; }
+
+/* 商铺收益摘要 */
+.shop-income-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0 0 8px; }
+.shop-income-summary > div { padding: 5px 6px; background: #eef2df; border: 1px solid #a3b18b; }
+.shop-income-summary span { display: block; font-size: 9px; color: #6f7f58; }
+.shop-income-summary b { display: block; font-size: 13px; color: #3f5330; font-weight: 400; }
+
+/* 装修套装 */
+.decor-set-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.decor-set-row { display: flex; align-items: center; gap: 8px; padding: 7px; background: #f4e7cc; border: 2px solid #c2a678; }
+.decor-set-row.active { background: #edf2df; border-color: #9fae84; }
+.decor-set-copy { flex: 1; min-width: 0; }
+.decor-set-copy b { display: block; font-size: 13px; font-weight: 400; color: #3f2b19; }
+.decor-set-copy span { display: block; font-size: 10px; color: #7c6041; line-height: 1.35; }
+.decor-set-copy em { display: block; margin-top: 2px; font-style: normal; font-size: 9px; color: #9a7a4f; }
+.decor-set-action { flex: 0 0 auto; }
+.room-shop-item { overflow: hidden; }

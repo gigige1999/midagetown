@@ -3201,13 +3201,23 @@ window.CastleScene = (function () {
     R(ctx, x + 4, y - 21, 2, 5, "#6d4e34");
   }
 
-  function expansionRoomSlot(floorIndex, typeId) {
-    if (!stateRef || !stateRef.expansionFloors) return null;
+  function sceneFloorRooms(floorIndex) {
+    if (!stateRef || !stateRef.expansionFloors) return [];
     const rooms = stateRef.expansionFloors[floorIndex] || {};
-    for (let i = 0; i < D.EXPANSION_SLOTS.length; i++) {
-      const slot = D.EXPANSION_SLOTS[i];
-      const room = rooms[slot.id];
-      if (room && room.type === typeId) return slot;
+    return Object.keys(rooms).map(function (id) {
+      const room = rooms[id];
+      if (!room || !room.type) return null;
+      const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === room.type; })[0];
+      if (!type) return null;
+      const fp = (D.ROOM_FOOTPRINTS || {})[type.size] || { w: 136, h: 104 };
+      return { id: id, room: room, type: type, x: Number(room.x) || 20, y: Number(room.y) || 40, w: fp.w, h: fp.h, size: type.size };
+    }).filter(Boolean);
+  }
+
+  function expansionRoomSlot(floorIndex, typeId) {
+    const list = sceneFloorRooms(floorIndex);
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].type.id === typeId) return list[i];
     }
     return null;
   }
@@ -3903,6 +3913,63 @@ window.CastleScene = (function () {
     drawRoomLevelDecor(level, x, y, w, h, t);
     ctx.restore();
   }
+  function drawFloorDecor(floor, t) {
+    if (!stateRef || !Array.isArray(stateRef.decor)) return;
+    const list = stateRef.decor[floor] || [];
+    list.forEach(function (d) {
+      const item = (D.DECOR_ITEMS || []).filter(function (i) { return i.id === d.type; })[0];
+      if (!item) return;
+      drawDecorItem(item, Number(d.x) || 0, Number(d.y) || 0, t);
+    });
+  }
+
+  function drawDecorItem(item, x, y, t) {
+    const id = item.id;
+    shadow(ctx, x + item.w / 2, y + item.h, item.w * 0.45, 3, 0.2);
+    if (id === "lamp") {
+      R(ctx, x + 6, y + 4, 4, 18, "#3b2a1a");
+      R(ctx, x + 2, y, 12, 6, "#7a5a36");
+      R(ctx, x + 3, y + 1, 10, 3, "#f2c56d");
+      drawGlow(x + 8, y + 2, 18, "#ffcf72", 0.16);
+      R(ctx, x + 2, y + 20, 12, 3, "#3b2a1a");
+    } else if (id === "plant") {
+      R(ctx, x + 3, y + 12, 12, 11, "#8a5a36");
+      R(ctx, x + 4, y + 13, 10, 8, "#a87545");
+      R(ctx, x + 7, y + 4, 3, 10, "#4f6e3d");
+      R(ctx, x + 4, y + 7, 4, 5, "#6e904f");
+      R(ctx, x + 11, y + 5, 4, 6, "#5c7c44");
+      R(ctx, x + 8, y + 2, 4, 4, "#7fa35c");
+    } else if (id === "weapon") {
+      R(ctx, x + 1, y + 4, item.w - 2, 3, "#4b3725");
+      R(ctx, x + 1, y + item.h - 6, item.w - 2, 3, "#4b3725");
+      R(ctx, x + 8, y + 2, 2, item.h - 8, "#c9cfcb");
+      R(ctx, x + 5, y + 1, 8, 2, "#9aa0a0");
+      R(ctx, x + 18, y + 2, 2, item.h - 8, "#8a623b");
+      R(ctx, x + 16, y + 1, 6, 3, "#c9cfcb");
+    } else if (id === "painting") {
+      R(ctx, x, y + 2, item.w, item.h - 4, "#8e6e45");
+      R(ctx, x + 2, y + 4, item.w - 4, item.h - 8, "#4e6d82");
+      R(ctx, x + 3, y + item.h - 8, item.w - 6, 4, "#3f5f3a");
+      R(ctx, x + item.w / 2 - 3, y + 6, 6, 4, "#e0c06a");
+    } else if (id === "statue") {
+      R(ctx, x + 4, y + item.h - 8, item.w - 8, 8, "#6d6a5f");
+      R(ctx, x + 7, y + 8, item.w - 14, item.h - 16, "#9a9587");
+      R(ctx, x + 8, y + 4, item.w - 16, 6, "#b5b0a0");
+      R(ctx, x + 9, y + 10, 3, 3, "#57544b");
+    } else if (id === "rug") {
+      R(ctx, x, y + 4, item.w, item.h - 8, "#3d2a22");
+      R(ctx, x + 2, y + 5, item.w - 4, item.h - 10, "#8a4c3c");
+      for (let i = 4; i < item.w - 4; i += 8) R(ctx, x + i, y + 7, 4, 2, "#e0b45e");
+    } else if (id === "candle") {
+      R(ctx, x + 3, y + 16, 8, 4, "#3b2a1e");
+      for (let i = 0; i < 3; i++) {
+        R(ctx, x + 3 + i * 3, y + 6 + (i % 2) * 3, 2, 10, "#efe1bd");
+        R(ctx, x + 3 + i * 3, y + 3 + (i % 2) * 3, 2, 3, "#ffcf72");
+      }
+      drawGlow(x + 7, y + 6, 16, "#ffcf72", 0.12);
+    }
+  }
+
   function drawExpansion(state, dt) {
     const floor = (state && state.currentFloor) || 0;
     const rooms = state && state.expansionFloors ? state.expansionFloors[floor] || {} : {};
@@ -3914,27 +3981,20 @@ window.CastleScene = (function () {
     interiorArchWall(8, 8, W - 16, H - 16);
     R(ctx, 18, 18, W - 36, H - 36, "#4b3a31");
     drawSkinFloorBase(20, 20, W - 40, H - 40, skin);
-    // 楼层走廊
-    R(ctx, 20, 168, W - 40, 52, skinData.corridor);
-    R(ctx, 22, 170, W - 44, 48, skinData.runner);
-    for (let x = 42; x < W - 42; x += 24) {
-      R(ctx, x, 174, 10, 2, "rgba(239,205,140,0.28)");
-      R(ctx, x, 212, 10, 2, "rgba(239,205,140,0.28)");
-    }
-    // 楼层标牌
-    R(ctx, 286, 178, 148, 32, "#2b1d15");
-    R(ctx, 288, 180, 144, 28, "#3c2b1d");
-    R(ctx, 288, 180, 144, 2, "#876b49");
+    // 楼层尽头的墙面装饰线
+    R(ctx, 20, 20, W - 40, 2, "rgba(214,164,73,0.25)");
+    // 楼层标牌（左上角，避免被房间盖住）
+    R(ctx, 24, 22, 168, 16, "rgba(43,29,21,0.9)");
+    R(ctx, 26, 24, 164, 12, "rgba(60,43,29,0.9)");
     ctx.fillStyle = "#f0d28a";
-    ctx.font = "12px FusionPixel, FusionPixelExtra, monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("F" + (floor + 1) + "  ·  第 " + (floor + 1) + " 层  ·  " + skinData.name, 360, 200);
+    ctx.font = "9px 'PingFang SC', 'Microsoft YaHei', monospace";
     ctx.textAlign = "left";
-    D.EXPANSION_SLOTS.forEach(function (slot) {
-      const room = rooms[slot.id];
-      const type = room ? D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0] : null;
-      drawExpansionRoom(type, slot, time, room ? room.level || 1 : 1, skin);
+    ctx.fillText("F" + (floor + 1) + " · 第 " + (floor + 1) + " 层 · " + skinData.name, 32, 34);
+    ctx.textAlign = "left";
+    sceneFloorRooms(floor).forEach(function (entry) {
+      drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
     });
+    drawFloorDecor(floor, time);
     // 楼梯
     R(ctx, 318, 352, 84, 32, "#2b1e17");
     for (let i = 0; i < 6; i++) {
@@ -4163,6 +4223,43 @@ window.CastleScene = (function () {
       R(ctx, r.x + r.w - 17, r.y + 1, 3, 3, "#f0d28a");
     }
   }
+  function drawInteriorSetProps(t) {
+    if (!stateRef || !stateRef.interiorDecor) return;
+    const set = (D.DECOR_SETS || []).filter(function (s) { return s.id === stateRef.interiorDecor; })[0];
+    if (!set) return;
+    const props = set.props || [];
+    const hall = { x: 220, y: 158, w: 280, h: 218 };
+    if (props.indexOf("carpet") >= 0) {
+      interiorRug(hall.x + 26, hall.y + 50, hall.w - 52, hall.h - 84, "#7a4038");
+    }
+    if (props.indexOf("banner") >= 0) {
+      interiorBanner(hall.x + 20, hall.y + 12, 16, 40, "#8e3731");
+      interiorBanner(hall.x + hall.w - 36, hall.y + 12, 16, 40, "#8e3731");
+    }
+    if (props.indexOf("painting") >= 0) {
+      interiorPainting(hall.x + 46, hall.y + 8, 26, 20, "#4e6d82");
+    }
+    if (props.indexOf("clock") >= 0) {
+      R(ctx, hall.x + hall.w - 72, hall.y + 6, 18, 18, IN.ink);
+      circle(ctx, hall.x + hall.w - 63, hall.y + 15, 7, "#e8ddc4");
+      R(ctx, hall.x + hall.w - 63, hall.y + 11, 1, 4, "#3b2a1a");
+      R(ctx, hall.x + hall.w - 63, hall.y + 15, 4, 1, "#3b2a1a");
+    }
+    if (props.indexOf("books") >= 0) {
+      interiorBookStack(hall.x + 26, hall.y + 150);
+    }
+    if (props.indexOf("plant") >= 0) {
+      interiorPlant(hall.x + 14, hall.y + hall.h - 40);
+      interiorPlant(hall.x + hall.w - 32, hall.y + hall.h - 40);
+    }
+    if (props.indexOf("candles") >= 0) {
+      interiorCandle(hall.x + 12, hall.y + 96, t, true);
+      interiorCandle(hall.x + hall.w - 16, hall.y + 96, t, true);
+      interiorCandle(hall.x + 12, hall.y + 150, t, true);
+      interiorCandle(hall.x + hall.w - 16, hall.y + 150, t, true);
+    }
+  }
+
   function drawInterior(state, dt) {
     // 背景与外墙
     R(ctx, 0, 0, W, H, "#1b1310");
@@ -4249,6 +4346,7 @@ window.CastleScene = (function () {
       if (bs && bs.status === "built") drawInteriorRoomUpgrade(b, bs.level || 1, time);
     });
 
+    drawInteriorSetProps(time);
     drawStudy(time, built("study"));
     drawChapel(time, built("chapel"));
     drawBarracks(time, built("barracks"));
@@ -4400,8 +4498,10 @@ window.CastleScene = (function () {
     R(ctx, 588, 248, 2, 6, "#4f4534");
   }
 
-  function drawFishStall(t) {
+  function drawFishStall(t, plot) {
     const x = 470, baseY = 270;
+    ctx.save();
+    if (plot) ctx.translate(plot.x - 470, plot.y - 210);
     shadow(ctx, 516, baseY, 46, 7, 0.24);
     R(ctx, 476, 218, 82, 38, "#3b2a1a");
     R(ctx, 478, 220, 78, 34, "#5d5144");
@@ -4433,10 +4533,13 @@ window.CastleScene = (function () {
     }
     R(ctx, 474, 252, 3, 18, "#3b2a1a");
     R(ctx, 556, 252, 3, 18, "#3b2a1a");
+    ctx.restore();
   }
 
-  function drawFlowerStall(t) {
+  function drawFlowerStall(t, plot) {
     const x = 214, baseY = 382;
+    ctx.save();
+    if (plot) ctx.translate(plot.x - 214, plot.y - 326);
     shadow(ctx, 258, baseY, 44, 7, 0.22);
     R(ctx, 218, 334, 80, 38, "#3b2a1a");
     R(ctx, 220, 336, 76, 34, "#6d5238");
@@ -4458,6 +4561,7 @@ window.CastleScene = (function () {
     }
     R(ctx, 216, 366, 3, 16, "#3b2a1a");
     R(ctx, 297, 366, 3, 16, "#3b2a1a");
+    ctx.restore();
   }
 
   function drawShopSign(x, baseY, t) {
@@ -4491,9 +4595,9 @@ window.CastleScene = (function () {
       } else if (shop.id === "smithy") {
         drawSmithy(t, lights);
       } else if (shop.id === "fishmonger") {
-        drawFishStall(t);
+        drawFishStall(t, shop.plot);
       } else if (shop.id === "flower") {
-        drawFlowerStall(t);
+        drawFlowerStall(t, shop.plot);
       }
     });
   }
