@@ -2789,7 +2789,7 @@
         "</div></div>";
     }).join("");
     openModal(
-      modalHead("sparkle", "城堡内部 · 装修", "套装与地板", "套装包含地板与陈设；单买地板只换地面。") +
+      modalHead("sparkle", "城堡内部 · 装修", "套装与地板", "整套购买，地板、墙面与陈设一起换；不再单卖地板。") +
       '<div class="modal-body">' +
       '<div class="decor-set-list">' + D.DECOR_SETS.map(function (set) {
         const active = state.interiorDecor === set.id;
@@ -2802,7 +2802,6 @@
             : '<button class="btn btn-gold btn-small" data-action="buy-decor-set" data-set="' + set.id + '"' + (can ? "" : " disabled") + ">购买套装</button>") +
           "</div></div>";
       }).join("") + "</div>" +
-      '<div class="floor-skin-list">' + rows + "</div>" +
       '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b></span>" +
       '<button class="btn btn-primary" data-action="close-modal">完成</button></div></div>',
       { className: "modal-floor-skin" }

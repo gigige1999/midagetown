@@ -4255,6 +4255,14 @@ window.CastleScene = (function () {
       R(ctx, r.x + r.w - 17, r.y + 1, 3, 3, "#f0d28a");
     }
   }
+  const INTERIOR_PALETTES = {
+    stone: null,
+    wood: { wash: "#c08a4e", alpha: 0.55, rug: "#7a4a30", accent: "#f0c27a", glow: "#ffcf8a" },
+    checker: { wash: "#8f9aa8", alpha: 0.50, rug: "#5a4a52", accent: "#e2e8ee", glow: "#cfe0f0" },
+    moss: { wash: "#7fa062", alpha: 0.55, rug: "#4e5f3e", accent: "#c0d894", glow: "#c8e0a0" },
+    royal: { wash: "#b03a46", alpha: 0.55, rug: "#7a2f3a", accent: "#f0cc72", glow: "#ff9a7a" }
+  };
+
   function drawInteriorSetProps(t) {
     if (!stateRef || !stateRef.interiorDecor) return;
     const set = (D.DECOR_SETS || []).filter(function (s) { return s.id === stateRef.interiorDecor; })[0];
@@ -4262,7 +4270,8 @@ window.CastleScene = (function () {
     const props = set.props || [];
     const hall = { x: 220, y: 158, w: 280, h: 218 };
     if (props.indexOf("carpet") >= 0) {
-      interiorRug(hall.x + 26, hall.y + 50, hall.w - 52, hall.h - 84, "#7a4038");
+      const pal = INTERIOR_PALETTES[set.skin] || {};
+      interiorRug(hall.x + 26, hall.y + 50, hall.w - 52, hall.h - 84, pal.rug || "#7a4038");
     }
     if (props.indexOf("banner") >= 0) {
       interiorBanner(hall.x + 20, hall.y + 12, 16, 40, "#8e3731");
@@ -4414,6 +4423,30 @@ window.CastleScene = (function () {
     if (built("storeroom")) lights.push({ x: 158, y: 242, r: 22, color: "#f3ca75", a: 0.14 });
     if (built("kitchen")) lights.push({ x: 150, y: 348, r: 22, color: "#f3ca75", a: 0.14 });
     lights.forEach(function (l) { drawGlow(l.x, l.y, l.r, l.color, l.a); });
+
+    // 套装整体配色
+    const skinId = state && state.interiorSkin ? state.interiorSkin.selected : "stone";
+    const pal = INTERIOR_PALETTES[skinId];
+    if (pal) {
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = pal.alpha;
+      R(ctx, 20, 20, W - 40, H - 40, pal.wash);
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.10;
+      R(ctx, 20, 20, W - 40, H - 40, pal.glow || pal.wash);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 0.55;
+      // 墙面/地面分界处的套装色带
+      R(ctx, 22, 22, W - 44, 2, pal.accent);
+      R(ctx, 22, H - 24, W - 44, 2, pal.accent);
+      for (let i = 0; i < 3; i++) {
+        R(ctx, 23 + i, 23 + i, W - 46 - i * 2, 1, pal.accent);
+        R(ctx, 23 + i, H - 24 - i, W - 46 - i * 2, 1, pal.accent);
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
 
     // 戴面具的居民会在主厅里走动
     drawMaskedWanderers(time, "indoor");
