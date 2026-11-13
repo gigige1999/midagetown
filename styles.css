@@ -3178,3 +3178,20 @@ button { font-size: 14px; }
 .relation-copy { flex: 1; min-width: 0; }
 .relation-copy b { display: block; font-size: 11px; font-weight: 400; color: #3f2b19; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .relation-copy span { display: block; font-size: 10px; color: #7c6041; }
+
+
+/* 调试入口与面板状态 */
+.square-btn.debug-toggle { position: relative; }
+.square-btn.debug-toggle.active {
+  background: #8a3f31;
+  box-shadow: inset 0 0 0 1px #e08a72, 0 2px 0 #0c0705;
+}
+.square-btn.debug-toggle.active::after {
+  content: "";
+  position: absolute; right: 2px; top: 2px;
+  width: 6px; height: 6px; background: #ffd28a; border: 1px solid #2a0f0b;
+}
+body.debug-on .debug-panel { box-shadow: 0 0 0 2px #0d0805, 0 6px 0 rgba(0,0,0,.3), 0 0 24px rgba(228,108,86,.35); }
+@media (max-width: 1360px) {
+  .top-actions .square-btn.debug-toggle { display: grid; }
+}

@@ -3847,8 +3847,12 @@
     const panel = $("#debugPanel");
     if (panel) panel.hidden = !ui.debugMode;
     document.body.classList.toggle("debug-on", ui.debugMode);
-    const btn = $(".debug-toggle");
-    if (btn) btn.textContent = ui.debugMode ? "调试中" : "调试";
+    const btn = $("#debugBtn") || $(".debug-toggle");
+    if (btn) {
+      btn.classList.toggle("active", ui.debugMode);
+      btn.title = ui.debugMode ? "调试模式已开启 · 点击关闭" : "调试模式（~ 或 Ctrl+Shift+D）";
+      btn.setAttribute("aria-label", ui.debugMode ? "关闭调试模式" : "开启调试模式");
+    }
     toast(ui.debugMode ? "调试模式开启：建造会立即完成。" : "调试模式关闭。", ui.debugMode ? "gold" : "neutral", "hammer");
   }
 
