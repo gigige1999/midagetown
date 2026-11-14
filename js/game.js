@@ -58,6 +58,7 @@
     placement: null,
     decorMode: false,
     dragRoom: null,
+    dragDecor: null,
     tileBrush: null
   };
 
@@ -3359,6 +3360,7 @@
     ui.decorMode = false;
     window.__decorMode = false;
     ui.dragRoom = null;
+    ui.dragDecor = null;
     ui.tileBrush = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
@@ -3374,6 +3376,62 @@
       if (lx >= r.x && lx <= r.x + r.w && ly >= r.y && ly <= r.y + r.h) return list[i];
     }
     return null;
+  }
+
+  function decorAtPoint(lx, ly) {
+    const floor = state.currentFloor || 0;
+    const list = state.decor[floor] || [];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const d = list[i];
+      const item = D.DECOR_ITEMS.filter(function (it) { return it.id === d.type; })[0];
+      if (!item) continue;
+      if (lx >= d.x && lx <= d.x + item.w && ly >= d.y && ly <= d.y + item.h) return { decor: d, item: item };
+    }
+    return null;
+  }
+
+  function beginDecorDrag(decor, item, lx, ly) {
+    ui.dragDecor = { id: decor.id, type: decor.type, w: item.w, h: item.h, dx: lx - decor.x, dy: ly - decor.y, x: decor.x, y: decor.y };
+  }
+
+  function updateDecorDrag(lx, ly) {
+    const d = ui.dragDecor;
+    if (!d) return;
+    let x = snapGrid(lx - d.dx);
+    let y = snapGrid(ly - d.dy);
+    const g = D.FLOOR_GRID;
+    x = Math.max(g.left, Math.min(g.right - d.w, x));
+    y = Math.max(g.top, Math.min(g.bottom - d.h, y));
+    d.x = x; d.y = y;
+    const item = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
+    const ok = item ? decorPlacementValid(state.currentFloor || 0, item, x, y, d.id) : false;
+    d.valid = ok;
+    const ghost = $("#placementGhost");
+    if (ghost) {
+      ghost.hidden = false;
+      ghost.className = "placement-ghost " + (ok ? "valid" : "invalid");
+      ghost.style.left = (x / 720 * 100) + "%";
+      ghost.style.top = (y / 405 * 100) + "%";
+      ghost.style.width = (d.w / 720 * 100) + "%";
+      ghost.style.height = (d.h / 405 * 100) + "%";
+    }
+  }
+
+  function commitDecorDrag() {
+    const d = ui.dragDecor;
+    ui.dragDecor = null;
+    const ghost = $("#placementGhost");
+    if (ghost) ghost.hidden = true;
+    if (!d || d.valid === false) { renderAll(true); return; }
+    const list = state.decor[state.currentFloor || 0] || [];
+    const target = list.filter(function (it) { return it.id === d.id; })[0];
+    if (!target) return;
+    if (target.x === d.x && target.y === d.y) { renderAll(true); return; }
+    target.x = d.x; target.y = d.y;
+    A.sfx("page");
+    toast("装饰位置已调整。", "good", "sparkle");
+    renderAll(true);
+    saveState();
   }
 
   function beginRoomDrag(room, lx, ly) {
@@ -3550,7 +3608,7 @@
     if (decors.length) {
       html += '<div class="decor-placed-list">' + decors.map(function (d) {
         const item = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
-        return '<button class="decor-placed" data-action="decor-remove" data-decor="' + d.id + '">' + (item ? item.name : d.type) + " ×</button>";
+        return '<button class="decor-placed" data-action="decor-remove" data-decor="' + d.id + '" title="装修模式中可拖动；点击这里移除">' + (item ? item.name : d.type) + " ×</button>";
       }).join("") + "</div>";
     }
     return html;
@@ -4055,6 +4113,7 @@
         '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
       '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
       '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+      '<button class="btn btn-wood" data-action="move-room" data-room="' + roomId + '"><img src="' + I.icon("arrow") + '" alt="">移动位置</button>' +
       '<button class="btn btn-danger" data-action="demolish-open" data-room="' + roomId + '">拆除</button>' +
       (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-room="' + roomId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
       "</div></div>"
@@ -4373,20 +4432,24 @@
         const p = layerPoint(e);
         if (!p) return;
         if (ui.placement) { movePlacement(p.x, p.y); return; }
-        if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); }
+        if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); return; }
+        if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); }
       });
       placeLayer.addEventListener("pointerdown", function (e) {
         const p = layerPoint(e);
         if (!p) return;
         if (ui.placement) { movePlacement(p.x, p.y); return; }
         if (!ui.decorMode) return;
+        const dec = decorAtPoint(p.x, p.y);
+        if (dec) { beginDecorDrag(dec.decor, dec.item, p.x, p.y); return; }
         const room = roomAtPoint(p.x, p.y);
         if (room) { beginRoomDrag(room, p.x, p.y); return; }
         if (ui.tileBrush) { paintTileAt(p.x, p.y); }
       });
       placeLayer.addEventListener("click", function (e) {
         if (ui.placement) { e.preventDefault(); commitPlacement(); return; }
-        if (ui.decorMode && ui.dragRoom) { e.preventDefault(); commitRoomDrag(); }
+        if (ui.decorMode && ui.dragRoom) { e.preventDefault(); commitRoomDrag(); return; }
+        if (ui.decorMode && ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
       });
     }
     $("#viewSwitch").addEventListener("click", function (e) {
@@ -4438,6 +4501,7 @@
       else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
       else if (action === "brush-tile") { ui.tileBrush = el.dataset.id; closeModal(true); enterDecorMode(); }
       else if (action === "decor-mode") { if (ui.decorMode) exitDecorMode(); else enterDecorMode(); }
+      else if (action === "move-room") { closeModal(true); enterDecorMode(); toast("按住房间拖动即可换位置。", "neutral", "arrow"); }
       else if (action === "place-room-start") startPlacement("room", el.dataset.type);
       else if (action === "place-decor-start") startPlacement("decor", el.dataset.type);
       else if (action === "decor-remove") removeDecorItem(el.dataset.decor);
