@@ -2593,6 +2593,12 @@
     renderLedger(true);
     renderSceneHotspots();
     renderFloorSwitch();
+    const pl = $("#placementLayer");
+    if (pl) {
+      if (ui.decorMode || ui.placement) pl.hidden = false;
+      else if (!ui.placement) pl.hidden = true;
+    }
+    document.body.classList.toggle("placement-on", !!(ui.decorMode || ui.placement));
     updateDailyStatus();
     updateHint();
     updateSaveStatus();
@@ -3237,6 +3243,8 @@
     closeModal(true);
     const layer = $("#placementLayer");
     if (layer) layer.hidden = false;
+    const barBtn = document.querySelector(".placement-bar [data-action='placement-cancel']");
+    if (barBtn) barBtn.textContent = "取消";
     const hint = $("#placementHint");
     if (hint) {
       hint.textContent = kind === "room"
@@ -3250,7 +3258,10 @@
   }
 
   function cancelPlacement() {
+    if (ui.decorMode) { exitDecorMode(); return; }
     ui.placement = null;
+    ui.dragRoom = null;
+    ui.dragDecor = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
     document.body.classList.remove("placement-on");
@@ -3351,7 +3362,9 @@
     if (layer) layer.hidden = false;
     document.body.classList.add("placement-on");
     const bar = $("#placementHint");
-    if (bar) bar.textContent = "装修模式：拖动房间调整位置 · 选中地砖后点击地面铺设";
+    if (bar) bar.textContent = "装修模式：拖动房间或装饰调整位置 · 选中地砖后点击地面铺设";
+    const barBtn = document.querySelector(".placement-bar [data-action='placement-cancel']");
+    if (barBtn) barBtn.textContent = "退出装修";
     toast("装修模式：可拖动房间、铺设地砖。", "gold", "sparkle");
     renderAll(true);
   }
@@ -3918,6 +3931,7 @@
   function renderSceneHotspots() {
     const layer = $("#interiorHotspots");
     if (!layer) return;
+    if (ui.decorMode) { layer.hidden = true; layer.innerHTML = ""; return; }
     if (state && state.view === "indoor") { renderInteriorHotspots(); return; }
     if (state && state.view === "expansion") { renderExpansionHotspots(); return; }
     if (state && state.view === "land") { renderLandHotspots(); return; }
@@ -4227,6 +4241,16 @@
     }, 10000);
   }
 
+  const MASK_NAMES = ["阿灰", "铜扣", "小满", "青弦", "白羽", "栗子", "石南", "蜜糖", "夜莺", "七弦"];
+  const GUEST_NAMES = {
+    resident: ["阿灰", "铜扣", "小满", "青弦", "白羽"],
+    soldier: ["铁牛", "石盾", "长枪", "哨兵", "重甲"],
+    minister: ["金策", "灰袍", "文书", "账房先生"],
+    missionary: ["灯烛", "钟声", "静修", "晚祷"],
+    farmer: ["阿土", "麦穗", "青禾", "老犁"],
+    cook: ["汤勺", "布丁", "胡椒", "奶油"]
+  };
+
   function inviteGuest(klassId) {
     if (!started) return;
     if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
@@ -4445,6 +4469,12 @@
         const room = roomAtPoint(p.x, p.y);
         if (room) { beginRoomDrag(room, p.x, p.y); return; }
         if (ui.tileBrush) { paintTileAt(p.x, p.y); }
+      });
+      placeLayer.addEventListener("pointerup", function (e) {
+        if (ui.placement) return;
+        if (!ui.decorMode) return;
+        if (ui.dragRoom) { e.preventDefault(); commitRoomDrag(); return; }
+        if (ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
       });
       placeLayer.addEventListener("click", function (e) {
         if (ui.placement) { e.preventDefault(); commitPlacement(); return; }
