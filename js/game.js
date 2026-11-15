@@ -4471,7 +4471,10 @@
         if (ui.tileBrush) { paintTileAt(p.x, p.y); }
       });
       placeLayer.addEventListener("pointerup", function (e) {
-        if (ui.placement) return;
+        if (ui.placement) {
+          if (ui.placement.valid) commitPlacement();
+          return;
+        }
         if (!ui.decorMode) return;
         if (ui.dragRoom) { e.preventDefault(); commitRoomDrag(); return; }
         if (ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
@@ -4747,10 +4750,12 @@
       state.buildings.chapel.status = "built";
       state.buildings.chapel.progress = 1;
       state.interiorUnlocked = true;
+      state.expansionUnlocked = true;
       state.flags.enteredCastle = true;
       state.flags.chapelBuilt = true;
       state.guideIndex = D.GUIDE.length - 1;
       state.resources = { gold: 240, wood: 120, stone: 90, food: 60 };
+      refreshShopUnlocks();
       renderAll(true);
     }
   };

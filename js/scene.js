@@ -3991,14 +3991,6 @@ window.CastleScene = (function () {
     drawSkinFloorBase(20, 20, W - 40, H - 40, skin);
     // 楼层尽头的墙面装饰线
     R(ctx, 20, 20, W - 40, 2, "rgba(214,164,73,0.25)");
-    // 楼层标牌（左上角，避免被房间盖住）
-    R(ctx, 24, 22, 168, 16, "rgba(43,29,21,0.9)");
-    R(ctx, 26, 24, 164, 12, "rgba(60,43,29,0.9)");
-    ctx.fillStyle = "#f0d28a";
-    ctx.font = "9px 'PingFang SC', 'Microsoft YaHei', monospace";
-    ctx.textAlign = "left";
-    ctx.fillText("F" + (floor + 1) + " · 第 " + (floor + 1) + " 层 · " + skinData.name, 32, 34);
-    ctx.textAlign = "left";
     // 已铺地砖
     const tiles = (state && state.floorTiles && state.floorTiles[floor]) || {};
     const tileCell = D.TILE_CELL || 24;
@@ -4022,6 +4014,15 @@ window.CastleScene = (function () {
       for (let gy = 40; gy <= 376; gy += tileCell) R(ctx, 20, gy, 680, 1, "#f0d28a");
       ctx.globalAlpha = 1;
     }
+
+    // 楼层标牌（画在地砖之上，保证清晰）
+    R(ctx, 24, 8, 172, 18, "rgba(43,29,21,0.92)");
+    R(ctx, 26, 10, 168, 14, "rgba(60,43,29,0.92)");
+    ctx.fillStyle = "#f0d28a";
+    ctx.font = "10px 'PingFang SC', 'Microsoft YaHei', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("F" + (floor + 1) + " · 第 " + (floor + 1) + " 层 · " + skinData.name, 32, 21);
+    ctx.textAlign = "left";
 
     sceneFloorRooms(floor).forEach(function (entry) {
       drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
@@ -4132,11 +4133,11 @@ window.CastleScene = (function () {
     for (let i = 0; i < 3; i++) R(ctx, 116, 94 + i * 13, 18, 2, "#8b6e48");
     // 围栏
     for (let x = 160; x < 700; x += 22) {
-      R(ctx, x, 112, 3, 24, "#5b432a");
-      R(ctx, x + 3, 116, 19, 2, "#795b39");
+      R(ctx, x, 94, 3, 22, "#5b432a");
+      R(ctx, x + 3, 98, 19, 2, "#795b39");
     }
-    R(ctx, 160, 112, 3, 250, "#5b432a");
-    R(ctx, 697, 112, 3, 250, "#5b432a");
+    R(ctx, 160, 94, 3, 268, "#5b432a");
+    R(ctx, 697, 94, 3, 268, "#5b432a");
     // 田地
     (state && state.land ? state.land.plots : []).forEach(function (plot, i) {
       const r = D.LAND_PLOT_RECTS[i];
@@ -4152,10 +4153,6 @@ window.CastleScene = (function () {
           R(ctx, p[0], p[1], 3, 14, "#4b3320");
           R(ctx, p[0] + 1, p[1] + 1, 1, 12, "#8a623b");
         });
-        R(ctx, r.x + 30, r.y + 27, 80, 28, "#4b3320");
-        R(ctx, r.x + 33, r.y + 30, 74, 22, "#c2a06b");
-        ctx.fillStyle = "#4b3320"; ctx.font = "11px FusionPixel, FusionPixelExtra, monospace"; ctx.textAlign = "center";
-        ctx.fillText("待开垦", r.x + 70, r.y + 46); ctx.textAlign = "left";
         return;
       }
       R(ctx, r.x, r.y, r.w, r.h, "#5d4028");
@@ -4211,8 +4208,8 @@ window.CastleScene = (function () {
       R(ctx, hx - 2, hy - 12, 2, 20, "#8a623b");
     }
     for (let i = 0; i < 5; i++) {
-      const tx = i < 2 ? 12 + i * 36 : 650 + (i - 2) * 26;
-      const ty = 242 + (i % 3) * 38;
+      const tx = i < 2 ? 12 + i * 36 : 692 + (i - 2) * 8;
+      const ty = 250 + (i % 3) * 34;
       R(ctx, tx, ty - 28, 6, 30, "#4a3320");
       ellipse(ctx, tx + 3, ty - 34, 24, 14, "#3f5f3a");
       ellipse(ctx, tx - 8, ty - 30, 16, 11, "#4a7044");

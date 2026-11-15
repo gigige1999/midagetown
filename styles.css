@@ -3291,3 +3291,25 @@ body.placement-on .interior-hotspots { pointer-events: none; }
 .modal-catalog .modal, .modal-tiles .modal { width: min(720px, 94vw); }
 .catalog-copy em { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 .catalog-copy em .cost { display: inline-flex; margin: 0; }
+
+/* 1280 宽度下的顶栏与场景导航压缩 */
+@media (max-width: 1360px) {
+  .brand { flex: 0 0 auto; min-width: 0; }
+  .brand-mark { width: 30px; height: 30px; flex-basis: 30px; }
+  .brand-mark img { width: 26px; height: 26px; }
+  .brand-copy h1 { font-size: 17px; letter-spacing: 1px; white-space: nowrap; }
+  .brand-copy span { display: none; }
+  .top-objective { min-width: 0; }
+  .top-obj-title { font-size: 14px; }
+  .top-obj-meta { display: none; }
+  .resource-pill { min-width: 62px; }
+  .time-widget { min-width: 112px; }
+  .time-widget .season-text { display: none; }
+  .top-quick-btn { min-width: 70px; height: 44px; font-size: 12px; padding: 2px 4px; }
+  .top-quick-btn img { width: 20px; height: 20px; }
+  .top-quick-btn em { min-width: 13px; font-size: 9px; line-height: 14px; }
+  .scene-topnav .scene-location { display: none; }
+  .scene-topnav .progress-widget { width: 150px; flex-basis: 150px; }
+  .scene-topnav .progress-sub { display: none; }
+  .placement-bar { bottom: 14px; }
+}
