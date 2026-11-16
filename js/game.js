@@ -241,6 +241,7 @@
       interiorSkin: { owned: ["stone"], selected: "stone" },
       menuDays: {},
       tipsSeen: {},
+      castleName: "风息堡",
       warehouseRooms: [],
       kitchenFresh: 0,
       land: { crops: {}, harvested: {}, plots: [
@@ -405,6 +406,7 @@
     if (!s.land.harvested || typeof s.land.harvested !== "object") s.land.harvested = {};
     s.kitchenFresh = Math.max(0, Math.floor(Number(s.kitchenFresh) || 0));
     s.tipsSeen = raw.tipsSeen && typeof raw.tipsSeen === "object" ? raw.tipsSeen : {};
+    s.castleName = (raw.castleName && typeof raw.castleName === "string" && raw.castleName.trim()) ? raw.castleName.trim().slice(0, 14) : "风息堡";
     s.warehouseRooms = Array.isArray(raw.warehouseRooms) ? raw.warehouseRooms.filter(function (r) {
       return r && D.EXPANSION_ROOMS.some(function (t) { return t.id === r.type; });
     }).map(function (r) { return { type: r.type, level: clamp(Math.floor(Number(r.level) || 1), 1, 3) }; }) : [];
@@ -635,7 +637,7 @@
     showDialogue({
       npc: "samuel",
       lines: [
-        "殿下，您终于回来了。风息堡只剩断墙，地窖里还剩一点木材和金币。",
+        "殿下，您终于回来了。城堡只剩断墙，地窖里还剩一点木材和金币。" + (state && state.castleName ? "它曾叫「" + state.castleName + "」。你要换一个名字吗？" : ""),
         "先在城门口请木匠巴特。修好伐木场，他就会自动生产木材。",
         "木材不仅能修房子，也能卖给门口的行商换金币。有了金币，才能请石匠、农夫，打开更多区域。",
         "记住：每个人每天都要吃饭。吃得饱，大家干活才更快。城堡里还有很多房间在等我们。"
@@ -2452,7 +2454,7 @@
       bar.innerHTML =
         '<span class="top-obj-badge">完</span>' +
         '<div class="top-obj-copy"><div class="top-obj-kicker">自由经营</div>' +
-        '<div class="top-obj-title">风息堡的日常</div>' +
+        '<div class="top-obj-title" id="topObjTitle">风息堡的日常</div>' +
         '<div class="top-obj-meta">查看菜单、扩建房间，或者去庭院添一间商铺。</div></div>' +
         '<div class="top-obj-actions">' +
         (state.expansionUnlocked ? '<button class="btn btn-gold top-obj-trade" data-action="open-expansion">扩建层</button>' : "") +
@@ -2530,7 +2532,8 @@
     const indoor = state.view === "indoor";
     const expansion = state.view === "expansion";
     const land = state.view === "land";
-    $("#sceneLocationTitle").textContent = expansion ? "风息堡扩建层 · 第 " + (state.currentFloor + 1) + " 层" : indoor ? "风息堡大厅" : land ? "风息堡领地" : "风息堡庭院";
+    const cn = (state && state.castleName) || "风息堡";
+    $("#sceneLocationTitle").textContent = expansion ? cn + "扩建层 · 第 " + (state.currentFloor + 1) + " 层" : indoor ? cn + "大厅" : land ? cn + "领地" : cn + "庭院";
     $("#sceneLocationSub").textContent = expansion ? "UPPER WING · FLOOR " + (state.currentFloor + 1) : indoor ? "GREAT HALL · 内部" : land ? "OUTER FIELDS · 农田" : "WINDREST COURTYARD";
     const vs = $("#viewSwitch");
     if (vs) {
@@ -2720,14 +2723,39 @@
     );
   }
 
+  function openRenameModal() {
+    openModal(
+      modalHead("crest", "命名你的城堡", "给城堡起个名字", "最多 14 个字；这个名字会出现在各个地方。") +
+      '<div class="modal-body"><form onsubmit="return false" style="display:flex;gap:8px;align-items:center">' +
+      '<input class="rename-input" id="renameInput" type="text" maxlength="14" value="' + escapeHTML(state.castleName || "风息堡") + '" placeholder="城堡名字" autofocus>' +
+      '<button class="btn btn-gold" data-action="rename-confirm">确认</button></form>' +
+      '<div class="modal-actions" style="margin-top:10px"><button class="btn btn-ghost" data-action="close-modal">取消</button></div></div>',
+      { className: "modal-rename" }
+    );
+    setTimeout(function () { var inp = $("#renameInput"); if (inp) { inp.focus(); inp.select(); } }, 120);
+  }
+
+  function applyRename() {
+    const inp = $("#renameInput");
+    const name = (inp && inp.value && inp.value.trim()) ? inp.value.trim().slice(0, 14) : null;
+    if (!name) return;
+    state.castleName = name;
+    addLog("城堡命名为「" + name + "」。", "good");
+    toast("城堡已命名为「" + name + "」。重新看看各处吧。", "gold", "crest");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+  }
+
   function openCastleModal() {
     const built = D.countBuilt(state);
     const out = D.countBuilt(state, "outdoor");
     const inside = D.countBuilt(state, "indoor");
     openModal(
-      modalHead("crest", "城堡档案", state.view === "indoor" ? "风息堡大厅" : "风息堡庭院", "一座正在重新亮起灯的城堡") +
+      modalHead("crest", "城堡档案", cn + (state.view === "indoor" ? "大厅" : "庭院"), "一座正在重新亮起灯的城堡") +
       '<div class="modal-body"><p class="modal-copy">' +
-      (built >= 8 ? "所有区域都恢复了。风息堡重新完整，壁炉、厨房和每一扇窗都亮着。" : "还有房间在等一盏灯。继续修复，让更多居民住进来。") +
+      (built >= 8 ? "所有区域都恢复了。" + cn + "重新完整，壁炉、厨房和每一扇窗都亮着。" : "还有房间在等一盏灯。继续修复，让更多居民住进来。") +
       "</p>" +
       '<div class="modal-stats">' +
       '<div class="modal-stat"><img src="' + I.icon("crown") + '" alt=""><span>复兴进度<b>' + built + " / " + D.COMPLETION_TOTAL + "</b></span></div>" +
@@ -2850,7 +2878,7 @@
       ? '<p class="modal-copy">' + (tradeNote || "把多余的木材、石料和食物换成金币。金铃在账房时，出售价格会更高。") + '</p><div class="trade-list">' + sellRows + "</div>"
       : '<p class="modal-copy">用金币补缺口。每种物资每天能买的量有限，黎明时刷新。价格比卖出高，别指望靠倒卖发财。</p><div class="trade-list">' + buyRows + "</div>";
     openModal(
-      modalHead("coin", "门口的行商", "行商的货车", "卖出手里的余粮，或者买进今天缺的材料。") +
+      modalHead("coin", "门口的行商", (state.castleName || "风息堡") + "的行商", "卖出手里的余粮，或者买进今天缺的材料。") +
       '<div class="modal-body" id="tradeModal">' +
       '<div class="trade-tabs">' +
       '<button class="trade-tab' + (active === "sell" ? " active" : "") + '" data-action="trade-tab" data-tab="sell">卖出 · 换金币</button>' +
@@ -2899,7 +2927,7 @@
 
   function openHelpModal() {
     openModal(
-      modalHead("book", "经营手册", "风息堡经营手册", "从一条金色按钮开始，慢慢把城堡变成一座城。") +
+      modalHead("book", "经营手册", (state.castleName || "风息堡") + "经营手册", "从一条金色按钮开始，慢慢把城堡变成一座城。") +
       '<div class="modal-body"><div class="help-list">' +
       '<div class="help-item"><img src="' + I.icon("people") + '" alt=""><div><strong>① 雇人 → 解锁建筑</strong><p>先在居民页雇佣工匠。每个人都会解锁一座对应建筑，雇佣后建筑会自动出现在建设页。</p></div></div>' +
       '<div class="help-item"><img src="' + I.icon("hammer") + '" alt=""><div><strong>② 建造 → 自动生产</strong><p>花材料建造。建成后对应居民会自动工作，不需要手动安排岗位，资源会持续积累。</p></div></div>' +
@@ -2967,6 +2995,8 @@
   function renderAll(force) {
     if (!state) return;
     updateTopbar();
+    const objTitle = $("#topObjTitle");
+    if (objTitle) objTitle.textContent = ((state && state.castleName) || "风息堡") + "的日常";
     updateMenuButton();
     updateShopButton();
     updateBuildShopButton();
@@ -4859,7 +4889,7 @@
   }
 
   function renderJournalTab() {
-    let html = sectionHead("风息堡手记", "第 " + state.day + " 天");
+    let html = sectionHead((state.castleName || "风息堡") + "手记", "第 " + state.day + " 天");
     html += '<div class="journal-block"><div class="journal-title"><img src="' + I.icon("crest") + '" alt="">复兴进度</div>' +
       '<div class="journal-stats">' +
       '<div class="stat-box"><span>修复区域</span><b>' + D.countBuilt(state) + " / " + D.COMPLETION_TOTAL + "</b></div>" +
@@ -5584,6 +5614,8 @@
       else if (dx > 0 && !ui.sidebarCollapsed) setSidebarCollapsed(true);
     }, { passive: true });
     window.addEventListener("resize", updateLedgerScrim);
+    var locCopy = $("#sceneLocationCopy");
+    if (locCopy) locCopy.addEventListener("click", function () { if (started) openRenameModal(); });
     $("#viewSwitch").addEventListener("click", function (e) {
       const b = e.target.closest("[data-view]");
       if (b) switchView(b.dataset.view);
@@ -5644,6 +5676,7 @@
         startPlacement("room", el.dataset.type, { fromWarehouse: true });
       }
       else if (action === "open-floor-picker") openFloorPickerModal();
+      else if (action === "rename-confirm") applyRename();
       else if (action === "floor-pick") {
         const kind = el.dataset.kind;
         const id = el.dataset.id;
@@ -5914,6 +5947,7 @@
     character: function (info) { openCharacterModal(info || {}); },
     shopUpgrade: function (id) { upgradeShop(id); },
     floors: function () { openBuildShopModal("floors"); },
+    rename: function () { openRenameModal(); },
     buyFloor: function (id) { buyFloorSkin(id); },
     upgrade: function (id) { upgradeBuilding(id); },
     invite: function () { inviteResident(); },

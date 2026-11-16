@@ -3637,3 +3637,12 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .crop-icon { width: 32px; height: 32px; flex: 0 0 32px; background: #3b2a1a; border: 2px solid #6b4a32; }
 .crop-icon img { display: block; width: 32px; height: 32px; image-rendering: pixelated; }
 .crop-row { gap: 8px; align-items: flex-start; }
+
+/* 城堡命名 */
+.rename-input {
+  flex: 1; padding: 7px 10px; background: #f7ecd4; border: 2px solid #8a6a44;
+  font-family: var(--px); font-size: 14px; color: #3f2b19;
+}
+.rename-input:focus { outline: 2px solid #d6a449; outline-offset: -1px; }
+#sceneLocationCopy { cursor: pointer; }
+#sceneLocationCopy:hover { opacity: .82; }
