@@ -222,7 +222,7 @@
       speed: 1,
       weather: "clear",
       view: "outdoor",
-      resources: { gold: 60, wood: 30, stone: 8, food: 12 },
+      resources: { gold: 50, wood: 22, stone: 6, food: 10 },
       workers: workers,
       buildings: buildings,
       guideIndex: 0,

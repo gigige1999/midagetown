@@ -116,8 +116,8 @@ window.GameData = (function () {
     {
       id: "lumber", name: "伐木场", icon: "lumber", scene: "outdoor",
       worker: "bart", tags: ["生产", "木材"], room: "庭院 · 左侧",
-      cost: { wood: 10, gold: 0 }, time: 5,
-      output: { wood: 0.28 },
+      cost: { wood: 8, gold: 0 }, time: 3,
+      output: { wood: 0.32 },
       desc: "把倒下的老橡树变成整齐的木板。",
       flavor: "锯末让城堡闻起来像新的一天。",
       completionGold: 10,
@@ -126,8 +126,8 @@ window.GameData = (function () {
     {
       id: "farm", name: "农田", icon: "farm", scene: "outdoor",
       worker: "maya", tags: ["生产", "食物"], room: "庭院 · 左下",
-      cost: { wood: 18, gold: 5 }, time: 6,
-      output: { food: 0.22 },
+      cost: { wood: 14, gold: 3 }, time: 4,
+      output: { food: 0.26 },
       desc: "翻土、撒种，然后耐心等风来。",
       flavor: "第一批麦子磨成面粉时，全城堡都闻到了面包香。",
       completionGold: 10,
@@ -136,8 +136,8 @@ window.GameData = (function () {
     {
       id: "quarry", name: "采石场", icon: "quarry", scene: "outdoor",
       worker: "granite", tags: ["生产", "石料"], room: "庭院 · 右侧",
-      cost: { wood: 15, gold: 0 }, time: 6,
-      output: { stone: 0.18 },
+      cost: { wood: 12, gold: 0 }, time: 4,
+      output: { stone: 0.22 },
       desc: "从沉睡的山岩里凿出下一座城堡。",
       flavor: "花岗说，石头只是睡得很沉的云。",
       completionGold: 15,
@@ -146,7 +146,7 @@ window.GameData = (function () {
     {
       id: "kitchen", name: "厨房", icon: "tavern", scene: "indoor",
       worker: "pudding", tags: ["城堡内", "食物"], room: "城堡 · 左下",
-      cost: { wood: 20, stone: 12, gold: 10 }, time: 7,
+      cost: { wood: 16, stone: 8, gold: 4 }, time: 4,
       output: { food: 0.04 },
       effect: "每日少消耗 1 份食物，全体效率 +10%",
       desc: "炉火、热汤和一张能坐下所有人的长桌。",
@@ -157,7 +157,7 @@ window.GameData = (function () {
     {
       id: "study", name: "书房", icon: "library", scene: "indoor",
       worker: "ink", tags: ["城堡内", "效率"], room: "城堡 · 左上",
-      cost: { wood: 28, stone: 22, gold: 22 }, time: 8,
+      cost: { wood: 22, stone: 16, gold: 10 }, time: 5,
       effect: "全体生产效率 +10%",
       desc: "旧书里有旧王国的地图，也有明天的办法。",
       flavor: "最里面那排书架，总是比昨天多出一本。",
@@ -167,7 +167,7 @@ window.GameData = (function () {
     {
       id: "barracks", name: "兵营", icon: "tower", scene: "indoor",
       worker: "irondan", tags: ["城堡内", "安全"], room: "城堡 · 右上",
-      cost: { wood: 35, stone: 30, gold: 30 }, time: 9,
+      cost: { wood: 28, stone: 20, gold: 18 }, time: 6,
       effect: "全体生产效率 +10%，坏事件减半",
       desc: "武器靠墙，炉火不灭，守夜的人有一张自己的床。",
       flavor: "铁蛋坚持在门口放一块擦鞋垫。",
@@ -177,7 +177,7 @@ window.GameData = (function () {
     {
       id: "storeroom", name: "账房", icon: "market", scene: "indoor",
       worker: "goldbell", tags: ["城堡内", "买卖"], room: "城堡 · 左中",
-      cost: { wood: 40, stone: 35, gold: 42 }, time: 10,
+      cost: { wood: 32, stone: 24, gold: 26 }, time: 7,
       effect: "出售资源价格 +50%，全体效率 +10%",
       desc: "账本、货架、秘银秤，还有一把只用来数钱的椅子。",
       flavor: "金铃说，最好的买卖是让双方都笑着回家。",
@@ -187,7 +187,7 @@ window.GameData = (function () {
     {
       id: "chapel", name: "礼拜堂", icon: "chapel", scene: "indoor",
       worker: null, tags: ["城堡内", "终章"], room: "城堡 · 上方",
-      cost: { wood: 60, stone: 50, gold: 80 }, time: 12,
+      cost: { wood: 50, stone: 38, gold: 56 }, time: 8,
       effect: "风息堡重新完整，可以举办丰收庆典",
       desc: "修补彩窗，重新点亮烛台，让钟声再次有地方回响。",
       flavor: "钟声不是用来告别的，是用来叫大家回家的。",
