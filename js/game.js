@@ -62,7 +62,8 @@
     painting: false,
     paintStart: null,
     tileBrush: null,
-    ready: false
+    ready: false,
+    sections: { rooms: false, shops: false, decor: false }
   };
 
   /* =========================================================
@@ -85,6 +86,7 @@
     const prefs = loadPrefs();
     ui.ready = true;
     if (prefs && prefs.ledgerWidth) applyLedgerWidth(prefs.ledgerWidth);
+    if (prefs && prefs.sections) ui.sections = Object.assign(ui.sections, prefs.sections);
     if (prefs && prefs.sidebarCollapsed) setSidebarCollapsed(true);
     if (window.ResizeObserver) {
       resizeObserver = new ResizeObserver(fitScene);
@@ -3658,21 +3660,22 @@
 
     // 已建房间
     const rooms = floorRoomList(floor);
-    html += '<div class="guest-recruit-head"><b>本层房间</b><span>点击管理</span></div>';
-    if (rooms.length) {
+    html += '<button class="section-toggle' + (ui.sections.rooms ? " collapsed" : "") + '" data-action="toggle-section" data-section="rooms"><span>本层房间</span><em>' + rooms.length + ' 间 · 点击管理</em></button>';
+    if (!ui.sections.rooms && rooms.length) {
       html += '<div class="room-chip-list">' + rooms.map(function (room) {
         const type = roomTypeOf(room);
         if (!type) return "";
-        return '<button class="room-chip" data-action="room-manage" data-room="' + room.id + '">' +
+        return '<button class="room-chip" data-hover-room="' + room.id + '" data-action="room-manage" data-room="' + room.id + '">' +
           '<span class="room-chip-size ' + type.size + '">' + type.size + '</span>' +
           '<b>' + type.name + '</b><em>Lv.' + roomLevel(room) + '</em></button>';
       }).join("") + "</div>";
-    } else {
+    } else if (!ui.sections.rooms) {
       html += '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">这一层还空着，从下面的房间商店买一间放上去。</div>';
     }
 
     // 商店入口
-    html += '<div class="store-entry-grid">' +
+    html += '<button class="section-toggle' + (ui.sections.shops ? " collapsed" : "") + '" data-action="toggle-section" data-section="shops"><span>商店与装修</span><em>房间 / 装饰 / 地砖</em></button>';
+    if (!ui.sections.shops) html += '<div class="store-entry-grid">' +
       '<button class="store-entry" data-action="open-room-catalog"><img src="' + I.icon("hammer") + '" alt=""><b>房间商店</b><span>' + built + "/" + D.FLOOR_GRID.maxRooms + '</span></button>' +
       '<button class="store-entry" data-action="open-decor-catalog"><img src="' + I.icon("sparkle") + '" alt=""><b>装饰商店</b><span>' + (state.decor[floor] || []).length + ' 件</span></button>' +
       '<button class="store-entry" data-action="open-tile-shop"><img src="' + I.icon("leaf") + '" alt=""><b>地砖</b><span>' + Object.keys(state.floorTiles[floor] || {}).length + ' 块</span></button>' +
@@ -3680,6 +3683,9 @@
       "</div>";
     const decors = state.decor[floor] || [];
     if (decors.length) {
+      html += '<button class="section-toggle' + (ui.sections.decor ? " collapsed" : "") + '" data-action="toggle-section" data-section="decor"><span>已摆装饰</span><em>' + decors.length + ' 件</em></button>';
+    }
+    if (decors.length && !ui.sections.decor) {
       html += '<div class="decor-placed-list">' + decors.map(function (d) {
         const item = D.DECOR_ITEMS.filter(function (i) { return i.id === d.type; })[0];
         return '<button class="decor-placed" data-action="decor-remove" data-decor="' + d.id + '" title="装修模式中可拖动；点击这里移除">' + (item ? item.name : d.type) + " ×</button>";
@@ -3762,7 +3768,7 @@
   const PREFS_KEY = "castle-story-prefs-v1";
 
   function savePrefs() {
-    safeStorageSet(PREFS_KEY, JSON.stringify({ sidebarCollapsed: !!ui.sidebarCollapsed, ledgerWidth: ui.ledgerWidth || 0 }));
+    safeStorageSet(PREFS_KEY, JSON.stringify({ sidebarCollapsed: !!ui.sidebarCollapsed, ledgerWidth: ui.ledgerWidth || 0, sections: ui.sections }));
   }
 
   function loadPrefs() {
@@ -3812,6 +3818,18 @@
         savePrefs();
       });
     }
+    document.addEventListener("mouseover", function (e) {
+      const el = e.target.closest ? e.target.closest("[data-hover-room]") : null;
+      if (!el) return;
+      const room = currentFloorRooms()[el.dataset.hoverRoom];
+      if (!room) { window.__hoverRoom = null; return; }
+      const r = roomRectOf(room);
+      window.__hoverRoom = { x: r.x, y: r.y, w: r.w, h: r.h };
+    });
+    document.addEventListener("mouseout", function (e) {
+      const el = e.target.closest ? e.target.closest("[data-hover-room]") : null;
+      if (el) window.__hoverRoom = null;
+    });
     const scrim = $("#ledgerScrim");
     if (!scrim) return;
     const drawer = window.innerWidth <= 1080;
@@ -4671,6 +4689,18 @@
         savePrefs();
       });
     }
+    document.addEventListener("mouseover", function (e) {
+      const el = e.target.closest ? e.target.closest("[data-hover-room]") : null;
+      if (!el) return;
+      const room = currentFloorRooms()[el.dataset.hoverRoom];
+      if (!room) { window.__hoverRoom = null; return; }
+      const r = roomRectOf(room);
+      window.__hoverRoom = { x: r.x, y: r.y, w: r.w, h: r.h };
+    });
+    document.addEventListener("mouseout", function (e) {
+      const el = e.target.closest ? e.target.closest("[data-hover-room]") : null;
+      if (el) window.__hoverRoom = null;
+    });
     const scrim = $("#ledgerScrim");
     if (scrim) scrim.addEventListener("click", function () { setSidebarCollapsed(true); });
     if (window.innerWidth <= 1080) setSidebarCollapsed(true);
@@ -4745,6 +4775,12 @@
       else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
       else if (action === "brush-tile") { ui.tileBrush = el.dataset.id; closeModal(true); enterDecorMode(); }
       else if (action === "decor-mode") { if (ui.decorMode) exitDecorMode(); else enterDecorMode(); }
+      else if (action === "toggle-section") {
+        const key = el.dataset.section;
+        ui.sections[key] = !ui.sections[key];
+        savePrefs();
+        renderLedger(true);
+      }
       else if (action === "focus-room") {
         const id = el.dataset.room;
         const room = currentFloorRooms()[id];

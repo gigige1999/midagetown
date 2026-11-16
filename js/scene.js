@@ -4027,6 +4027,15 @@ window.CastleScene = (function () {
     sceneFloorRooms(floor).forEach(function (entry) {
       drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
     });
+    const hover = window.__hoverRoom;
+    if (hover) {
+      ctx.globalAlpha = 0.5;
+      R(ctx, hover.x, hover.y, hover.w, 1, "#ffd27a");
+      R(ctx, hover.x, hover.y + hover.h - 1, hover.w, 1, "#ffd27a");
+      R(ctx, hover.x, hover.y, 1, hover.h, "#ffd27a");
+      R(ctx, hover.x + hover.w - 1, hover.y, 1, hover.h, "#ffd27a");
+      ctx.globalAlpha = 1;
+    }
     const focus = window.__focusRoom;
     if (focus && Date.now() < focus.until) {
       const a = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 7));

@@ -3410,3 +3410,18 @@ body.placement-on .interior-hotspots { pointer-events: none; }
 .ledger-resizer:hover, body.resizing-ledger .ledger-resizer { background: rgba(214,164,73,.28); }
 body.resizing-ledger { cursor: col-resize; user-select: none; }
 @media (max-width: 1080px) { .ledger-resizer { display: none; } }
+
+/* 账房分区折叠 */
+.section-toggle {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  margin: 8px 0 5px; padding: 5px 7px;
+  background: #e9dcc2; border: 2px solid #c2a678; font-family: var(--px);
+  cursor: pointer; text-align: left;
+}
+.section-toggle::before {
+  content: "▾"; font-size: 10px; color: #7a5a36; transition: transform .12s ease;
+}
+.section-toggle.collapsed::before { transform: rotate(-90deg); }
+.section-toggle span { font-size: 12px; color: #3f2b19; }
+.section-toggle em { margin-left: auto; font-style: normal; font-size: 9px; color: #8a6b48; }
+.section-toggle:hover { background: #f3e7cd; }
