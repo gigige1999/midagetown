@@ -3655,3 +3655,13 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .tile-row .tile-copy em { font-size: 9px; }
 
 .tile-thumb { width: 46px; height: 46px; flex: 0 0 46px; image-rendering: pixelated; border: 2px solid #4b3320; background: #3b2a1a; }
+
+.shop-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; }
+.shop-bar .shop-tabs { flex: 1; margin-bottom: 0; }
+.warehouse-cta { padding: 7px 10px; background: #7d5a33; color: #ffe9c0; border: 2px solid #c9a26a; font-family: var(--px); font-size: 11px; cursor: pointer; white-space: nowrap; }
+.warehouse-cta:hover { background: #8d6739; }
+.warehouse-tile img { width: 34px; height: 34px; image-rendering: pixelated; border: 1px solid #4b3320; }
+.warehouse-tile { cursor: pointer; }
+
+.warehouse-cta { background: #b8862f; color: #2a1b0d; border-color: #ffe0a0; font-size: 11px; }
+.warehouse-cta:hover { background: #c9962f; }

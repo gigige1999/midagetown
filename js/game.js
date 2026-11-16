@@ -243,6 +243,7 @@
       tipsSeen: {},
       castleName: "风息堡",
       warehouseRooms: [],
+      warehouseTiles: {},
       kitchenFresh: 0,
       land: { crops: {}, harvested: {}, plots: [
         { unlocked: true, crop: null, growth: 0, ready: false, plantedDay: null },
@@ -407,6 +408,7 @@
     s.kitchenFresh = Math.max(0, Math.floor(Number(s.kitchenFresh) || 0));
     s.tipsSeen = raw.tipsSeen && typeof raw.tipsSeen === "object" ? raw.tipsSeen : {};
     s.castleName = (raw.castleName && typeof raw.castleName === "string" && raw.castleName.trim()) ? raw.castleName.trim().slice(0, 14) : "风息堡";
+    s.warehouseTiles = raw.warehouseTiles && typeof raw.warehouseTiles === "object" ? raw.warehouseTiles : {};
     s.warehouseRooms = Array.isArray(raw.warehouseRooms) ? raw.warehouseRooms.filter(function (r) {
       return r && D.EXPANSION_ROOMS.some(function (t) { return t.id === r.type; });
     }).map(function (r) { return { type: r.type, level: clamp(Math.floor(Number(r.level) || 1), 1, 3) }; }) : [];
@@ -3792,8 +3794,16 @@
   function undoTile() {
     const snap = ui.tileHistory.pop();
     if (!snap) { toast("没有可撤销的地砖操作。", "neutral", "arrow"); return; }
+    const floorNow = state.currentFloor || 0;
+    const nowTiles = state.floorTiles[floorNow] || {};
+    if (!state.warehouseTiles) state.warehouseTiles = {};
+    Object.keys(nowTiles).forEach(function (key) {
+      const id = nowTiles[key];
+      if (!snap.tiles[key]) state.warehouseTiles[id] = (state.warehouseTiles[id] || 0) + 1;
+    });
     state.floorTiles[snap.floor] = snap.tiles;
     state.tileStock[snap.floor] = snap.stock;
+    teach("warehouse", "拆下来的地砖会进仓库", "撤销或擦掉的地砖会收进城堡仓库，之后可以在仓库里重新铺到任意楼层。");
     toast("已撤销上一步地砖操作。", "good", "arrow");
     A.sfx("page");
     renderAll(true);
@@ -3807,8 +3817,9 @@
     const cur = state.floorTiles[floor][t.key];
     if (!cur) return 0;
     delete state.floorTiles[floor][t.key];
-    const stock = tileStockOf(floor);
-    stock[cur] = (stock[cur] || 0) + 1;
+    if (!state.warehouseTiles) state.warehouseTiles = {};
+    state.warehouseTiles[cur] = (state.warehouseTiles[cur] || 0) + 1;
+    teach("warehouse", "拆下来的地砖会进仓库", "用橡皮擦掉或用撤销回退的地砖会收进城堡仓库，之后可以在仓库里重新铺到任意楼层。");
     if (!silent) { renderAll(true); saveState(); }
     return 1;
   }
@@ -3820,9 +3831,15 @@
     if (!t) return;
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
-    if ((stock[ui.tileBrush] || 0) <= 0) { toast("这种地砖用完了，去「地砖」补货。", "bad", "coin"); return; }
     if (state.floorTiles[floor][t.key] === ui.tileBrush) return;
-    stock[ui.tileBrush] -= 1;
+    if (state.warehouseTiles && (state.warehouseTiles[ui.tileBrush] || 0) > 0) {
+      state.warehouseTiles[ui.tileBrush] -= 1;
+    } else if ((stock[ui.tileBrush] || 0) > 0) {
+      stock[ui.tileBrush] -= 1;
+    } else {
+      toast("这种地砖用完了，去「地砖」补货，或从仓库取出。", "bad", "coin");
+      return;
+    }
     state.floorTiles[floor][t.key] = ui.tileBrush;
     teach("tile", "第一次铺地砖", "地砖是铺在地板上的装饰层：点击铺一块、按住拖动铺一片，橡皮可以擦除，撤销可以回退。");
     A.sfx("page");
@@ -4210,6 +4227,14 @@
       groups[r.type].count++;
       groups[r.type].level = Math.max(groups[r.type].level, r.level || 1);
     });
+    const tileStock = state.warehouseTiles || {};
+    const tileCards = Object.keys(tileStock).filter(function (id) { return (tileStock[id] || 0) > 0; }).map(function (id) {
+      const pack = D.TILE_PACKS.filter(function (p) { return p.id === id; })[0];
+      if (!pack) return "";
+      return '<button class="warehouse-tile" data-action="warehouse-brush" data-id="' + id + '">' +
+        '<img src="' + (window.CastleScene && window.CastleScene.tileThumb ? window.CastleScene.tileThumb(id) : "") + '" alt="">' +
+        '<b>' + pack.name + '</b><em>×' + tileStock[id] + '</em></button>';
+    }).join("");
     const roomCards = Object.keys(groups).map(function (typeId) {
       const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
       if (!type) return "";
@@ -4226,6 +4251,8 @@
         return '<button class="floor-btn' + (i === targetFloor ? " active" : "") + '" data-action="warehouse-floor" data-floor="' + i + '">第 ' + (i + 1) + ' 层</button>';
       }).join("") + '</div>' +
       (roomCards ? '<div class="catalog-grid">' + roomCards + "</div>" : '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">仓库里还没有房间。拆除扩建层房间后会收进这里。</div>') +
+      '<div class="decorate-head" style="margin-top:10px"><b>地砖</b><span>擦除/撤销后收进这里</span></div>' +
+      (tileCards ? '<div class="warehouse-tiles">' + tileCards + "</div>" : '<p class="decorate-tip">还没有收起的地砖。用橡皮擦掉或撤销铺砖后会进仓库。</p>') +
       '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
       { className: "modal-warehouse" }
     );
@@ -4310,7 +4337,8 @@
     else body = tileRowsHTML();
     openModal(
       modalHead("hammer", "工坊 · 装修", "第 " + (floor + 1) + " 层", "房间、装饰、地砖与地板都在这里；购买后进入放置模式。") +
-      '<div class="modal-body"><div class="shop-tabs">' + tabs + "</div>" + body +
+      '<div class="modal-body"><div class="shop-bar"><div class="shop-tabs">' + tabs + '</div>' +
+      '<button class="warehouse-cta" data-action="open-warehouse">仓库 · ' + ((state.warehouseRooms || []).length + Object.keys(state.warehouseTiles || {}).reduce(function(n,k){return n + (state.warehouseTiles[k]||0);},0)) + '</button></div>' + body +
       '<div class="modal-actions"><span class="modal-note">' +
       (t === "room" ? "本层 " + floorRoomCount(floor) + " / " + D.FLOOR_GRID.maxRooms + " 间 · 仓库 " + (state.warehouseRooms || []).length + " 间" : t === "tile" ? "已铺 " + Object.keys(state.floorTiles[floor] || {}).length + " 块" : "") +
       '</span><button class="btn btn-wood" data-action="open-warehouse">仓库</button>' +
@@ -4508,7 +4536,7 @@
       '<div class="floor-stat"><span>传教</span><b>' + classCount("missionary") + "</b></div></div>";
     if (missing.length) html += '<div class="floor-warning">' + missing.join(" · ") + "</div>";
     html += '<div class="floor-actions"><button class="btn btn-gold btn-small" data-action="recruit-open"><img src="' + I.icon("people") + '" alt="">招募客人</button>' +
-      '<button class="btn btn-wood btn-small" data-action="open-warehouse">仓库 ' + (state.warehouseRooms || []).length + '</button>' +
+      '<button class="btn btn-gold btn-small" data-action="open-warehouse">仓库 ' + (state.warehouseRooms || []).length + '</button>' +
       '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传 " + classCountOnFloor(floor, "missionary") + " · 农 " + classCountOnFloor(floor, "farmer") + " · 厨 " + classCountOnFloor(floor, "cook") + "</span></div>";
 
     // 已建房间
@@ -5046,6 +5074,7 @@
     if (!type) return;
     if (!state.warehouseRooms) state.warehouseRooms = [];
     state.warehouseRooms.push({ type: room.type, level: room.level || 1 });
+    teach("warehouse", "拆下来的房间会进仓库", "拆除的房间会保留等级收进城堡仓库。点击工坊里的「仓库」或侧栏「仓库」按钮，就能把它免费放回任意楼层。地砖擦除或撤销后也会进仓库。");
     rooms[slotId] = null;
     const floor = state.currentFloor;
     // 先移除因职业房间缺失而不满足条件的客人
@@ -5657,6 +5686,13 @@
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
       else if (action === "open-warehouse") openWarehouseModal();
+      else if (action === "warehouse-brush") {
+        ui.tileBrush = el.dataset.id;
+        ui.tileTool = "paint";
+        closeModal(true);
+        enterDecorMode();
+        toast("已选中仓库里的地砖，点击地面铺设。", "gold", "sparkle");
+      }
       else if (action === "warehouse-floor") { ui.warehouseFloor = Number(el.dataset.floor) || 0; openWarehouseModal(); }
       else if (action === "warehouse-place") {
         const targetFloor = ui.warehouseFloor == null ? (state.currentFloor || 0) : ui.warehouseFloor;
