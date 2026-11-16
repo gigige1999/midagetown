@@ -3477,7 +3477,7 @@
         const can = unlocked && canAfford({ gold: crop.cost });
         const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + crop.harvest[k]; }).join(" · ");
         return '<button class="crop-row' + (unlocked ? "" : " crop-locked") + '" data-action="sow-land" data-plot="' + index + '" data-crop="' + crop.id + '"' + (can ? "" : " disabled") + ">" +
-          '<span class="crop-dot" style="background:' + crop.color + '"></span><span class="crop-copy"><b>' + crop.name + '</b><em>' + (unlocked ? crop.days + " 天 · " + crop.cost + " 金" : "需要 " + crop.minResidents + " 居民") + '</em></span>' +
+          '<span class="crop-icon"><img src="' + (window.CastleScene && window.CastleScene.cropThumb ? window.CastleScene.cropThumb(crop.id) : "") + '" alt=""></span><span class="crop-copy"><b>' + crop.name + '</b><em>' + (unlocked ? crop.days + " 天 · " + crop.cost + " 金" : "需要 " + crop.minResidents + " 居民") + '</em></span>' +
           '<span class="crop-gain">' + (unlocked ? gains : "未解锁") + "</span></button>";
       }).join("");
       const upCost = landUpgradeCost(plot);

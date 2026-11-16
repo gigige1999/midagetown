@@ -4586,6 +4586,21 @@ window.CastleScene = (function () {
           } else if (crop === "pumpkin") {
             ellipse(ctx, xx, yy - 9, 8, 6, "#d18a3f");
             R(ctx, xx - 1, yy - 15, 2, 4, "#5f7d46");
+          } else if (crop === "herb") {
+            R(ctx, xx - 2, yy - 8, 4, 8, "#7e9d62");
+            R(ctx, xx - 6, yy - 12, 6, 4, "#9aba7a");
+            R(ctx, xx + 1, yy - 14, 5, 4, "#9aba7a");
+          } else if (crop === "grape") {
+            for (let g = 0; g < 4; g++) {
+              ellipse(ctx, xx - 3 + (g % 2) * 6, yy - 10 + Math.floor(g / 2) * 5, 4, 4, "#8a5d9e");
+            }
+            R(ctx, xx - 1, yy - 10, 2, 3, "rgba(100,60,130,0.5)");
+          } else if (crop === "lavender") {
+            for (let l = 0; l < 3; l++) {
+              R(ctx, xx - 4 + l * 4, yy - 12, 2, 8, "#8a7bb8");
+              R(ctx, xx - 3 + l * 4, yy - 15, 3, 3, "#a89ace");
+            }
+            R(ctx, xx - 2, yy - 6, 2, 6, "#5f7f47");
           } else if (crop === "tomato") {
             R(ctx, xx - 3, yy - 10, 6, 6, "#c94d3f");
             R(ctx, xx - 2, yy - 13, 4, 3, "#6c904f");
@@ -4593,14 +4608,6 @@ window.CastleScene = (function () {
             R(ctx, xx - 2, yy - 17, 4, 17, "#d8b14e");
             R(ctx, xx - 5, yy - 12, 10, 3, "#7e9d62");
             R(ctx, xx - 6, yy - 6, 12, 2, "#7e9d62");
-          } else if (crop === "grape") {
-            for (let g = 0; g < 3; g++) {
-              ellipse(ctx, xx - 4 + g * 4, yy - 8 - (g % 2) * 3, 4, 4, "#7a4f8e");
-            }
-            R(ctx, xx - 1, yy - 15, 2, 5, "#6c904f");
-          } else if (crop === "lavender") {
-            R(ctx, xx - 1, yy - 17, 2, 12, "#6c904f");
-            for (let l = 0; l < 4; l++) R(ctx, xx - 3 + (l % 2) * 4, yy - 18 + l * 3, 3, 3, "#9a86c1");
           } else {
             R(ctx, xx - 3, yy - 12, 6, 6, "#7e9d62");
             R(ctx, xx - 1, yy - 15, 3, 3, "#d8c76c");

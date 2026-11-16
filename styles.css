@@ -3633,3 +3633,7 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .warehouse-card.clickable { cursor: pointer; grid-template-rows: auto; }
 .warehouse-card.clickable:hover { background: #fbf0d8; border-color: #a98654; }
 .warehouse-place-hint { grid-column: 2; font-size: 10px; color: #8a6b48; }
+
+.crop-icon { width: 32px; height: 32px; flex: 0 0 32px; background: #3b2a1a; border: 2px solid #6b4a32; }
+.crop-icon img { display: block; width: 32px; height: 32px; image-rendering: pixelated; }
+.crop-row { gap: 8px; align-items: flex-start; }
