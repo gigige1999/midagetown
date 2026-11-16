@@ -3613,7 +3613,7 @@
     addLog("第 " + (floor + 1) + " 层补充了 " + pack.name + " 地砖。", "good");
     renderAll(true);
     saveState();
-    if (ui.modalOpen) openTileShopModal();
+    if (ui.modalOpen) openBuildShopModal("tile");
   }
 
   function tileAt(floor, lx, ly) {
@@ -3812,7 +3812,7 @@
       const tool = ui.tileTool || "paint";
       hint.textContent = tool === "erase" ? "橡皮擦：拖动擦除地砖（会退回库存）"
         : tool === "move" ? "移动：按住一片已铺地砖拖动，松手放下"
-        : "铺砖：选中砖后拖出矩形铺设 · 也可拖动房间/装饰换位置";
+        : "铺砖：点击铺一块，按住拖动铺一片 · 橡皮点击擦一块、拖动擦一片";
     }
   }
 
@@ -4090,11 +4090,6 @@
     const floor = state.currentFloor || 0;
     const fst = currentFloorSkin();
     let html = '<div class="decorate-panel">';
-    html += '<div class="decorate-section"><div class="decorate-head"><b>城堡大厅地板</b><span>整厅替换 · ' + D.FLOOR_SKINS.length + ' 款</span></div>' +
-      '<p class="decorate-tip">购买后整片大厅地板一起替换，家具与人物不受影响。</p>' +
-      '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
-        return floorSwatchHTML(f, hall.selected === f.id, hall.owned.indexOf(f.id) >= 0, "hall");
-      }).join("") + "</div></div>";
     if (state.expansionUnlocked) {
       html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层地板</b><span>整层替换</span></div>' +
         '<p class="decorate-tip">每层单独购买、单独使用；这是整层地板，和「地砖」的单块装饰是两层东西。</p>' +
@@ -4102,7 +4097,7 @@
           return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
         }).join("") + "</div></div>";
     }
-    html += '<p class="decorate-hint">地砖（单块）在「地砖」页；地板（整层）在这里，两者互不覆盖。</p></div>';
+    html += '<p class="decorate-hint">大厅地板固定，不再更换；「地砖」页是铺在地板上的装饰层，可单块点选、拖矩形、擦除与撤销。</p></div>';
     return html;
   }
 
@@ -5286,6 +5281,11 @@
         if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); return; }
         if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); return; }
         if (ui.decorMode && ui.moveSel) { updateMoveSelection(p.x, p.y); return; }
+        if (ui.decorMode && !ui.painting && !ui.dragRoom && !ui.dragDecor && !ui.moveSel && ui.tileBrush && (ui.tileTool || "paint") !== "move") {
+          const ht = tileAt(state.currentFloor || 0, p.x, p.y);
+          if (ht) showTileRectGhost(tileCellRect(ht.cx, ht.cy, ht.cx, ht.cy), (ui.tileTool || "paint") !== "erase");
+          return;
+        }
         if (ui.decorMode && ui.painting && ui.paintStart) {
           const t = tileAt(state.currentFloor || 0, p.x, p.y);
           if (!t) return;
@@ -5358,6 +5358,10 @@
         if (!ui.decorMode) return;
         if (ui.dragRoom) { e.preventDefault(); commitRoomDrag(); return; }
         if (ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
+      });
+      placeLayer.addEventListener("pointerleave", function () {
+        const ghost = $("#placementGhost");
+        if (ghost && !ui.painting && !ui.moveSel && !ui.dragRoom && !ui.dragDecor && !ui.placement) ghost.hidden = true;
       });
       placeLayer.addEventListener("click", function (e) {
         if (ui.placement) { e.preventDefault(); commitPlacement(); return; }
@@ -5487,7 +5491,7 @@
         else openFloorBuyConfirm(kind, id);
       }
       else if (action === "floor-buy-confirm") {
-        if (el.dataset.kind === "hall") buyFloorSkin(el.dataset.id); else useExpansionFloor(el.dataset.id);
+        useExpansionFloor(el.dataset.id);
       }
       else if (action === "tile-tool") {
         ui.tileTool = el.dataset.tool || "paint";
