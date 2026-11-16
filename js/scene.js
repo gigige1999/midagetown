@@ -55,6 +55,7 @@ window.CastleScene = (function () {
   const castleLayers = {};
   let hitAreas = [];
   let suppressRoomFloor = false;
+  let activeExpansionSkin = null;
   let lastFrameDt = 1 / 60;
   let hover = null;
   let mouseX = 0;
@@ -2350,6 +2351,7 @@ window.CastleScene = (function () {
 
   function interiorStoneFloor(x, y, w, h, tint) {
     if (suppressRoomFloor) return;
+    if (activeExpansionSkin) { drawFloorSkin(x, y, w, h, activeExpansionSkin); return; }
     const base = tint || IN.floorStone;
     const rng = mulberry32((x * 31 + y * 17) | 0);
     R(ctx, x, y, w, h, base);
@@ -2367,6 +2369,7 @@ window.CastleScene = (function () {
 
   function interiorWoodFloor(x, y, w, h) {
     if (suppressRoomFloor) return;
+    if (activeExpansionSkin) { drawFloorSkin(x, y, w, h, activeExpansionSkin); return; }
     R(ctx, x, y, w, h, IN.floorWood);
     const rng = mulberry32((x * 7 + y * 23) | 0);
     for (let yy = y + 6; yy < y + h; yy += 8) {
@@ -4213,9 +4216,11 @@ window.CastleScene = (function () {
     ctx.fillText("F" + (floor + 1) + " · 第 " + (floor + 1) + " 层 · " + skinData.name, 32, 21);
     ctx.textAlign = "left";
 
+    activeExpansionSkin = skin;
     sceneFloorRooms(floor).forEach(function (entry) {
       drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
     });
+    activeExpansionSkin = null;
     const hover = window.__hoverRoom;
     if (hover) {
       ctx.globalAlpha = 0.5;

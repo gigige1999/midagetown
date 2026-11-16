@@ -3047,7 +3047,7 @@
     closeModal(true);
     renderAll(true);
     saveState();
-    openInteriorSkinModal();
+    openBuildShopModal("floors");
   }
 
   function openInteriorSkinModal() {
@@ -3093,7 +3093,7 @@
     closeModal(true);
     renderAll(true);
     saveState();
-    openInteriorSkinModal();
+    openBuildShopModal("floors");
   }
 
 
@@ -3987,7 +3987,7 @@
   }
 
   function tileRowsHTML() {
-    const note = '<p class="decorate-tip">地砖是铺在地板之上的单块装饰：可以买一包包自己铺，也可以「整层」一次铺满；用橡皮与撤销调整。</p>';
+    const note = '<p class="decorate-tip">装饰地砖：铺在地板之上的小块图案，不改变地板本身。买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
     return note + '<div class="tile-list">' + D.TILE_PACKS.map(function (pack) {
@@ -4000,7 +4000,6 @@
         '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
         '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '"' + (can ? "" : " disabled") + '>买一包</button>' +
         '<button class="btn btn-gold btn-small" data-action="brush-tile" data-id="' + pack.id + '">铺这种</button>' +
-        '<button class="btn btn-ghost btn-small" data-action="fill-floor" data-id="' + pack.id + '">整层</button>' +
         "</div></div>";
     }).join("") + "</div>";
   }
@@ -4015,8 +4014,7 @@
     let html = '<div class="decorate-panel">';
     html += '<div class="decorate-section">' +
       '<div class="decorate-head"><b>城堡大厅地板</b><span>' + (hallSkin ? hallSkin.name : "灰石砖") + '</span></div>' +
-      '<p class="decorate-tip">只替换大厅地板，家具、人物和墙面保持原样；共 ' + D.FLOOR_SKINS.length + ' 种样式。</p>' +
-      '<button class="btn btn-gold btn-small" data-action="floor-skin-open">选择大厅地板</button></div>';
+      '<p class="decorate-tip">只替换大厅地板，家具、人物和墙面保持原样。地板统一在「地板」页购买与切换。</p></div>';
     if (state.expansionUnlocked) {
       html += '<div class="decorate-section">' +
         '<div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层</b><span>' + (floorSkin ? floorSkin.name : "") + '</span></div>' +
@@ -4039,10 +4037,52 @@
     return html;
   }
 
-  function floorSwatchHTML(f, active, owned, action) {
-    return '<button class="floor-pick' + (active ? " active" : "") + '" data-action="' + action + '" data-id="' + f.id + '">' +
+  function floorSwatchHTML(f, active, owned, kind) {
+    return '<button class="floor-pick' + (active ? " active" : "") + '" data-action="floor-pick" data-kind="' + kind + '" data-id="' + f.id + '">' +
       '<span class="floor-pick-swatch" style="background:' + f.base + '"><i style="background:' + f.a + '"></i><i style="background:' + f.b + '"></i></span>' +
       '<b>' + f.name + '</b><em>' + (active ? "使用中" : owned ? "已拥有" : f.cost + " 金") + '</em></button>';
+  }
+
+  function applyHallFloorStyle(id) {
+    const skin = floorSkinById(id);
+    const st = state.interiorSkin;
+    if (st.owned.indexOf(id) < 0) return;
+    st.selected = id;
+    toast("大厅地板已换成「" + skin.name + "」。", "good", "sparkle");
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+    openBuildShopModal("floors");
+  }
+
+  function applyExpansionFloorStyle(id) {
+    const skin = floorSkinById(id);
+    const st = currentFloorSkin();
+    if (st.owned.indexOf(id) < 0) return;
+    st.selected = id;
+    toast("第 " + (state.currentFloor + 1) + " 层地板已换成「" + skin.name + "」。", "good", "sparkle");
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+    openBuildShopModal("floors");
+  }
+
+  function openFloorBuyConfirm(kind, id) {
+    const skin = floorSkinById(id);
+    const hall = kind === "hall";
+    const areatxt = hall ? "城堡大厅" : "扩建层 · 第 " + ((state.currentFloor || 0) + 1) + " 层";
+    const can = canAfford({ gold: skin.cost });
+    openModal(
+      modalHead("sparkle", "地板 · 确认购买", skin.name, areatxt + " · 整层替换") +
+      '<div class="modal-body"><div class="floor-confirm-preview" style="background:' + skin.base + '">' +
+      '<i style="background:' + skin.a + '"></i><i style="background:' + skin.b + '"></i></div>' +
+      '<div class="info-rows"><div class="info-row"><span>铺设范围</span><b>' + areatxt + '</b></div>' +
+      '<div class="info-row"><span>价格</span><b>' + (skin.cost ? skin.cost + " 金币" : "免费") + '</b></div>' +
+      '<div class="info-row"><span>说明</span><b>' + skin.desc + '</b></div></div>' +
+      '<div class="modal-actions"><span class="modal-note">' + (hall ? "只影响城堡大厅" : "只影响当前层") + '；不会影响家具与房间。</span>' +
+      '<button class="btn btn-ghost" data-action="close-modal">取消</button>' +
+      '<button class="btn btn-gold" data-action="floor-buy-confirm" data-kind="' + kind + '" data-id="' + id + '"' + (can ? "" : " disabled") + '>购买并铺设</button></div></div>'
+    );
   }
 
   function floorsTabHTML() {
@@ -4053,13 +4093,13 @@
     html += '<div class="decorate-section"><div class="decorate-head"><b>城堡大厅地板</b><span>整厅替换 · ' + D.FLOOR_SKINS.length + ' 款</span></div>' +
       '<p class="decorate-tip">购买后整片大厅地板一起替换，家具与人物不受影响。</p>' +
       '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
-        return floorSwatchHTML(f, hall.selected === f.id, hall.owned.indexOf(f.id) >= 0, "shop-hall-floor");
+        return floorSwatchHTML(f, hall.selected === f.id, hall.owned.indexOf(f.id) >= 0, "hall");
       }).join("") + "</div></div>";
     if (state.expansionUnlocked) {
       html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层地板</b><span>整层替换</span></div>' +
         '<p class="decorate-tip">每层单独购买、单独使用；这是整层地板，和「地砖」的单块装饰是两层东西。</p>' +
         '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
-          return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "exp-floor");
+          return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
         }).join("") + "</div></div>";
     }
     html += '<p class="decorate-hint">地砖（单块）在「地砖」页；地板（整层）在这里，两者互不覆盖。</p></div>';
@@ -5439,13 +5479,16 @@
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
-      else if (action === "fill-floor") fillFloorConfirm(el.dataset.id);
-      else if (action === "fill-floor-apply") applyFillFloor(el.dataset.id);
-      else if (action === "pick-hall-floor") buyFloorSkin(el.dataset.id);
-      else if (action === "shop-hall-floor") { buyFloorSkin(el.dataset.id); }
-      else if (action === "exp-floor") useExpansionFloor(el.dataset.id);
-      else if (action === "floor-skin-open") openInteriorSkinModal();
-      else if (action === "floor-skin-open-expansion") openFloorSkinModal();
+      else if (action === "floor-pick") {
+        const kind = el.dataset.kind;
+        const id = el.dataset.id;
+        const owned = kind === "hall" ? state.interiorSkin.owned.indexOf(id) >= 0 : currentFloorSkin().owned.indexOf(id) >= 0;
+        if (owned) { if (kind === "hall") applyHallFloorStyle(id); else applyExpansionFloorStyle(id); }
+        else openFloorBuyConfirm(kind, id);
+      }
+      else if (action === "floor-buy-confirm") {
+        if (el.dataset.kind === "hall") buyFloorSkin(el.dataset.id); else useExpansionFloor(el.dataset.id);
+      }
       else if (action === "tile-tool") {
         ui.tileTool = el.dataset.tool || "paint";
         setTileToolUI();
@@ -5493,7 +5536,6 @@
       }
       else if (action === "territory-to") switchView(el.dataset.view);
       else if (action === "decor-open") openBuildShopModal("decorate");
-      else if (action === "floor-skin-open") openFloorSkinModal();
       else if (action === "buy-floor-skin") buyExpansionFloorSkin(el.dataset.id);
       else if (action === "apply-floor-skin") applyFloorSkin(el.dataset.id);
       else if (action === "apply-interior-skin") applyInteriorSkin(el.dataset.id);
