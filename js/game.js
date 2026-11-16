@@ -3777,7 +3777,10 @@
         '<div><span>地砖</span><b>' + tiles + "</b></div></div>" +
         '<div class="decorate-row">' +
         '<button class="btn ' + (ui.decorMode ? "btn-ghost" : "btn-gold") + ' btn-small" data-action="decor-mode">' + (ui.decorMode ? "退出装修模式" : "进入装修模式") + '</button>' +
-        '<button class="btn btn-wood btn-small" data-action="floor-skin-open-expansion">本层地板样式</button></div>' +
+        '<button class="btn btn-wood btn-small" data-action="floor-skin-open-expansion">本层地板样式</button>' +
+        (state.currentFloor + 1 >= state.expansionFloorCount && state.expansionFloorCount < D.MAX_FLOORS
+          ? '<button class="btn btn-wood btn-small" data-action="buy-floor">购买第 ' + (state.expansionFloorCount + 1) + ' 层</button>' : "") +
+        '</div>' +
         '<p class="decorate-tip">装修模式里：拖动房间/装饰换位置；地砖页选砖后可整层铺满，也可以一包一包自己铺，支持橡皮擦和撤销。</p></div>';
     } else {
       html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层</b><span>未开放</span></div>' +
@@ -3933,23 +3936,62 @@
     );
   }
 
-  function ensureFloorProgression(notify) {
-    if (!state || !state.expansionUnlocked) return;
-    const floor = state.currentFloor || 0;
-    if (floorRoomCount(floor) < D.FLOOR_GRID.maxRooms) return;
-    const nextCount = floor + 2;
-    if (state.expansionFloorCount < nextCount) {
-      state.expansionFloorCount = nextCount;
-      addLog("第 " + (floor + 1) + " 层已建满，第 " + (floor + 2) + " 层自动解锁。", "good");
-      if (notify !== false) {
-        setTimeout(function () {
-          toast("第 " + (floor + 1) + " 层已满，第 " + (floor + 2) + " 层已自动解锁。点击楼梯或楼层按钮上去。", "gold", "sparkle");
-        }, 400);
-      }
-      saveState();
-    }
+  function floorUnlockCost(nextIndex) {
+    const n = Math.max(1, nextIndex || 1);
+    return {
+      gold: 240 + (n - 1) * 180,
+      wood: 40 + (n - 1) * 22,
+      stone: 30 + (n - 1) * 18
+    };
   }
 
+  function canBuyNextFloor() {
+    return state && state.expansionUnlocked && state.currentFloor + 1 >= state.expansionFloorCount && state.expansionFloorCount < D.MAX_FLOORS;
+  }
+
+  function openFloorPurchaseModal() {
+    if (!state.expansionUnlocked) return;
+    if (state.currentFloor + 1 < state.expansionFloorCount) { goDownstairs(); return; }
+    if (state.expansionFloorCount >= D.MAX_FLOORS) { toast("已经到了最底层。", "neutral", "lock"); return; }
+    const nextIndex = state.expansionFloorCount;
+    const cost = floorUnlockCost(nextIndex);
+    const afford = canAfford(cost);
+    openModal(
+      modalHead("sparkle", "扩建层 · 新楼层", "开辟第 " + (nextIndex + 1) + " 层", "扩建层需要花钱修缮，不再随房间数量自动开放。") +
+      '<div class="modal-body"><div class="confirm-list">' +
+      '<div><span>当前楼层</span><b>第 ' + (state.currentFloor + 1) + ' 层</b></div>' +
+      '<div><span>已开放</span><b>' + state.expansionFloorCount + ' 层</b></div>' +
+      '<div><span>开拓费用</span><b>' + costShort(cost) + '</b></div></div>' +
+      '<div class="modal-actions"><span class="modal-note">' + (afford ? "购买后可直接下去，也可以留在本层继续布置。" : "材料不足：" + missingCostsText(cost)) + '</span>' +
+      '<button class="btn btn-ghost" data-action="close-modal">取消</button>' +
+      '<button class="btn btn-gold" data-action="buy-floor-confirm" data-index="' + nextIndex + '"' + (afford ? "" : " disabled") + '>购买第 ' + (nextIndex + 1) + ' 层</button></div></div>'
+    );
+  }
+
+  function buyNextFloor(index) {
+    if (!state.expansionUnlocked) return;
+    const nextIndex = Math.max(0, Number(index) || state.expansionFloorCount);
+    if (nextIndex !== state.expansionFloorCount) { openFloorPurchaseModal(); return; }
+    if (nextIndex >= D.MAX_FLOORS) { toast("已经到了最底层。", "neutral", "lock"); return; }
+    const cost = floorUnlockCost(nextIndex);
+    if (!canAfford(cost)) { toast("材料不够，还差：" + missingCostsText(cost), "bad", "coin"); return; }
+    payCost(cost);
+    state.expansionFloorCount = nextIndex + 1;
+    if (!state.expansionFloors[nextIndex]) state.expansionFloors[nextIndex] = {};
+    if (!state.decor[nextIndex]) state.decor[nextIndex] = [];
+    if (!state.floorTiles[nextIndex]) state.floorTiles[nextIndex] = {};
+    if (!state.tileStock[nextIndex]) state.tileStock[nextIndex] = {};
+    addLog("花 " + costShort(cost) + " 开辟了第 " + (nextIndex + 1) + " 层。", "good");
+    toast("第 " + (nextIndex + 1) + " 层已开放，可以下去布置了。", "gold", "sparkle");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+  }
+
+  function ensureFloorProgression() {
+    // 楼层改为花钱购买，不再自动解锁
+  }
   function renderExpansionBuildTab() {
     ensureFloorProgression(false);
     const floor = state.currentFloor || 0;
@@ -4033,20 +4075,8 @@
       A.sfx("page");
       return;
     }
-    if (floorRoomCount(state.currentFloor) >= D.FLOOR_GRID.maxRooms) {
-      ensureFloorProgression(false);
-      if (state.expansionFloorCount > next) {
-        state.currentFloor = next;
-        toast("下一层已开放。", "gold", "sparkle");
-        renderAll(true);
-        saveState();
-        A.sfx("page");
-        return;
-      }
-    }
-    toast("先把这一层建满 10 个房间，楼梯才会通往下一层。", "bad", "lock");
+    openFloorPurchaseModal();
   }
-
   function renderFloorSwitch() {
     const el = $("#floorStrip");
     if (!el) return;
@@ -4064,6 +4094,9 @@
     html += '<span class="floor-btn-row">';
     for (let i = 0; i < state.expansionFloorCount; i++) {
       html += '<button class="floor-btn' + (i === state.currentFloor ? " active" : "") + '" data-action="floor" data-floor="' + i + '">F' + (i + 1) + "</button>";
+    }
+    if (state.currentFloor + 1 >= state.expansionFloorCount && state.expansionFloorCount < D.MAX_FLOORS) {
+      html += '<button class="floor-btn floor-buy" data-action="buy-floor">+ 购买下一层</button>';
     }
     html += "</span>";
     el.innerHTML = html;
@@ -4817,7 +4850,7 @@
         '<span class="room-plaque built expansion-plaque"><img src="' + expansionIcon(type) + '" alt=""><span><b>' + type.name + '</b></span></span></button>';
     }).join("") +
       '<button class="stair-hotspot" data-action="floor-stairs" title="点击楼梯前往下一层"><span>' +
-      (state.currentFloor + 1 < state.expansionFloorCount ? "下一层" : (floorRoomCount(state.currentFloor) >= D.FLOOR_GRID.maxRooms ? "解锁下一层" : "建满本层")) +
+      (state.currentFloor + 1 < state.expansionFloorCount ? "下一层" : "购买下一层") +
       '</span></button>';
   }
   function setDebugMode(on) {
@@ -5183,6 +5216,8 @@
         A.sfx("page");
       }
       else if (action === "floor-stairs") goDownstairs();
+      else if (action === "buy-floor") openFloorPurchaseModal();
+      else if (action === "buy-floor-confirm") buyNextFloor(el.dataset.index);
       else if (action === "festival-confirm") holdFestival();
       else if (action === "festival-complete") finishFestival();
       else if (action === "festival") promptFestival();

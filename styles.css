@@ -3542,3 +3542,7 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .confirm-list span { font-size: 11px; color: #6f7f58; }
 .confirm-list b { margin-left: auto; font-size: 13px; color: #3f5330; font-weight: 400; }
 @media (max-width: 1080px) { .floor-picker { grid-template-columns: 1fr 1fr; } }
+
+/* 购买楼层 */
+.floor-buy { background: #7d5a33; color: #ffe2ac; border-color: #c9a26a; }
+.floor-buy:hover { background: #8d6739; }
