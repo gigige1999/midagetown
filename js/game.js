@@ -4122,8 +4122,8 @@
     const floor = state.currentFloor || 0;
     const full = floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms;
     const wh = (state.warehouseRooms || []).length;
-    return '<div class="tile-floor-entry"><div><b>我的仓库</b><span>' + wh + ' 间房间可免费放回</span></div>' +
-      '<button class="btn btn-wood btn-small" data-action="open-warehouse">打开仓库</button></div>' +
+    return (wh ? '<div class="tile-floor-entry"><div><b>仓库</b><span>' + wh + ' 间房可取出</span></div>' +
+      '<button class="btn btn-wood btn-small" data-action="open-warehouse">打开仓库</button></div>' : "") +
       '<div class="catalog-grid">' + D.EXPANSION_ROOMS.map(function (type) {
       const can = canAfford(type.cost) && !full;
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
@@ -4210,25 +4210,18 @@
       const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
       if (!type) return "";
       const g = groups[typeId];
-      return '<div class="warehouse-card clickable" data-action="warehouse-place" data-type="' + typeId + '">' +
+      return '<button class="catalog-card" data-action="warehouse-place" data-type="' + typeId + '">' +
         '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(typeId, g.level) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
-        '<div class="catalog-copy"><b>' + type.name + ' ×' + g.count + '</b><span>最高 Lv.' + g.level + ' · 点击放置到第 ' + (targetFloor + 1) + ' 层</span></div>' +
-        '<span class="warehouse-place-hint">点击放置</span></div>';
-    }).join("");
-    const stock = tileStockOf(state.currentFloor || 0);
-    const tileRows = D.TILE_PACKS.map(function (pack) {
-      return '<div class="warehouse-tile"><span class="tile-swatch ' + pack.id + '"></span><b>' + pack.name + '</b><em>×' + (stock[pack.id] || 0) + '</em></div>';
+        '<div class="catalog-copy"><b>' + type.name + '</b><span>Lv.' + g.level + ' · ×' + g.count + ' 间 · 免费放置</span></div>' +
+        '<span class="warehouse-place-badge">放置到第 ' + (targetFloor + 1) + ' 层</span></button>';
     }).join("");
     openModal(
-      modalHead("crest", "城堡仓库", "拆下来的都在这里", "拆除的房间会完整收进仓库，可以免费放回任意楼层；擦除的地砖退回本层库存。") +
-      '<div class="modal-body"><div class="warehouse-floor-row"><b>放置到</b>' +
+      modalHead("crest", "城堡仓库", rooms.length + " 间房", "拆除的房间会完整收进这里，点击即可免费放回任意楼层。") +
+      '<div class="modal-body"><div class="warehouse-floor-row"><b>放置目标</b>' +
       Array.from({ length: state.expansionFloorCount }).map(function (_, i) {
         return '<button class="floor-btn' + (i === targetFloor ? " active" : "") + '" data-action="warehouse-floor" data-floor="' + i + '">第 ' + (i + 1) + ' 层</button>';
       }).join("") + '</div>' +
-      '<div class="decorate-head"><b>房间</b><span>' + rooms.length + ' 间</span></div>' +
-      (roomCards ? '<div class="warehouse-grid">' + roomCards + "</div>" : '<p class="decorate-tip">仓库里还没有房间。拆除扩建层房间后会收进这里。</p>') +
-      '<div class="decorate-head" style="margin-top:10px"><b>本层地砖库存</b><span>第 ' + ((state.currentFloor || 0) + 1) + ' 层</span></div>' +
-      '<div class="warehouse-tiles">' + tileRows + "</div>" +
+      (roomCards ? '<div class="catalog-grid">' + roomCards + "</div>" : '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">仓库里还没有房间。拆除扩建层房间后会收进这里。</div>') +
       '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
       { className: "modal-warehouse" }
     );

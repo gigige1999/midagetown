@@ -3646,3 +3646,6 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .rename-input:focus { outline: 2px solid #d6a449; outline-offset: -1px; }
 #sceneLocationCopy { cursor: pointer; }
 #sceneLocationCopy:hover { opacity: .82; }
+
+.warehouse-place-badge { grid-column: 2; font-size: 10px; color: #6f7f58; align-self: end; }
+.catalog-card[data-action="warehouse-place"] { grid-template-rows: auto auto auto; }
