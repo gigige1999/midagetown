@@ -3546,3 +3546,5 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 /* 购买楼层 */
 .floor-buy { background: #7d5a33; color: #ffe2ac; border-color: #c9a26a; }
 .floor-buy:hover { background: #8d6739; }
+.floor-skin-swatch { display: flex; overflow: hidden; }
+.floor-skin-swatch i { flex: 1; }

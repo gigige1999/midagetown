@@ -2909,7 +2909,7 @@
       const selected = st.selected === skin.id;
       const can = skin.cost === 0 || canAfford({ gold: skin.cost });
       return '<div class="floor-skin-row' + (selected ? " selected" : "") + '">' +
-        '<div class="floor-skin-swatch ' + skin.id + '"></div>' +
+        '<div class="floor-skin-swatch" style="background:' + skin.base + '"><i style="background:' + skin.a + '"></i><i style="background:' + skin.b + '"></i></div>' +
         '<div class="floor-skin-copy"><b>' + skin.name + '</b><span>' + skin.desc + "</span>" +
         '<em>' + (owned ? "本层已拥有" : "仅限本层 · " + skin.cost + " 金币") + "</em></div>" +
         '<div class="floor-skin-action">' + (selected
