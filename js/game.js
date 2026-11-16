@@ -64,6 +64,7 @@
     tileBrush: null,
     ready: false,
     sections: { rooms: false, shops: false, decor: false },
+    teachQueue: [],
     tileTool: "paint",
     tileHistory: [],
     moveSel: null,
@@ -238,6 +239,7 @@
       floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       interiorSkin: { owned: ["stone"], selected: "stone" },
       menuDays: {},
+      tipsSeen: {},
       kitchenFresh: 0,
       land: { crops: {}, harvested: {}, plots: [
         { unlocked: true, crop: null, growth: 0, ready: false, plantedDay: null },
@@ -400,6 +402,7 @@
     if (!s.land.crops || typeof s.land.crops !== "object") s.land.crops = {};
     if (!s.land.harvested || typeof s.land.harvested !== "object") s.land.harvested = {};
     s.kitchenFresh = Math.max(0, Math.floor(Number(s.kitchenFresh) || 0));
+    s.tipsSeen = raw.tipsSeen && typeof raw.tipsSeen === "object" ? raw.tipsSeen : {};
     s.menuDays = raw.menuDays && typeof raw.menuDays === "object" ? raw.menuDays : {};
     s.menus.forEach(function (id) { if (!s.menuDays[id]) s.menuDays[id] = 3; });
     // 地砖：每层独立购买与铺设
@@ -1581,6 +1584,7 @@
       addLog("城堡扩建层开放了。现在可以建造更多房间，邀请戴面具的新居民。", "good");
       setTimeout(function () {
         toast("城堡扩建层开放了！点击画面上方的「扩建层」，建造新房间、邀请新居民。", "gold", "crest");
+        teach("expansion", "扩建层开放", "扩建层可以自由摆放房间：工坊里买房间后，绿色表示能放。不同职业需要不同房间组合，先看招募弹窗里的条件。");
       }, 650);
     }
     if (baseRoomsDone) refreshShopUnlocks();
@@ -1759,6 +1763,7 @@
     state.menus.push(id);
     state.menuDays[id] = m.duration || 4;
     addLog("厨房添了一道新菜：" + m.name + "（供应 4 天）。居民收入提高 " + Math.round(m.bonus * 100) + "%。", "good");
+    teach("menu", "第一道菜上桌", "菜单会提升居民收入，并给所有商铺 +5% 收入；每道菜供应几天后会吃完，需要重新用作物制作。特殊菜谱还能吸引对应职业的访客。");
     toast(m.name + "上桌了！居民收入 +" + Math.round(m.bonus * 100) + "%。", "gold", "food");
     A.sfx("complete");
     ui.guideSig = "";
@@ -1877,6 +1882,7 @@
     payCost(shop.cost);
     st.status = "built";
     addLog("「" + shop.name + "」在庭院开业了。" + shop.flavor, "good");
+    teach("shop", "第一家商铺开张", "商铺会持续产出金币。点商铺可以看收益、升级到 Lv.3；商铺也会每天消耗 1 份食物，记得留够口粮。");
     toast(shop.name + "开业！金币 +" + (shop.income * 60).toFixed(1) + "/分" +
       (shop.residentBonus ? " · 居民收入 +" + Math.round(shop.residentBonus * 100) + "%" : "") +
       (shop.productionBonus ? " · 生产 +" + Math.round(shop.productionBonus * 100) + "%" : ""), "gold", "coin");
@@ -2448,6 +2454,7 @@
      ========================================================= */
   function switchView(view) {
     if (!started) return;
+    if (view === "land") teach("land", "第一次来到领地", "点田地播种、成熟后收获。作物既能做菜，也能卖给行商；不同作物解锁的特殊菜谱门槛更高。");
     const tickerEl = $("#sceneTicker");
     if (tickerEl) { tickerEl.hidden = true; tickerEl.textContent = ""; }
     window.__castleBubbles = [];
@@ -2534,6 +2541,7 @@
     if (instant) root.innerHTML = "";
     else setTimeout(function () { if (!ui.modalOpen) root.innerHTML = ""; }, 170);
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* ignore */ } }
+    setTimeout(pumpTeach, 220);
   }
 
   function showDialogue(opts) {
@@ -3354,6 +3362,7 @@
     plot.ready = false;
     plot.plantedDay = state.day;
     addLog("第 " + (index + 1) + " 块田播下" + crop.name + "。", "good");
+    teach("sow", "第一次播种", "作物按天成熟，成熟后点田地收获：会得到作物库存和厨房新鲜食材。新鲜食材越多，厨房明天产出的食物越多。");
     toast("播下" + crop.name + "，约 " + crop.days + " 天成熟。", "good", "farm");
     A.sfx("build");
     closeModal(true);
@@ -3546,6 +3555,7 @@
     const id = "d" + floor + "_" + Date.now().toString(36) + Math.floor(Math.random() * 100);
     state.decor[floor].push({ id: id, type: typeId, x: x, y: y });
     addLog("第 " + (floor + 1) + " 层摆上了「" + item.name + "」。", "good");
+    teach("decor", "第一件装饰", "装饰只属于当前楼层。之后可以在房间弹窗里点「移动位置」拖动调整；地砖在工坊地砖页，可以单块点选或拖一片。");
     toast("「" + item.name + "」已摆好。", "good", item.icon);
     A.sfx("page");
     renderAll(true);
@@ -3729,6 +3739,7 @@
     if (state.floorTiles[floor][t.key] === ui.tileBrush) return;
     stock[ui.tileBrush] -= 1;
     state.floorTiles[floor][t.key] = ui.tileBrush;
+    teach("tile", "第一次铺地砖", "地砖是铺在地板上的装饰层：点击铺一块、按住拖动铺一片，橡皮可以擦除，撤销可以回退。");
     A.sfx("page");
     renderAll(true);
     saveState();
@@ -4350,6 +4361,7 @@
     if (!state.floorTiles[nextIndex]) state.floorTiles[nextIndex] = {};
     if (!state.tileStock[nextIndex]) state.tileStock[nextIndex] = {};
     addLog("花 " + costShort(cost) + " 开辟了第 " + (nextIndex + 1) + " 层。", "good");
+    teach("floor", "开辟新楼层", "新楼层是空的：先买房、再放装饰。地板按层单独购买，记得在工坊地砖页切换。");
     toast("第 " + (nextIndex + 1) + " 层已开放，可以下去布置了。", "gold", "sparkle");
     A.sfx("complete");
     closeModal(true);
@@ -5034,6 +5046,7 @@
 
   function onSocial(idA, idB) {
     if (!state || !state.genericResidents) return;
+    teach("talk", "居民会自己聊天", "居民相遇时会冒出一句对白，显示在顶部提示条；关系会随之变化。点击居民可以查看身份。");
     const a = state.genericResidents.filter(function (r) { return r.id === Number(idA); })[0];
     const b = state.genericResidents.filter(function (r) { return r.id === Number(idB); })[0];
     if (!a || !b) return;
@@ -5075,6 +5088,7 @@
   function triggerRaidAlert(soldiers, need, stolen) {
     const count = Math.min(4, Math.max(2, need - soldiers + 1));
     window.__castleRaid = { until: Date.now() + 12000, count: count, stolen: !!stolen };
+    teach("raid", "第一次遭遇入侵", "没有士兵时，隔壁村会来偷物资。修复兵营并招募士兵可以提高防御；训练场也能加防御。");
     const el = $("#raidAlert");
     if (!el) return;
     el.hidden = false;
@@ -5150,6 +5164,7 @@
       (klass.id === "minister" ? " 生产 +" + Math.round(klass.productionBonus * 100) + "%" : "") +
       (klass.id === "missionary" ? " 恢复居民产能" : ""), "gold", klass.icon);
     A.sfx("hire");
+    teach("resident", "第一位客人入住", "点场景里的居民可以查看身份；每位居民每天都要吃饭，士兵吃得更多。人越多，食物压力越大，记得多种田。");
     if (ui.modalOpen) closeModal(true);
     renderAll(true);
     saveState();
@@ -5717,6 +5732,31 @@
     state.log.push({ day: state.day, text: text, kind: kind || "info" });
     if (state.log.length > 70) state.log = state.log.slice(-70);
   }
+  function pumpTeach() {
+    if (!ui.teachQueue.length) return;
+    if (ui.modalOpen || ui.dialogueOpen || !started) { setTimeout(pumpTeach, 900); return; }
+    const t = ui.teachQueue.shift();
+    openModal(
+      modalHead("help", "新手引导 · 塞缪尔的建议", t.title, "第一次遇到，先看一眼再继续。") +
+      '<div class="modal-body"><div class="tutorial-card">' +
+      '<img src="' + I.npcPortrait("samuel") + '" alt="">' +
+      '<p>' + escapeHTML(t.text) + '</p></div>' +
+      '<div class="modal-actions"><button class="btn btn-gold btn-big" data-action="close-modal">知道了，继续</button></div></div>',
+      { className: "modal-tutorial" }
+    );
+  }
+
+  function teach(key, title, text) {
+    if (!state || !started) return;
+    if (!state.tipsSeen) state.tipsSeen = {};
+    if (state.tipsSeen[key]) return;
+    state.tipsSeen[key] = true;
+    ui.teachQueue.push({ title: title, text: text });
+    saveState();
+    addLog("【教学】" + title, "info");
+    setTimeout(pumpTeach, 500);
+  }
+
   function toast(text, kind, icon) {
     const stack = $("#toastStack");
     if (!stack) return;

@@ -3606,3 +3606,10 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 
 .menu-special { color: #b8862f; font-weight: 400; }
 .scene-topnav .toast-stack { z-index: 7; }
+
+/* 新手引导卡片 */
+.modal-tutorial { width: min(560px, 92vw); }
+.tutorial-card { display: flex; align-items: flex-start; gap: 10px; padding: 8px; background: #f7ecd4; border: 2px solid #c2a678; }
+.tutorial-card img { width: 64px; height: 64px; flex: 0 0 64px; image-rendering: pixelated; border: 2px solid #8a6a44; background: #3b2a1a; }
+.tutorial-card p { margin: 0; font-size: 12px; line-height: 1.7; color: #4a3320; }
+.modal-tutorial .modal-actions { justify-content: center; }
