@@ -222,7 +222,7 @@
       speed: 1,
       weather: "clear",
       view: "outdoor",
-      resources: { gold: 45, wood: 25, stone: 5, food: 10 },
+      resources: { gold: 60, wood: 30, stone: 8, food: 12 },
       workers: workers,
       buildings: buildings,
       guideIndex: 0,
@@ -1315,7 +1315,7 @@
   }
 
   function kitchenDailyOutput() {
-    return 3 + Math.min(state.kitchenFresh || 0, 18);
+    return 4 + Math.min(state.kitchenFresh || 0, 20);
   }
 
   function onNewDay() {
@@ -1323,7 +1323,7 @@
     growLandCrops();
     const freshBefore = state.kitchenFresh || 0;
     const madeFood = kitchenDailyOutput();
-    state.kitchenFresh = Math.max(0, freshBefore - Math.min(freshBefore, 18));
+    state.kitchenFresh = Math.max(0, freshBefore - Math.min(freshBefore, 20));
     state.resources.food = (state.resources.food || 0) + madeFood;
     addLog("厨房用新鲜食材做出 " + madeFood + " 份食物。", "good");
     const expired = [];
@@ -3444,7 +3444,7 @@
     if (!state.land.crops) state.land.crops = {};
     state.land.crops[crop.id] = (state.land.crops[crop.id] || 0) + cropAmount;
     state.land.harvested[crop.id] = (state.land.harvested[crop.id] || 0) + cropAmount;
-    state.kitchenFresh = (state.kitchenFresh || 0) + 5;
+    state.kitchenFresh = (state.kitchenFresh || 0) + 6;
     const gains = "「" + crop.name + "」×" + cropAmount + " · " + Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + Math.round(crop.harvest[k] * yieldMult); }).join(" · ");
     addLog("收获第 " + (index + 1) + " 块田的" + crop.name + "：" + gains + "。", "good");
     toast("收获" + crop.name + "：" + gains, "gold", "food");

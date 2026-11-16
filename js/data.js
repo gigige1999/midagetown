@@ -19,9 +19,9 @@ window.GameData = (function () {
   };
 
   const SELL_INFO = {
-    wood:  { amount: 10, gold: 6 },
-    stone: { amount: 10, gold: 8 },
-    food:  { amount: 10, gold: 4 }
+    wood:  { amount: 10, gold: 7 },
+    stone: { amount: 10, gold: 9 },
+    food:  { amount: 10, gold: 5 }
   };
   const BUY_FOOD = { gold: 6, food: 10 };
 
@@ -146,7 +146,7 @@ window.GameData = (function () {
     {
       id: "kitchen", name: "厨房", icon: "tavern", scene: "indoor",
       worker: "pudding", tags: ["城堡内", "食物"], room: "城堡 · 左下",
-      cost: { wood: 20, stone: 12, gold: 20 }, time: 7,
+      cost: { wood: 20, stone: 12, gold: 10 }, time: 7,
       output: { food: 0.04 },
       effect: "每日少消耗 1 份食物，全体效率 +10%",
       desc: "炉火、热汤和一张能坐下所有人的长桌。",
@@ -157,7 +157,7 @@ window.GameData = (function () {
     {
       id: "study", name: "书房", icon: "library", scene: "indoor",
       worker: "ink", tags: ["城堡内", "效率"], room: "城堡 · 左上",
-      cost: { wood: 28, stone: 22, gold: 35 }, time: 8,
+      cost: { wood: 28, stone: 22, gold: 22 }, time: 8,
       effect: "全体生产效率 +10%",
       desc: "旧书里有旧王国的地图，也有明天的办法。",
       flavor: "最里面那排书架，总是比昨天多出一本。",
@@ -167,7 +167,7 @@ window.GameData = (function () {
     {
       id: "barracks", name: "兵营", icon: "tower", scene: "indoor",
       worker: "irondan", tags: ["城堡内", "安全"], room: "城堡 · 右上",
-      cost: { wood: 35, stone: 30, gold: 45 }, time: 9,
+      cost: { wood: 35, stone: 30, gold: 30 }, time: 9,
       effect: "全体生产效率 +10%，坏事件减半",
       desc: "武器靠墙，炉火不灭，守夜的人有一张自己的床。",
       flavor: "铁蛋坚持在门口放一块擦鞋垫。",
@@ -177,7 +177,7 @@ window.GameData = (function () {
     {
       id: "storeroom", name: "账房", icon: "market", scene: "indoor",
       worker: "goldbell", tags: ["城堡内", "买卖"], room: "城堡 · 左中",
-      cost: { wood: 40, stone: 35, gold: 60 }, time: 10,
+      cost: { wood: 40, stone: 35, gold: 42 }, time: 10,
       effect: "出售资源价格 +50%，全体效率 +10%",
       desc: "账本、货架、秘银秤，还有一把只用来数钱的椅子。",
       flavor: "金铃说，最好的买卖是让双方都笑着回家。",
@@ -187,7 +187,7 @@ window.GameData = (function () {
     {
       id: "chapel", name: "礼拜堂", icon: "chapel", scene: "indoor",
       worker: null, tags: ["城堡内", "终章"], room: "城堡 · 上方",
-      cost: { wood: 60, stone: 50, gold: 100 }, time: 12,
+      cost: { wood: 60, stone: 50, gold: 80 }, time: 12,
       effect: "风息堡重新完整，可以举办丰收庆典",
       desc: "修补彩窗，重新点亮烛台，让钟声再次有地方回响。",
       flavor: "钟声不是用来告别的，是用来叫大家回家的。",
@@ -362,10 +362,10 @@ window.GameData = (function () {
   ];
 
   const CROPS = [
-    { id: "wheat", name: "小麦", color: "#d9b45a", days: 2, cost: 8, minResidents: 0, harvest: { food: 18, gold: 8 }, desc: "最稳的口粮。" },
-    { id: "carrot", name: "胡萝卜", color: "#d97b46", days: 1, cost: 6, minResidents: 0, harvest: { food: 12 }, desc: "一天就能收，救急。" },
-    { id: "pumpkin", name: "南瓜", color: "#d18a3f", days: 3, cost: 12, minResidents: 0, harvest: { food: 26, gold: 16 }, desc: "长得慢，收得多。" },
-    { id: "herb", name: "草药", color: "#7e9d62", days: 2, cost: 10, minResidents: 0, harvest: { gold: 26, food: 6 }, desc: "卖给行商最值钱。" },
+    { id: "wheat", name: "小麦", color: "#d9b45a", days: 2, cost: 8, minResidents: 0, harvest: { food: 18, gold: 10 }, desc: "最稳的口粮。" },
+    { id: "carrot", name: "胡萝卜", color: "#d97b46", days: 1, cost: 6, minResidents: 0, harvest: { food: 12, gold: 4 }, desc: "一天就能收，救急。" },
+    { id: "pumpkin", name: "南瓜", color: "#d18a3f", days: 3, cost: 12, minResidents: 0, harvest: { food: 26, gold: 18 }, desc: "长得慢，收得多。" },
+    { id: "herb", name: "草药", color: "#7e9d62", days: 2, cost: 10, minResidents: 0, harvest: { gold: 30, food: 6 }, desc: "卖给行商最值钱。" },
     { id: "tomato", name: "番茄", color: "#c94d3f", days: 2, cost: 11, minResidents: 4, harvest: { food: 20, gold: 12 }, desc: "厨房最常用的红色作物。" },
     { id: "corn", name: "玉米", color: "#e2bd54", days: 3, cost: 14, minResidents: 8, harvest: { food: 28, gold: 18 }, desc: "能磨粉，也能直接烤。" },
     { id: "grape", name: "葡萄", color: "#8a5d9e", days: 4, cost: 18, minResidents: 12, harvest: { gold: 42, food: 10 }, desc: "酿成酒或做成派都值钱。" },
@@ -507,35 +507,35 @@ window.GameData = (function () {
   const SHOPS = [
     {
       id: "bakery", name: "面包房", category: "食物", icon: "tavern", plot: { x: 178, y: 186, w: 104, h: 114, baseY: 300 },
-      cost: { wood: 45, stone: 30, gold: 90 }, income: 0.11, residentBonus: 0.05,
+      cost: { wood: 40, stone: 26, gold: 72 }, income: 0.11, residentBonus: 0.05,
       unlock: "kitchen", unlockText: "修复厨房后开放",
       desc: "面包香会顺着风飘进每一个房间。",
       flavor: "每天清晨，第一炉面包会被放在窗台上。"
     },
     {
       id: "smithy", name: "铁匠铺", category: "工具", icon: "tower", plot: { x: 584, y: 206, w: 72, h: 70, baseY: 274 },
-      cost: { wood: 53, stone: 60, gold: 120 }, income: 0.13, productionBonus: 0.05,
+      cost: { wood: 48, stone: 54, gold: 96 }, income: 0.13, productionBonus: 0.05,
       unlock: "barracks", unlockText: "修复兵营后开放",
       desc: "钉马蹄、修刀剑、顺便听守卫抱怨。",
       flavor: "铁锤落下的节奏，听久了像一首歌。"
     },
     {
       id: "general", name: "杂货铺", category: "杂货", icon: "market", plot: { x: 490, y: 300, w: 150, h: 86, baseY: 386 },
-      cost: { wood: 75, stone: 53, gold: 150 }, income: 0.18, residentBonus: 0.10,
+      cost: { wood: 68, stone: 48, gold: 120 }, income: 0.18, residentBonus: 0.10,
       unlock: "allrooms", unlockText: "修复所有房间后开放",
       desc: "货架上什么都有，包括你昨天卖掉的那把勺子。",
       flavor: "金铃说，一家好的杂货铺应该让客人空手进来，满载出去。"
     },
     {
       id: "fishmonger", name: "鱼摊", category: "食物", icon: "market", plot: { x: 470, y: 210, w: 90, h: 60, baseY: 270 },
-      cost: { wood: 60, stone: 30, gold: 180 }, income: 0.15, residentBonus: 0.05,
+      cost: { wood: 54, stone: 27, gold: 144 }, income: 0.15, residentBonus: 0.05,
       unlock: "stage5", unlockText: "城堡阶段 5 开放",
       desc: "清晨的河鱼，带着水草和冰块的味道。",
       flavor: "鱼摊老板说，最好的鱼要留给最早来的人。"
     },
     {
       id: "flower", name: "花摊", icon: "farm", plot: { x: 214, y: 326, w: 88, h: 56, baseY: 382 },
-      cost: { wood: 45, stone: 23, gold: 135 }, income: 0.12, residentBonus: 0.03,
+      cost: { wood: 40, stone: 20, gold: 108 }, income: 0.12, residentBonus: 0.03,
       unlock: "floor2", unlockText: "扩建到第 2 层开放",
       desc: "花摊把颜色带进石头城堡。",
       flavor: "每束花都附赠一句不合时宜的祝福。"
