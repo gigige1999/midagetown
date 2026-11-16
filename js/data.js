@@ -406,10 +406,20 @@ window.GameData = (function () {
     { id: "lavender", name: "薰衣草石", cost: 190, pattern: "tile", base: "#8d7f97", a: "#a291ad", b: "#716380", accent: "#d8c8e0", desc: "带一点紫的浅色石砖。" },
     { id: "gold", name: "鎏金地砖", cost: 420, pattern: "tile", base: "#8a6a2f", a: "#a8843c", b: "#6b5124", accent: "#ffe08a", desc: "镀金的方砖，只在最气派的厅堂出现。" },
     { id: "walnut", name: "深胡桃木", cost: 230, pattern: "plank", base: "#5c4028", a: "#6d4c30", b: "#483021", accent: "#b08a5c", desc: "深色胡桃木，沉静耐看。" },
-    { id: "jade", name: "青玉拼石", cost: 300, pattern: "marble", base: "#4f7d72", a: "#629a8b", b: "#3a5d55", accent: "#cfe3d6", desc: "青玉色石材，带细腻纹路。" }
+    { id: "jade", name: "青玉拼石", cost: 300, pattern: "marble", base: "#4f7d72", a: "#629a8b", b: "#3a5d55", accent: "#cfe3d6", desc: "青玉色石材，带细腻纹路。" },
+    { id: "sandstone", name: "砂岩暖砖", cost: 150, pattern: "tile", base: "#b99a6b", a: "#c9aa78", b: "#9c8055", accent: "#e6d0a4", desc: "带细沙纹理的暖色方砖。" },
+    { id: "oak", name: "橡木长板", cost: 170, pattern: "plank", base: "#8a5f36", a: "#9c6f42", b: "#734c2a", accent: "#c9a06a", desc: "宽板橡木，纹理粗犷。" },
+    { id: "redwood", name: "红杉木", cost: 190, pattern: "plank", base: "#7a4030", a: "#8f4f3a", b: "#5f3025", accent: "#c98a63", desc: "偏红的木地板，适合宴会厅。" },
+    { id: "bluegray", name: "雾蓝石板", cost: 200, pattern: "tile", base: "#6a7786", a: "#7b8998", b: "#55606e", accent: "#b6c3ce", desc: "冷调的雾蓝石板。" },
+    { id: "pearl", name: "珍珠白砖", cost: 280, pattern: "marble", base: "#d9d4c8", a: "#ece7da", b: "#c1bbad", accent: "#fffaee", desc: "泛着微光的珍珠白石。" },
+    { id: "copper", name: "紫铜地砖", cost: 300, pattern: "tile", base: "#8a5a44", a: "#a56f52", b: "#6d4433", accent: "#e0a878", desc: "紫铜色地砖，暖而沉。" },
+    { id: "bronze", name: "青铜拼花", cost: 320, pattern: "mosaic", base: "#6f5f3a", a: "#8a7748", b: "#554829", accent: "#c9b26a", desc: "青铜与黄铜拼出的小花纹。" },
+    { id: "forest", name: "林地深绿", cost: 210, pattern: "tile", base: "#42604a", a: "#4f7258", b: "#344b3a", accent: "#8fae7a", desc: "深绿色石砖，像林间苔地。" },
+    { id: "autumn", name: "秋叶暖砖", cost: 180, pattern: "brick", base: "#9a5f3a", a: "#b07043", b: "#7c4a2e", accent: "#e0a868", desc: "橙褐色砖，踩上去像踩过落叶。" },
+    { id: "midnight", name: "午夜石板", cost: 260, pattern: "tile", base: "#2f3446", a: "#3b4258", b: "#232838", accent: "#7d8bb0", desc: "近乎黑色的石板，适合静室。" },
+    { id: "sunrise", name: "晨曦石砖", cost: 230, pattern: "marble", base: "#c9a98a", a: "#e0c2a0", b: "#ad8d70", accent: "#fff0d2", desc: "晨光色的石砖，温暖不刺眼。" },
+    { id: "plum", name: "梅子紫砖", cost: 240, pattern: "checker", base: "#7a5d78", a: "#9a7a96", b: "#5c445a", accent: "#d8bcd4", desc: "深浅交错的梅子色方砖。" }
   ];
-
-
 
   const MENUS = [
     {
@@ -584,7 +594,47 @@ window.GameData = (function () {
       id: "missionary_cell", name: "静修室", icon: "crest", size: "S", cost: { wood: 18, stone: 22, gold: 60 },
       capacity: 1, satisfaction: 5, productionBonus: 0.02,
       desc: "小型静修室，增加 1 个床位。招募传教士的必要房间。"
-    }
+    },
+    {
+      id: "infirmary", name: "医馆", icon: "bath", size: "S", cost: { wood: 26, stone: 24, gold: 85 },
+      capacity: 1, satisfaction: 5, residentBonus: 0.03, drawAs: "library",
+      desc: "小型医馆。床位 +1，满意度 +5，居民收入 +3%。"
+    },
+    {
+      id: "brewery", name: "酿酒房", icon: "food", size: "M", cost: { wood: 40, stone: 28, gold: 110 },
+      capacity: 0, residentBonus: 0.08, foodBonus: 0.05, drawAs: "storeroom",
+      desc: "中型房。居民收入 +8%，食物产出 +5%。"
+    },
+    {
+      id: "observatory", name: "观星台", icon: "sparkle", size: "M", cost: { wood: 34, stone: 40, gold: 130 },
+      capacity: 0, satisfaction: 6, productionBonus: 0.04, drawAs: "library",
+      desc: "中型房。满意度 +6，生产 +4%。"
+    },
+    {
+      id: "treasury", name: "金库", icon: "coin", size: "M", cost: { wood: 38, stone: 46, gold: 150 },
+      capacity: 0, residentBonus: 0.10, drawAs: "minister_office",
+      desc: "中型房。居民收入 +10%，适合账房与大臣。"
+    },
+    {
+      id: "training", name: "训练场", icon: "hammer", size: "M", cost: { wood: 30, stone: 30, gold: 100 },
+      capacity: 0, defense: 8, satisfaction: -1, drawAs: "armory",
+      desc: "中型房。防御 +8，但操练声会让满意度 -1。"
+    },
+    {
+      id: "greenhouse", name: "温室", icon: "leaf", size: "M", cost: { wood: 36, stone: 22, gold: 120 },
+      capacity: 0, foodBonus: 0.12, satisfaction: 3, drawAs: "garden",
+      desc: "中型房。食物产出 +12%，满意度 +3。"
+    },
+    {
+      id: "tavern", name: "酒馆", icon: "tavern", size: "L", cost: { wood: 60, stone: 40, gold: 200 },
+      capacity: 0, residentBonus: 0.12, satisfaction: 4, foodBonus: 0.04, drawAs: "dining",
+      desc: "大型房。居民收入 +12%，满意度 +4，食物 +4%。"
+    },
+    {
+      id: "nursery", name: "育儿室", icon: "people", size: "M", cost: { wood: 34, stone: 20, gold: 95 },
+      capacity: 3, satisfaction: 2, drawAs: "dorm",
+      desc: "中型房。床位 +3，满意度 +2，适合年轻居民。"
+    },
   ];
 
   const GUEST_CLASSES = [
@@ -669,7 +719,39 @@ window.GameData = (function () {
     { id: "painting", name: "挂画", icon: "scroll", cost: { gold: 40 }, w: 26, h: 22, desc: "画着旧日风息堡的风景。" },
     { id: "statue", name: "小雕像", icon: "crest", cost: { gold: 70, stone: 16 }, w: 22, h: 30, desc: "沉默的石制守护者。" },
     { id: "rug", name: "小地毯", icon: "bunting", cost: { gold: 36 }, w: 40, h: 24, desc: "织着家族纹样的小毯。" },
-    { id: "candle", name: "烛台", icon: "sun", cost: { gold: 18 }, w: 14, h: 22, desc: "三支蜡烛的铜烛台。" }
+    { id: "candle", name: "烛台", icon: "sun", cost: { gold: 18 }, w: 14, h: 22, desc: "三支蜡烛的铜烛台。" },
+    { id: "chandelier", name: "小吊灯", icon: "sparkle", cost: { gold: 90, wood: 10 }, kind: "lamp", w: 26, h: 28, desc: "挂在天花板下的三臂小吊灯。" },
+    { id: "candelabra", name: "七枝烛台", icon: "sun", cost: { gold: 60, stone: 8 }, kind: "lamp", w: 20, h: 30, desc: "气派的七枝铜烛台。" },
+    { id: "flowers", name: "花束", icon: "leaf", cost: { gold: 26 }, kind: "plant", w: 16, h: 22, desc: "刚剪下的野花，插在陶罐里。" },
+    { id: "fern", name: "蕨类盆栽", icon: "leaf", cost: { gold: 34 }, kind: "plant", w: 20, h: 26, desc: "叶片舒展开的大盆蕨类。" },
+    { id: "vase", name: "青瓷花瓶", icon: "crest", cost: { gold: 55, stone: 6 }, kind: "vase", w: 16, h: 28, desc: "青瓷花瓶，空着也好看。" },
+    { id: "bench", name: "长凳", icon: "hammer", cost: { gold: 32, wood: 14 }, kind: "seat", w: 34, h: 18, desc: "靠墙的橡木长凳。" },
+    { id: "stool", name: "圆凳", icon: "hammer", cost: { gold: 20, wood: 8 }, kind: "seat", w: 16, h: 16, desc: "矮圆凳，随手就能拖过来。" },
+    { id: "chair", name: "高背椅", icon: "hammer", cost: { gold: 28, wood: 10 }, kind: "seat", w: 18, h: 24, desc: "高背木椅，坐着谈事正合适。" },
+    { id: "table", name: "小圆桌", icon: "hammer", cost: { gold: 40, wood: 16 }, kind: "table", w: 30, h: 22, desc: "两人用的小圆桌。" },
+    { id: "desk", name: "书桌", icon: "book", cost: { gold: 60, wood: 20 }, kind: "table", w: 38, h: 22, desc: "带抽屉的书桌。" },
+    { id: "shelf", name: "书架", icon: "book", cost: { gold: 55, wood: 22 }, kind: "shelf", w: 34, h: 40, desc: "塞满书的木书架。" },
+    { id: "bookshelf", name: "高书柜", icon: "book", cost: { gold: 85, wood: 30 }, kind: "shelf", w: 30, h: 52, desc: "到顶的高书柜，带玻璃门。" },
+    { id: "cabinet", name: "矮柜", icon: "scroll", cost: { gold: 45, wood: 18 }, kind: "shelf", w: 30, h: 24, desc: "放账本和杂物的矮柜。" },
+    { id: "chest", name: "木箱", icon: "coin", cost: { gold: 26, wood: 12 }, kind: "chest", w: 24, h: 18, desc: "带铁锁的旧木箱。" },
+    { id: "barrel", name: "酒桶", icon: "food", cost: { gold: 30, wood: 14 }, kind: "barrel", w: 20, h: 26, desc: "装酒或腌菜的木桶。" },
+    { id: "winerack", name: "酒架", icon: "food", cost: { gold: 70, wood: 18 }, kind: "shelf", w: 24, h: 34, desc: "斜放酒瓶的木架。" },
+    { id: "clock", name: "立钟", icon: "clock", cost: { gold: 80, wood: 16 }, kind: "clock", w: 18, h: 40, desc: "会滴答响的落地钟。" },
+    { id: "mirror", name: "穿衣镜", icon: "sparkle", cost: { gold: 75, stone: 10 }, kind: "mirror", w: 18, h: 38, desc: "带铜框的穿衣镜。" },
+    { id: "map", name: "旧地图", icon: "scroll", cost: { gold: 45 }, kind: "painting", w: 30, h: 22, desc: "标着旧商道的地图。" },
+    { id: "tapestry", name: "挂毯", icon: "bunting", cost: { gold: 95 }, kind: "painting", w: 26, h: 42, desc: "织着风息堡纹章的挂毯。" },
+    { id: "banner", name: "垂旗", icon: "crest", cost: { gold: 60 }, kind: "painting", w: 16, h: 44, desc: "从墙头垂下的家族旗。" },
+    { id: "shield", name: "盾牌", icon: "crest", cost: { gold: 50, wood: 8 }, kind: "metal", w: 20, h: 24, desc: "挂在墙上的旧盾。" },
+    { id: "armor", name: "盔甲架", icon: "hammer", cost: { gold: 120, stone: 20 }, kind: "metal", w: 22, h: 40, desc: "整副板甲立在木架上。" },
+    { id: "fountain", name: "小喷泉", icon: "sparkle", cost: { gold: 160, stone: 40 }, kind: "fountain", w: 34, h: 30, desc: "室内的小喷泉，水声很轻。" },
+    { id: "sculpture", name: "石雕", icon: "crest", cost: { gold: 110, stone: 30 }, kind: "statue", w: 24, h: 36, desc: "抽象的石雕，看不出来是什么。" },
+    { id: "globe", name: "地球仪", icon: "scroll", cost: { gold: 90, wood: 10 }, kind: "globe", w: 22, h: 28, desc: "黄铜支架的地球仪。" },
+    { id: "harp", name: "竖琴", icon: "sparkle", cost: { gold: 140, wood: 20 }, kind: "harp", w: 22, h: 40, desc: "偶尔有人会拨两下。" },
+    { id: "telescope", name: "望远镜", icon: "sparkle", cost: { gold: 150, stone: 15 }, kind: "telescope", w: 26, h: 36, desc: "黄铜望远镜，对准天窗。" },
+    { id: "cauldron", name: "铜锅", icon: "food", cost: { gold: 55, stone: 8 }, kind: "cauldron", w: 24, h: 22, desc: "厨房用的铜锅，还热着。" },
+    { id: "fireplace", name: "小壁炉", icon: "sun", cost: { gold: 130, stone: 35 }, kind: "fire", w: 40, h: 34, desc: "嵌在墙里的小壁炉。" },
+    { id: "rug2", name: "长绒地毯", icon: "bunting", cost: { gold: 80 }, kind: "rug", w: 56, h: 26, desc: "厚实的长绒地毯。" },
+    { id: "rug3", name: "圆地毯", icon: "bunting", cost: { gold: 60 }, kind: "rug", w: 34, h: 34, desc: "织着花纹的圆地毯。" }
   ];
 
   const TILE_PACKS = [

@@ -3739,6 +3739,7 @@ window.CastleScene = (function () {
   }
   function drawExpansionRoom(type, slot, t, level, skin) {
     const x = slot.x, y = slot.y, w = slot.w, h = slot.h;
+    if (type && type.drawAs) type = Object.assign({}, type, { id: type.drawAs });
     R(ctx, x - 4, y - 4, w + 8, h + 8, "#2a1d17");
     R(ctx, x - 2, y - 2, w + 4, h + 4, "#695242");
     R(ctx, x, y, w, h, "#6e5a49");
@@ -4138,51 +4139,174 @@ window.CastleScene = (function () {
   }
 
   function drawDecorItem(item, x, y, t) {
-    const id = item.id;
-    shadow(ctx, x + item.w / 2, y + item.h, item.w * 0.45, 3, 0.2);
-    if (id === "lamp") {
-      R(ctx, x + 6, y + 4, 4, 18, "#3b2a1a");
-      R(ctx, x + 2, y, 12, 6, "#7a5a36");
-      R(ctx, x + 3, y + 1, 10, 3, "#f2c56d");
-      drawGlow(x + 8, y + 2, 18, "#ffcf72", 0.16);
-      R(ctx, x + 2, y + 20, 12, 3, "#3b2a1a");
-    } else if (id === "plant") {
-      R(ctx, x + 3, y + 12, 12, 11, "#8a5a36");
-      R(ctx, x + 4, y + 13, 10, 8, "#a87545");
-      R(ctx, x + 7, y + 4, 3, 10, "#4f6e3d");
-      R(ctx, x + 4, y + 7, 4, 5, "#6e904f");
-      R(ctx, x + 11, y + 5, 4, 6, "#5c7c44");
-      R(ctx, x + 8, y + 2, 4, 4, "#7fa35c");
-    } else if (id === "weapon") {
-      R(ctx, x + 1, y + 4, item.w - 2, 3, "#4b3725");
-      R(ctx, x + 1, y + item.h - 6, item.w - 2, 3, "#4b3725");
-      R(ctx, x + 8, y + 2, 2, item.h - 8, "#c9cfcb");
-      R(ctx, x + 5, y + 1, 8, 2, "#9aa0a0");
-      R(ctx, x + 18, y + 2, 2, item.h - 8, "#8a623b");
-      R(ctx, x + 16, y + 1, 6, 3, "#c9cfcb");
-    } else if (id === "painting") {
-      R(ctx, x, y + 2, item.w, item.h - 4, "#8e6e45");
-      R(ctx, x + 2, y + 4, item.w - 4, item.h - 8, "#4e6d82");
-      R(ctx, x + 3, y + item.h - 8, item.w - 6, 4, "#3f5f3a");
-      R(ctx, x + item.w / 2 - 3, y + 6, 6, 4, "#e0c06a");
-    } else if (id === "statue") {
-      R(ctx, x + 4, y + item.h - 8, item.w - 8, 8, "#6d6a5f");
-      R(ctx, x + 7, y + 8, item.w - 14, item.h - 16, "#9a9587");
-      R(ctx, x + 8, y + 4, item.w - 16, 6, "#b5b0a0");
-      R(ctx, x + 9, y + 10, 3, 3, "#57544b");
-    } else if (id === "rug") {
-      R(ctx, x, y + 4, item.w, item.h - 8, "#3d2a22");
-      R(ctx, x + 2, y + 5, item.w - 4, item.h - 10, "#8a4c3c");
-      for (let i = 4; i < item.w - 4; i += 8) R(ctx, x + i, y + 7, 4, 2, "#e0b45e");
-    } else if (id === "candle") {
-      R(ctx, x + 3, y + 16, 8, 4, "#3b2a1e");
+    const kind = item.kind || item.id;
+    const w = item.w || 16, h = item.h || 20;
+    shadow(ctx, x + w / 2, y + h, w * 0.42, 3, 0.18);
+    if (kind === "lamp") {
+      if (item.id === "chandelier") {
+        R(ctx, x + w / 2 - 1, y, 2, 8, "#3b2a1a");
+        R(ctx, x + 4, y + 8, w - 8, 2, "#7a5a36");
+        for (let i = 0; i < 3; i++) { R(ctx, x + 6 + i * 6, y + 10, 2, 5, "#f2c56d"); R(ctx, x + 6 + i * 6, y + 8, 2, 2, "#fff0b0"); }
+        drawGlow(x + w / 2, y + 12, 22, "#ffcf72", 0.16);
+      } else {
+        R(ctx, x + w / 2 - 2, y + 4, 4, h - 8, "#3b2a1a");
+        R(ctx, x + 2, y + 1, w - 4, 5, "#7a5a36");
+        R(ctx, x + 3, y + 2, w - 6, 3, "#f2c56d");
+        if (item.id === "candelabra") {
+          for (let i = 0; i < 3; i++) R(ctx, x + 4 + i * (w - 8) / 2, y - 2, 2, 4, "#ffe9b0");
+        }
+        drawGlow(x + w / 2, y + 3, 18, "#ffcf72", 0.14);
+        R(ctx, x + 3, y + h - 3, w - 6, 3, "#3b2a1a");
+      }
+    } else if (kind === "plant") {
+      R(ctx, x + 2, y + h - 12, w - 4, 11, "#8a5a36");
+      R(ctx, x + 3, y + h - 11, w - 6, 8, "#a87545");
+      for (let i = 0; i < 4; i++) {
+        R(ctx, x + w / 2 - 2 + (i - 1) * 3, y + 4 + i * 3, 3, h - 16, i % 2 ? "#5c7c44" : "#6e904f");
+      }
+      if (item.id === "flowers") {
+        ["#d97b46", "#e0c06a", "#c95d7a"].forEach(function (c, i) { R(ctx, x + 4 + i * 4, y + 2, 3, 3, c); });
+      }
+    } else if (kind === "weapon") {
+      R(ctx, x + 1, y + 4, w - 2, 3, "#4b3725");
+      R(ctx, x + 1, y + h - 6, w - 2, 3, "#4b3725");
+      R(ctx, x + 6, y + 2, 2, h - 8, "#c9cfcb");
+      R(ctx, x + 14, y + 2, 2, h - 8, "#8a623b");
+      R(ctx, x + 20, y + 4, 3, 10, "#9aa0a0");
+    } else if (kind === "painting") {
+      R(ctx, x, y + 2, w, h - 4, "#8e6e45");
+      R(ctx, x + 2, y + 4, w - 4, h - 8, "#4e6d82");
+      R(ctx, x + 3, y + h - 8, w - 6, 4, "#3f5f3a");
+      R(ctx, x + w / 2 - 3, y + 6, 6, 4, "#e0c06a");
+      R(ctx, x + w / 2 - 1, y + 2, 2, h - 4, "rgba(60,40,20,0.25)");
+    } else if (kind === "statue") {
+      R(ctx, x + 3, y + h - 7, w - 6, 7, "#6d6a5f");
+      R(ctx, x + 5, y + 8, w - 10, h - 14, "#9a9587");
+      R(ctx, x + 6, y + 4, w - 12, 6, "#b5b0a0");
+      R(ctx, x + 7, y + 10, 3, 3, "#57544b");
+    } else if (kind === "rug") {
+      R(ctx, x, y + 4, w, h - 8, "#3d2a22");
+      R(ctx, x + 2, y + 5, w - 4, h - 10, "#8a4c3c");
+      for (let i = 4; i < w - 4; i += 8) R(ctx, x + i, y + 7, 4, 2, "#e0b45e");
+      for (let i = 4; i < w - 4; i += 8) R(ctx, x + i, y + h - 9, 4, 2, "#e0b45e");
+    } else if (kind === "candle") {
+      R(ctx, x + 2, y + h - 5, w - 4, 4, "#3b2a1e");
       for (let i = 0; i < 3; i++) {
-        R(ctx, x + 3 + i * 3, y + 6 + (i % 2) * 3, 2, 10, "#efe1bd");
+        R(ctx, x + 3 + i * 3, y + 6 + (i % 2) * 3, 2, h - 10, "#efe1bd");
         R(ctx, x + 3 + i * 3, y + 3 + (i % 2) * 3, 2, 3, "#ffcf72");
       }
-      drawGlow(x + 7, y + 6, 16, "#ffcf72", 0.12);
+      drawGlow(x + w / 2, y + 6, 16, "#ffcf72", 0.10);
+    } else if (kind === "vase") {
+      R(ctx, x + 4, y + h - 16, w - 8, 14, "#5f8f86");
+      R(ctx, x + 5, y + h - 15, w - 10, 4, "#7fb3a8");
+      R(ctx, x + w / 2 - 1, y + 2, 2, h - 16, "#4f6e3d");
+      R(ctx, x + w / 2 - 4, y + 4, 4, 3, "#8fae7a");
+      R(ctx, x + w / 2 + 1, y + 7, 4, 3, "#8fae7a");
+    } else if (kind === "seat") {
+      R(ctx, x + 2, y + h - 10, w - 4, 4, "#8a623b");
+      R(ctx, x + 2, y + h - 10, w - 4, 1, "#b08050");
+      R(ctx, x + 3, y + h - 6, 3, 6, "#5b4029");
+      R(ctx, x + w - 6, y + h - 6, 3, 6, "#5b4029");
+      if (item.id === "chair") R(ctx, x + 2, y + 2, w - 4, h - 12, "#7a5233");
+      if (item.id === "bench") R(ctx, x + 2, y + 2, w - 4, 4, "#7a5233");
+      if (item.id === "stool") R(ctx, x + 3, y + h - 14, w - 6, 4, "#9a7048");
+    } else if (kind === "table") {
+      R(ctx, x + 1, y + 6, w - 2, 5, "#9a7048");
+      R(ctx, x + 1, y + 6, w - 2, 1, "#c49660");
+      R(ctx, x + 3, y + 11, 3, h - 11, "#5b4029");
+      R(ctx, x + w - 6, y + 11, 3, h - 11, "#5b4029");
+      if (item.id === "desk") R(ctx, x + w - 12, y + 11, 9, 5, "#7a5233");
+    } else if (kind === "shelf") {
+      R(ctx, x + 1, y + 1, w - 2, h - 2, "#5b4029");
+      R(ctx, x + 2, y + 2, w - 4, h - 4, "#7a5233");
+      for (let i = 0; i < Math.max(2, Math.floor(h / 12)); i++) {
+        const sy = y + 5 + i * 11;
+        R(ctx, x + 2, sy, w - 4, 2, "#4a3220");
+        for (let bx = x + 4; bx < x + w - 5; bx += 5) R(ctx, bx, sy - 6, 3, 6, ["#8e4a3c", "#4e6d82", "#6c7d54", "#b08a4a"][(bx + i) % 4]);
+      }
+    } else if (kind === "chest") {
+      R(ctx, x + 1, y + 4, w - 2, h - 6, "#6d4a2c");
+      R(ctx, x + 2, y + 5, w - 4, h - 9, "#8a623b");
+      R(ctx, x + 2, y + 5, w - 4, 2, "#b08050");
+      R(ctx, x + w / 2 - 2, y + h - 12, 4, 6, "#c9a24e");
+      R(ctx, x + 2, y + 2, w - 4, 3, "#5b4029");
+    } else if (kind === "barrel") {
+      R(ctx, x + 2, y + 4, w - 4, h - 6, "#7a5233");
+      R(ctx, x + 3, y + 5, w - 6, h - 8, "#966a42");
+      R(ctx, x + 2, y + 9, w - 4, 2, "#3f3122");
+      R(ctx, x + 2, y + h - 10, w - 4, 2, "#3f3122");
+      R(ctx, x + w / 2 - 2, y, 4, 4, "#5b4029");
+    } else if (kind === "clock") {
+      R(ctx, x + 2, y + 2, w - 4, h - 4, "#5b4029");
+      R(ctx, x + 3, y + 3, w - 6, h - 6, "#7a5233");
+      circle(ctx, x + w / 2, y + 12, 6, "#e8ddc4");
+      R(ctx, x + w / 2, y + 8, 1, 4, "#3b2a1a");
+      R(ctx, x + w / 2, y + 12, 3, 1, "#3b2a1a");
+      R(ctx, x + w / 2 - 1, y + h - 14, 2, 10, "#3b2a1a");
+    } else if (kind === "mirror") {
+      R(ctx, x + 1, y + 2, w - 2, h - 4, "#8e6e45");
+      R(ctx, x + 3, y + 4, w - 6, h - 8, "#9fc3cf");
+      R(ctx, x + 4, y + 5, 3, h - 12, "#d3e8ee");
+    } else if (kind === "metal") {
+      if (item.id === "shield") {
+        R(ctx, x + 2, y + 2, w - 4, h - 4, "#8d9495");
+        R(ctx, x + 4, y + 4, w - 8, h - 8, "#b5b9b3");
+        R(ctx, x + w / 2 - 1, y + 6, 2, h - 12, "#8e3731");
+      } else {
+        R(ctx, x + w / 2 - 1, y + 2, 2, h - 4, "#5b4029");
+        R(ctx, x + 4, y + 6, w - 8, 10, "#8d9495");
+        R(ctx, x + 3, y + 16, w - 6, 12, "#9aa0a0");
+        R(ctx, x + 6, y + 28, 3, 8, "#6f7472");
+        R(ctx, x + w - 9, y + 28, 3, 8, "#6f7472");
+      }
+    } else if (kind === "fountain") {
+      R(ctx, x + 2, y + h - 12, w - 4, 10, "#7d7f72");
+      R(ctx, x + 4, y + h - 10, w - 8, 5, "#6fa3b8");
+      R(ctx, x + w / 2 - 1, y + h - 22, 2, 12, "#9aa6a6");
+      R(ctx, x + w / 2 - 4, y + h - 24, 8, 3, "#b9cdd4");
+      R(ctx, x + w / 2, y + h - 30, 1, 6, "#cfe6ee");
+      drawGlow(x + w / 2, y + h - 16, 20, "#9fd0e0", 0.10);
+    } else if (kind === "globe") {
+      R(ctx, x + w / 2 - 1, y + h - 12, 2, 8, "#8a623b");
+      R(ctx, x + 4, y + h - 5, w - 8, 3, "#5b4029");
+      circle(ctx, x + w / 2, y + h / 2, 8, "#4e6d82");
+      R(ctx, x + w / 2 - 8, y + h / 2 - 1, 16, 1, "#c9a24e");
+      R(ctx, x + w / 2 - 4, y + h / 2 - 6, 3, 3, "#6c8a54");
+    } else if (kind === "harp") {
+      R(ctx, x + 3, y + h - 4, w - 6, 3, "#8a623b");
+      R(ctx, x + 3, y + 2, 3, h - 4, "#9a7048");
+      for (let i = 0; i < 4; i++) R(ctx, x + 5 + i * 3, y + 6 + i * 3, 1, h - 12 - i * 3, "#e0d3a8");
+      R(ctx, x + 3, y + 2, w - 6, 3, "#9a7048");
+    } else if (kind === "telescope") {
+      R(ctx, x + 4, y + h - 4, 3, 4, "#5b4029");
+      R(ctx, x + w - 7, y + h - 4, 3, 4, "#5b4029");
+      R(ctx, x + w / 2 - 1, y + 14, 2, h - 18, "#5b4029");
+      R(ctx, x + 4, y + 6, w - 8, 5, "#b08a4a");
+      R(ctx, x + w - 6, y + 5, 4, 7, "#c9a24e");
+    } else if (kind === "cauldron") {
+      R(ctx, x + 3, y + 6, w - 6, h - 8, "#3b3b34");
+      R(ctx, x + 4, y + 7, w - 8, h - 12, "#5b5b50");
+      R(ctx, x + 4, y + 7, w - 8, 2, "#8a8980");
+      R(ctx, x + 1, y + 10, 2, 6, "#3b3b34");
+      R(ctx, x + w - 3, y + 10, 2, 6, "#3b3b34");
+      ctx.globalAlpha = 0.25;
+      R(ctx, x + 7, y + 1, 2, 4, "#d8d2c4");
+      R(ctx, x + 12, y - 2, 2, 4, "#d8d2c4");
+      ctx.globalAlpha = 1;
+    } else if (kind === "fire") {
+      R(ctx, x + 2, y + 4, w - 4, h - 4, "#5b4029");
+      R(ctx, x + 4, y + 8, w - 8, h - 10, "#2b2118");
+      R(ctx, x + 5, y + h - 10, w - 10, 6, "#8a4a2c");
+      ctx.globalAlpha = 0.55 + 0.15 * Math.sin(t * 6);
+      R(ctx, x + w / 2 - 5, y + h - 16, 10, 8, "#e08a3c");
+      ctx.globalAlpha = 1;
+      drawGlow(x + w / 2, y + h - 12, 26, "#ffb45e", 0.16);
+    } else {
+      R(ctx, x + 2, y + 2, w - 4, h - 4, "#8a623b");
+      R(ctx, x + 4, y + 4, w - 8, h - 8, "#b08050");
     }
   }
+
 
   function drawExpansion(state, dt) {
     suppressRoomFloor = false;
@@ -5831,6 +5955,27 @@ window.CastleScene = (function () {
     return cropThumbCache[id];
   }
 
+  const decorThumbCache = {};
+
+  function decorThumb(id) {
+    if (decorThumbCache[id]) return decorThumbCache[id];
+    const item = (D.DECOR_ITEMS || []).filter(function (d) { return d.id === id; })[0];
+    if (!item) return "";
+    const c = document.createElement("canvas");
+    c.width = 128; c.height = 128;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    const prev = ctx;
+    ctx = g;
+    g.scale(2, 2);
+    const w = item.w || 16, h = item.h || 20;
+    const ox = Math.max(0, (64 - w) / 2), oy = Math.max(0, (64 - h) / 2);
+    try { drawDecorItem(item, ox, oy, 0.4); } catch (e) { ctx = prev; return ""; }
+    ctx = prev;
+    decorThumbCache[id] = c.toDataURL("image/png");
+    return decorThumbCache[id];
+  }
+
   function coreInfo(id) {
     const c = HALL_CAST.filter(function (x) { return x.id === id; })[0];
     return c ? { name: c.name, role: c.role, klass: c.klass, type: c.type } : null;
@@ -5840,6 +5985,7 @@ window.CastleScene = (function () {
     init: init,
     roomThumb: roomThumb,
     cropThumb: cropThumb,
+    decorThumb: decorThumb,
     coreInfo: coreInfo,
     draw: draw,
     petCat: petCat,

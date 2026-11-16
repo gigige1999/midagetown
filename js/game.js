@@ -3982,7 +3982,7 @@
     return '<div class="catalog-grid">' + D.DECOR_ITEMS.map(function (item) {
       const can = canAfford(item.cost);
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
-        '<div class="catalog-preview decor"><img src="' + I.icon(item.icon) + '" alt=""></div>' +
+        '<div class="catalog-preview decor"><img src="' + (window.CastleScene && window.CastleScene.decorThumb ? window.CastleScene.decorThumb(item.id) : I.icon(item.icon)) + '" alt=""></div>' +
         '<div class="catalog-copy"><b>' + item.name + '</b><span>' + item.desc + '</span>' +
         '<em>' + costHTML(item.cost, true) + '</em></div>' +
         '<button class="btn btn-gold btn-small" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + '>购买并摆放</button></div>';
@@ -4210,7 +4210,7 @@
     const cards = D.DECOR_ITEMS.map(function (item) {
       const can = canAfford(item.cost);
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
-        '<div class="catalog-preview decor"><img src="' + I.icon(item.icon) + '" alt=""></div>' +
+        '<div class="catalog-preview decor"><img src="' + (window.CastleScene && window.CastleScene.decorThumb ? window.CastleScene.decorThumb(item.id) : I.icon(item.icon)) + '" alt=""></div>' +
         '<div class="catalog-copy"><b>' + item.name + '</b><span>' + item.desc + "</span>" +
         '<em>' + costHTML(item.cost, true) + "</em></div>" +
         '<button class="btn btn-gold btn-small" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + ">购买并摆放</button></div>";
