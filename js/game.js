@@ -4146,10 +4146,15 @@
   }
 
   function tileRowsHTML() {
-    const skin = floorSkinById(currentFloorSkin().selected);
-    const note = '<div class="tile-floor-entry"><div><b>本层地板</b><span>' + (skin ? skin.name : "灰石砖") + ' · 整层替换</span></div>' +
-      '<button class="btn btn-wood btn-small" data-action="open-floor-picker">更换地板</button></div>' +
-      '<p class="decorate-tip">装饰地砖：铺在地板之上的小块图案，不改变地板本身。买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
+    const fst = currentFloorSkin();
+    const skin = floorSkinById(fst.selected);
+    const note = '<div class="decorate-head"><b>地板</b><span>' + (skin ? skin.name : "灰石砖") + ' · 单独购买</span></div>' +
+      '<p class="decorate-tip">每款地板单独购买、只对这一层生效；点一下即购买并使用。</p>' +
+      '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
+        return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
+      }).join("") + "</div>" +
+      '<div class="decorate-head" style="margin-top:10px"><b>装饰地砖</b><span>铺在地板之上</span></div>' +
+      '<p class="decorate-tip">地砖是地板上的小块图案：买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
     return note + '<div class="tile-list">' + D.TILE_PACKS.map(function (pack) {
@@ -4227,22 +4232,13 @@
     );
   }
 
-  function openFloorPickerModal() {
-    if (!state.expansionUnlocked) { toast("扩建层开放后才能更换地板。", "bad", "lock"); return; }
-    openModal(
-      modalHead("sparkle", "扩建层 · 地板", "第 " + ((state.currentFloor || 0) + 1) + " 层地板", "本层单独购买，只影响当前层；购买后立即生效。") +
-      '<div class="modal-body">' + floorsTabHTML() +
-      '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>'
-    );
-  }
-
   function openFloorBuyConfirm(kind, id) {
     const skin = floorSkinById(id);
     const hall = kind === "hall";
     const areatxt = hall ? "城堡大厅" : "扩建层 · 第 " + ((state.currentFloor || 0) + 1) + " 层";
     const can = canAfford({ gold: skin.cost });
     openModal(
-      modalHead("sparkle", "地板 · 确认购买", skin.name, areatxt + " · 整层替换") +
+      modalHead("sparkle", "地板 · 确认购买", skin.name, areatxt + " · 单独购买") +
       '<div class="modal-body"><div class="floor-confirm-preview" style="background:' + skin.base + '">' +
       '<i style="background:' + skin.a + '"></i><i style="background:' + skin.b + '"></i></div>' +
       '<div class="info-rows"><div class="info-row"><span>铺设范围</span><b>' + areatxt + '</b></div>' +
@@ -5670,7 +5666,6 @@
         closeModal(true);
         startPlacement("room", el.dataset.type, { fromWarehouse: true });
       }
-      else if (action === "open-floor-picker") openFloorPickerModal();
       else if (action === "rename-confirm") applyRename();
       else if (action === "floor-pick") {
         const kind = el.dataset.kind;
