@@ -59,6 +59,7 @@
     decorMode: false,
     dragRoom: null,
     dragDecor: null,
+    painting: false,
     tileBrush: null
   };
 
@@ -2593,6 +2594,7 @@
     renderLedger(true);
     renderSceneHotspots();
     renderFloorSwitch();
+    updateLedgerScrim();
     const pl = $("#placementLayer");
     if (pl) {
       if (ui.decorMode || ui.placement) pl.hidden = false;
@@ -3374,6 +3376,7 @@
     window.__decorMode = false;
     ui.dragRoom = null;
     ui.dragDecor = null;
+    ui.painting = false;
     ui.tileBrush = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
@@ -3498,7 +3501,7 @@
       const can = canAfford(type.cost) && !full;
       const fp = roomFootprint(type);
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
-        '<div class="catalog-preview size-' + type.size + '"><span>' + type.size + '</span><em>' + fp.w + "×" + fp.h + "</em></div>" +
+        '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
         '<div class="catalog-copy"><b>' + type.name + '</b><span>' + type.desc + "</span>" +
         '<em>' + costHTML(type.cost, true) + "</em></div>" +
         '<button class="btn btn-gold btn-small" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + ">购买并放置</button></div>";
@@ -3698,8 +3701,18 @@
     if (activeFloorBtn && row) row.scrollLeft = Math.max(0, activeFloorBtn.offsetLeft - row.clientWidth / 2);
   }
 
+  function updateLedgerScrim() {
+    const scrim = $("#ledgerScrim");
+    if (!scrim) return;
+    const drawer = window.innerWidth <= 1080;
+    const show = drawer && started && !ui.sidebarCollapsed;
+    scrim.hidden = !show;
+    scrim.classList.toggle("show", show);
+  }
+
   function setSidebarCollapsed(collapsed) {
     ui.sidebarCollapsed = !!collapsed;
+    updateLedgerScrim();
     const game = $(".game");
     const collapse = $("#ledgerCollapse");
     const expand = $("#ledgerExpand");
@@ -4457,7 +4470,8 @@
         if (!p) return;
         if (ui.placement) { movePlacement(p.x, p.y); return; }
         if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); return; }
-        if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); }
+        if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); return; }
+        if (ui.decorMode && ui.painting && ui.tileBrush) { paintTileAt(p.x, p.y); }
       });
       placeLayer.addEventListener("pointerdown", function (e) {
         const p = layerPoint(e);
@@ -4468,9 +4482,16 @@
         if (dec) { beginDecorDrag(dec.decor, dec.item, p.x, p.y); return; }
         const room = roomAtPoint(p.x, p.y);
         if (room) { beginRoomDrag(room, p.x, p.y); return; }
-        if (ui.tileBrush) { paintTileAt(p.x, p.y); }
+        if (ui.tileBrush) {
+          ui.painting = true;
+          if (placeLayer.setPointerCapture && e.pointerId != null) {
+            try { placeLayer.setPointerCapture(e.pointerId); } catch (err) {}
+          }
+          paintTileAt(p.x, p.y);
+        }
       });
       placeLayer.addEventListener("pointerup", function (e) {
+        ui.painting = false;
         if (ui.placement) {
           if (ui.placement.valid) commitPlacement();
           return;
@@ -4485,6 +4506,32 @@
         if (ui.decorMode && ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
       });
     }
+    const scrim = $("#ledgerScrim");
+    if (scrim) scrim.addEventListener("click", function () { setSidebarCollapsed(true); });
+    if (window.innerWidth <= 1080) setSidebarCollapsed(true);
+    // 右缘滑动开关账房抽屉
+    let swipe = null;
+    document.addEventListener("pointerdown", function (e) {
+      if (ui.placement || ui.decorMode) return;
+      const edge = window.innerWidth - e.clientX;
+      const drawerOpen = !ui.sidebarCollapsed;
+      if (!drawerOpen && edge > 42) return;
+      swipe = { x: e.clientX, y: e.clientY, t: Date.now() };
+    }, { passive: true });
+    document.addEventListener("pointerup", function (e) {
+      if (!swipe) return;
+      const dx = e.clientX - swipe.x;
+      const dy = e.clientY - swipe.y;
+      const dt = Date.now() - swipe.t;
+      swipe = null;
+      if (dt > 900 || Math.abs(dx) < 46 || Math.abs(dy) > 70) return;
+      if (dx < 0 && ui.sidebarCollapsed) setSidebarCollapsed(false);
+      else if (dx > 0 && !ui.sidebarCollapsed) setSidebarCollapsed(true);
+    }, { passive: true });
+    window.addEventListener("resize", function () {
+      updateLedgerScrim();
+      if (window.innerWidth > 1080 && ui.sidebarCollapsed) setSidebarCollapsed(false);
+    });
     $("#viewSwitch").addEventListener("click", function (e) {
       const b = e.target.closest("[data-view]");
       if (b) switchView(b.dataset.view);

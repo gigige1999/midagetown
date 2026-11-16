@@ -5372,8 +5372,34 @@ window.CastleScene = (function () {
     // 天气由 state 驱动，这里保留接口
   }
 
+  const roomThumbCache = {};
+
+  function roomThumb(typeId) {
+    if (roomThumbCache[typeId]) return roomThumbCache[typeId];
+    const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === typeId; })[0];
+    if (!type) return "";
+    const c = document.createElement("canvas");
+    c.width = 176;
+    c.height = 208;
+    const tctx = c.getContext("2d");
+    tctx.imageSmoothingEnabled = false;
+    const prev = ctx;
+    ctx = tctx;
+    tctx.scale(2, 2);
+    try {
+      drawExpansionRoom(type, { x: 0, y: 0, w: 88, h: 104, size: type.size }, 0.6, 1, "stone");
+    } catch (e) {
+      ctx = prev;
+      return "";
+    }
+    ctx = prev;
+    roomThumbCache[typeId] = c.toDataURL("image/png");
+    return roomThumbCache[typeId];
+  }
+
   return {
     init: init,
+    roomThumb: roomThumb,
     draw: draw,
     petCat: petCat,
     burstBuilding: burstBuilding,

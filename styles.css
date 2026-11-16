@@ -3313,3 +3313,62 @@ body.placement-on .interior-hotspots { pointer-events: none; }
   .scene-topnav .progress-sub { display: none; }
   .placement-bar { bottom: 14px; }
 }
+
+
+/* 移动端账房抽屉 */
+.ledger-scrim { position: fixed; inset: 0; z-index: 45; background: rgba(10,7,5,.55); display: none; }
+.ledger-scrim.show { display: block; }
+@media (max-width: 1080px) {
+  .game { grid-template-columns: 1fr !important; }
+  .ledger {
+    position: fixed; right: 0; top: 0; bottom: 0; z-index: 50;
+    width: min(86vw, 360px); min-height: 0; max-height: none;
+    box-shadow: -8px 0 24px rgba(0,0,0,.45);
+  }
+  .game.sidebar-collapsed .ledger { display: none; }
+  .ledger-expand { display: flex !important; }
+  .ledger-collapse { display: grid !important; }
+}
+
+/* 房间缩略图 */
+.catalog-preview.room { position: relative; overflow: hidden; padding: 0; background: #3b2a1a; }
+.catalog-preview.room img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.catalog-preview.room .catalog-size {
+  position: absolute; left: 1px; top: 1px; min-width: 13px; padding: 0 2px;
+  background: rgba(24,16,11,.85); color: #f0d28a; font-size: 9px; line-height: 13px; text-align: center;
+}
+.catalog-card { grid-template-columns: 66px minmax(0,1fr); }
+.catalog-preview { width: 66px; height: 74px; }
+.catalog-preview.room img { object-position: center 40%; }
+
+/* 手机横屏：顶栏压成一行 */
+@media (max-width: 1080px) {
+  .topbar { flex-wrap: nowrap; height: 50px; flex-basis: 50px; gap: 4px; padding: 0 6px; overflow: hidden; }
+  .brand { flex: 0 0 auto; }
+  .brand-mark { width: 28px; height: 28px; flex-basis: 28px; }
+  .brand-mark img { width: 24px; height: 24px; }
+  .brand-copy h1 { font-size: 15px; letter-spacing: 0; white-space: nowrap; }
+  .brand-copy span { display: none; }
+  .top-objective { display: none; }
+  .resource-strip { order: 0 !important; flex: 1 1 auto !important; flex-basis: auto !important; justify-content: flex-start; gap: 3px; overflow: visible; padding-bottom: 0; }
+  .resource-pill { min-width: 52px; padding: 2px 4px 2px 3px; gap: 3px; }
+  .resource-pill img { width: 18px; height: 18px; flex-basis: 18px; }
+  .resource-pill .res-name, .resource-pill .res-rate { display: none; }
+  .resource-pill .res-value { font-size: 13px; }
+  .time-widget { min-width: 64px; padding: 1px 3px; }
+  .time-widget .season-text, .time-widget .weather-text, .time-widget .clock-line { display: none; }
+  .time-widget .day-text { font-size: 10px; }
+  .speed-btn { width: 22px; height: 28px; font-size: 10px; }
+  .top-actions { gap: 3px; }
+  .top-quick-btn { min-width: 58px; height: 38px; padding: 1px 3px; border-width: 2px; gap: 0; }
+  .top-quick-btn img { width: 17px; height: 17px; }
+  .top-quick-btn span { font-size: 9px; }
+  .top-quick-btn em { top: 1px; right: 2px; min-width: 11px; font-size: 8px; line-height: 12px; }
+  .top-actions .square-btn { display: none; }
+  .stage-footer { display: none; }
+}
+@media (max-width: 1080px) {
+  .brand-copy { display: none; }
+  .brand { gap: 0; }
+  .brand-mark { width: 26px; height: 26px; flex-basis: 26px; }
+}
