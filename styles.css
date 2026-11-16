@@ -3598,3 +3598,8 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .tile-floor-entry > div { flex: 1; min-width: 0; }
 .tile-floor-entry b { display: block; font-size: 12px; font-weight: 400; color: #3f5330; }
 .tile-floor-entry span { display: block; font-size: 10px; color: #6f7f58; }
+
+
+/* 真实房间缩略图：完整显示 */
+.catalog-preview.room img { object-fit: contain; }
+.room-preview img { object-fit: contain; background: #2a1d17; }

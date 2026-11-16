@@ -2590,6 +2590,14 @@ window.CastleScene = (function () {
     R(ctx, x + Math.floor(w / 2) - 3, y + 4, 6, 4, "#e0c06a");
   }
 
+  function interiorCurtain(x, y, w, h, color) {
+    R(ctx, x - 2, y, w + 4, 2, "#5b432a");
+    R(ctx, x, y + 2, w, h - 2, color);
+    for (let i = 0; i < 3; i++) R(ctx, x + 2 + i * Math.max(2, Math.floor(w / 3)), y + 2, 1, h - 3, "rgba(40,20,16,0.35)");
+    R(ctx, x, y + h - 2, w, 2, "rgba(20,12,8,0.35)");
+    R(ctx, x, y + 2, w, 1, "rgba(255,220,170,0.18)");
+  }
+
   function interiorWindow(x, y, w, h, warm) {
     R(ctx, x - 2, y - 2, w + 4, h + 4, "#2b1e17");
     R(ctx, x, y, w, h, "#6f563d");
@@ -3692,13 +3700,29 @@ window.CastleScene = (function () {
     R(ctx, x + 6, y + 2, w - 12, 1, "rgba(120,86,40,0.35)");
     interiorSconce(x + 12, y + 8, t);
     interiorSconce(x + w - 14, y + 8, t);
+    if (level >= 2) {
+      interiorCurtain(x + 3, y, 8, 22, "#8e3731");
+      interiorCurtain(x + w - 11, y, 8, 22, "#8e3731");
+      interiorPainting(x + 15, y + 4, 15, 10, "#4e6d82");
+      interiorPainting(x + w - 30, y + 4, 15, 10, "#6c7d54");
+    }
     if (level >= 3) {
-      R(ctx, x + Math.floor(w / 2) - 7, y + 4, 14, 11, "#3b2a1a");
-      R(ctx, x + Math.floor(w / 2) - 6, y + 5, 12, 9, "#8e6e45");
-      R(ctx, x + Math.floor(w / 2) - 4, y + 7, 8, 5, "#e0b452");
-      R(ctx, x + Math.floor(w / 2) - 1, y + 6, 2, 2, "#fff0b0");
-      R(ctx, x + 5, y + 5, 2, 2, "#e0b45e");
-      R(ctx, x + w - 7, y + 5, 2, 2, "#e0b45e");
+      // 吊灯
+      R(ctx, x + Math.floor(w / 2) - 1, y + 1, 2, 8, "#3f3122");
+      R(ctx, x + Math.floor(w / 2) - 13, y + 9, 26, 2, "#3f3122");
+      for (let i = 0; i < 3; i++) {
+        const cx = x + Math.floor(w / 2) - 10 + i * 9;
+        R(ctx, cx, y + 11, 2, 4, "#f2c56d");
+        R(ctx, cx, y + 8, 2, 2, "#ffe9b0");
+      }
+      drawGlow(x + w / 2, y + 12, Math.min(w, 46), "#ffd58c", 0.16);
+      interiorBanner(x + 2, y + 2, 10, 26, "#8e3731");
+      interiorBanner(x + w - 12, y + 2, 10, 26, "#8e3731");
+      R(ctx, x + 3, y + h - 3, w - 6, 1, "#c9a24e");
+      interiorPlant(x + 2, y + h - 18);
+      interiorPlant(x + w - 12, y + h - 18);
+      interiorCandle(x + 4, y + Math.floor(h / 2), t, true);
+      interiorCandle(x + w - 7, y + Math.floor(h / 2), t, true);
     }
   }
   function drawRoomLevelDecor(level, x, y, w, h, t) {
@@ -4437,6 +4461,41 @@ window.CastleScene = (function () {
     hitAreas.push({ type: "territory", view: "outdoor", x: 0, y: 150, w: 32, h: 110 });
   }
 
+  const ROOM_TIER_RUG = { study: "#4e6b42", chapel: "#6b3f4a", barracks: "#4a5568", storeroom: "#6b5438", kitchen: "#7a4a30", hall: "#7a2f3a", bedroom: "#5a4a6a", quarters: "#4f5a48" };
+
+  function drawRoomTierProps(id, r, level, t) {
+    if (!level || level <= 1) return;
+    // 二级：墙面翻新、窗帘、挂画、壁灯
+    R(ctx, r.x + 4, r.y + 1, r.w - 8, 1, "rgba(230,198,124,0.55)");
+    R(ctx, r.x + 4, r.y + 2, r.w - 8, 1, "rgba(90,62,32,0.5)");
+    interiorPainting(r.x + 10, r.y + 5, 20, 13, "#4e6d82");
+    interiorPainting(r.x + r.w - 30, r.y + 5, 20, 13, "#6c7d54");
+    interiorSconce(r.x + 4, r.y + 6, t);
+    interiorSconce(r.x + r.w - 6, r.y + 6, t);
+    interiorCurtain(r.x + 6, r.y, 10, 26, "#8e3731");
+    interiorCurtain(r.x + r.w - 16, r.y, 10, 26, "#8e3731");
+    if (level >= 3) {
+      // 三级：吊灯、旗帜、金线、角落绿植与烛台
+      R(ctx, r.x + Math.floor(r.w / 2) - 1, r.y + 1, 2, 9, "#3f3122");
+      R(ctx, r.x + Math.floor(r.w / 2) - 15, r.y + 10, 30, 2, "#3f3122");
+      for (let i = 0; i < 4; i++) {
+        const cx = r.x + Math.floor(r.w / 2) - 12 + i * 8;
+        R(ctx, cx, r.y + 12, 2, 4, "#f2c56d");
+        R(ctx, cx, r.y + 9, 2, 2, "#ffe9b0");
+      }
+      drawGlow(r.x + r.w / 2, r.y + 14, 52, "#ffd58c", 0.16);
+      interiorBanner(r.x + 3, r.y + 3, 13, 32, "#8e3731");
+      interiorBanner(r.x + r.w - 16, r.y + 3, 13, 32, "#8e3731");
+      R(ctx, r.x + 4, r.y + r.h - 4, r.w - 8, 1, "#c9a24e");
+      R(ctx, r.x + 2, r.y + 2, 2, 2, "#f0d28a");
+      R(ctx, r.x + r.w - 4, r.y + 2, 2, 2, "#f0d28a");
+      interiorPlant(r.x + 3, r.y + r.h - 22);
+      interiorPlant(r.x + r.w - 15, r.y + r.h - 22);
+      interiorCandle(r.x + 6, r.y + Math.floor(r.h / 2), t, true);
+      interiorCandle(r.x + r.w - 9, r.y + Math.floor(r.h / 2), t, true);
+    }
+  }
+
   function drawInteriorRoomUpgrade(b, level, t) {
     if (level <= 1) return;
     const r = b.rect;
@@ -4646,6 +4705,10 @@ window.CastleScene = (function () {
     drawBedroom(time);
     drawQuarters(time);
     suppressRoomFloor = false;
+    D.BUILDINGS.filter(function (b) { return b.scene === "indoor"; }).forEach(function (b) {
+      const bs = state.buildings[b.id];
+      if (bs && bs.status === "built") drawRoomTierProps(b.id, b.rect, bs.level || 1, time);
+    });
 
     // 礼拜堂彩窗与暖色空气
     drawChapelWindow(time);
@@ -5693,16 +5756,17 @@ window.CastleScene = (function () {
     if (roomThumbCache[key]) return roomThumbCache[key];
     const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === typeId; })[0];
     if (!type) return "";
+    const fp = (D.ROOM_FOOTPRINTS || {})[type.size] || { w: 88, h: 104 };
     const c = document.createElement("canvas");
-    c.width = 176;
-    c.height = 208;
+    c.width = fp.w * 2;
+    c.height = fp.h * 2;
     const tctx = c.getContext("2d");
     tctx.imageSmoothingEnabled = false;
     const prev = ctx;
     ctx = tctx;
     tctx.scale(2, 2);
     try {
-      drawExpansionRoom(type, { x: 0, y: 0, w: 88, h: 104, size: type.size }, 0.6, lv, "stone");
+      drawExpansionRoom(type, { x: 0, y: 0, w: fp.w, h: fp.h, size: type.size }, 0.6, lv, "stone");
     } catch (e) {
       ctx = prev;
       return "";
