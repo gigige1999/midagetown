@@ -2072,9 +2072,9 @@
   function updateBuildShopButton() {
     const btn = $("#buildShopBtn");
     if (!btn || !state) return;
-    btn.hidden = !started;
+    btn.hidden = !started || !state.expansionUnlocked;
     btn.classList.toggle("locked", !state.expansionUnlocked);
-    btn.title = state.expansionUnlocked ? "工坊：房间 / 装饰 / 地砖 / 装修" : "工坊：大厅地板 / 装修";
+    btn.title = "工坊：房间 / 装饰 / 地砖";
   }
 
   function updateShopButton() {
@@ -3990,7 +3990,10 @@
   }
 
   function tileRowsHTML() {
-    const note = '<p class="decorate-tip">装饰地砖：铺在地板之上的小块图案，不改变地板本身。买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
+    const skin = floorSkinById(currentFloorSkin().selected);
+    const note = '<div class="tile-floor-entry"><div><b>本层地板</b><span>' + (skin ? skin.name : "灰石砖") + ' · 整层替换</span></div>' +
+      '<button class="btn btn-wood btn-small" data-action="open-floor-picker">更换地板</button></div>' +
+      '<p class="decorate-tip">装饰地砖：铺在地板之上的小块图案，不改变地板本身。买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
     return note + '<div class="tile-list">' + D.TILE_PACKS.map(function (pack) {
@@ -4035,6 +4038,15 @@
     renderAll(true);
     saveState();
     openBuildShopModal("floors");
+  }
+
+  function openFloorPickerModal() {
+    if (!state.expansionUnlocked) { toast("扩建层开放后才能更换地板。", "bad", "lock"); return; }
+    openModal(
+      modalHead("sparkle", "扩建层 · 地板", "第 " + ((state.currentFloor || 0) + 1) + " 层地板", "整层替换，只影响当前层；购买后立即生效。") +
+      '<div class="modal-body">' + floorsTabHTML() +
+      '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>'
+    );
   }
 
   function openFloorBuyConfirm(kind, id) {
@@ -4103,18 +4115,17 @@
 
   function openBuildShopModal(tab) {
     const locked = !state.expansionUnlocked;
-    let t = ["room", "decor", "tile", "floors"].indexOf(tab) >= 0 ? tab : "floors";
-    if (locked && (t === "room" || t === "decor" || t === "tile")) t = "floors";
+    let t = ["room", "decor", "tile"].indexOf(tab) >= 0 ? tab : "room";
+    if (locked) t = "room";
     const floor = state.currentFloor || 0;
-    const tabs = [["room", "房间"], ["decor", "装饰"], ["tile", "地砖"], ["floors", "地板"]].map(function (item) {
-      const dis = locked && item[0] !== "floors";
+    const tabs = [["room", "房间"], ["decor", "装饰"], ["tile", "地砖"]].map(function (item) {
+      const dis = locked;
       return '<button class="shop-tab' + (item[0] === t ? " active" : "") + '" data-action="shop-tab" data-tab="' + item[0] + '"' + (dis ? " disabled" : "") + '>' + item[1] + "</button>";
     }).join("");
     let body = "";
     if (t === "room") body = roomShopCardsHTML();
     else if (t === "decor") body = decorShopCardsHTML();
-    else if (t === "tile") body = tileRowsHTML();
-    else body = floorsTabHTML();
+    else body = tileRowsHTML();
     openModal(
       modalHead("hammer", "工坊 · 装修", "第 " + (floor + 1) + " 层", "房间、装饰、地砖与地板都在这里；购买后进入放置模式。") +
       '<div class="modal-body"><div class="shop-tabs">' + tabs + "</div>" + body +
@@ -5232,7 +5243,8 @@
     if (buildShopBtn) {
       buildShopBtn.addEventListener("click", function () {
         if (!started) return;
-        openBuildShopModal(state.expansionUnlocked ? "room" : "floors");
+        if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层工坊才会开放。", "bad", "lock"); return; }
+        openBuildShopModal("room");
       });
     }
     const collapseBtn = $("#ledgerCollapse");
@@ -5456,6 +5468,7 @@
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
+      else if (action === "open-floor-picker") openFloorPickerModal();
       else if (action === "floor-pick") {
         const kind = el.dataset.kind;
         const id = el.dataset.id;

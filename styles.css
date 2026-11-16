@@ -3592,3 +3592,9 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
   .scene-ticker { display: none !important; }
   .scene-topnav .toast-stack { max-width: 52%; }
 }
+
+/* 地砖页内的地板入口 */
+.tile-floor-entry { display: flex; align-items: center; gap: 8px; padding: 7px; margin-bottom: 6px; background: #eef2df; border: 2px solid #a3b18b; }
+.tile-floor-entry > div { flex: 1; min-width: 0; }
+.tile-floor-entry b { display: block; font-size: 12px; font-weight: 400; color: #3f5330; }
+.tile-floor-entry span { display: block; font-size: 10px; color: #6f7f58; }
