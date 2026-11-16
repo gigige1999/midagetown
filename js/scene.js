@@ -55,6 +55,7 @@ window.CastleScene = (function () {
   const castleLayers = {};
   let hitAreas = [];
   let suppressRoomFloor = false;
+  let lastFrameDt = 1 / 60;
   let hover = null;
   let mouseX = 0;
   let mouseY = 0;
@@ -3417,9 +3418,37 @@ window.CastleScene = (function () {
   function expansionAnchor(types, fallback) {
     for (var i = 0; i < types.length; i++) {
       const slot = expansionRoomSlot(stateRef.currentFloor || 0, types[i]);
-      if (slot) return { x: slot.x + slot.w / 2, y: slot.y + slot.h - 18 };
+      if (slot) {
+        return {
+          x: slot.x + slot.w / 2,
+          y: slot.y + slot.h - 16,
+          top: slot.y,
+          bottom: slot.y + slot.h
+        };
+      }
     }
-    return fallback;
+    return { x: fallback.x, y: fallback.y, top: fallback.y - 60, bottom: fallback.y };
+  }
+
+  function routeBetween(a, b) {
+    const stairs = { x: 296, y: 336, w: 128, h: 52 };
+    const sameRow = Math.abs(a.y - b.y) < 26;
+    const crossesStairs = function (y) { return y > stairs.y - 10 && y < stairs.y + stairs.h + 6; };
+    if (sameRow) {
+      if (Math.min(a.x, b.x) < stairs.x + stairs.w && Math.max(a.x, b.x) > stairs.x && crossesStairs(a.y)) {
+        const laneY = Math.min(a.top, b.top) - 28;
+        return [a, { x: a.x, y: laneY }, { x: b.x, y: laneY }, b];
+      }
+      return [a, b];
+    }
+    let laneY = Math.round((a.bottom + b.bottom) / 2);
+    laneY = Math.max(70, Math.min(352, laneY));
+    if (crossesStairs(laneY) && Math.min(a.x, b.x) < stairs.x + stairs.w && Math.max(a.x, b.x) > stairs.x) {
+      laneY = Math.min(a.top, b.top) - 28;
+      if (laneY < 64) laneY = Math.min(a.bottom, b.bottom) + 10;
+    }
+    const pts = [a, { x: a.x, y: laneY }, { x: b.x, y: laneY }, b];
+    return pts.filter(function (p, i) { return i === 0 || Math.abs(p.x - pts[i - 1].x) + Math.abs(p.y - pts[i - 1].y) > 2; });
   }
 
   function expansionWalker(r, i, dt, t) {
@@ -3428,26 +3457,32 @@ window.CastleScene = (function () {
     const a = expansionAnchor(route[0], { x: 70 + (i % 6) * 96, y: 330 });
     const b = expansionAnchor(route[1], { x: 600 - (i % 5) * 80, y: 200 });
     const sig = [a.x, a.y, b.x, b.y].join(",");
-    if (!r.__walk || r.__walk.sig !== sig) {
-      r.__walk = { sig: sig, p: Math.random(), dir: Math.random() < 0.5 ? 1 : -1, pause: 0, a: a, b: b };
+    if (!r.__route || r.__route.sig !== sig) {
+      const pts = routeBetween(a, b);
+      const cum = [0];
+      for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].y - pts[k - 1].y));
+      r.__route = { sig: sig, pts: pts, cum: cum, total: Math.max(1, cum[cum.length - 1]) };
     }
-    const w = r.__walk;
-    const dist = Math.max(24, Math.hypot(b.x - a.x, b.y - a.y));
-    if (w.pause > 0) {
-      w.pause -= dt;
-    } else {
-      w.p += (18 / dist) * dt * w.dir;
-      if (w.p >= 1) { w.p = 1; w.dir = -1; w.pause = 1.6 + Math.random() * 2.2; }
-      if (w.p <= 0) { w.p = 0; w.dir = 1; w.pause = 1.6 + Math.random() * 2.2; }
-    }
-    const x = a.x + (b.x - a.x) * w.p;
-    const y = a.y + (b.y - a.y) * w.p + Math.sin(t * 1.8 + i) * 0.8;
-    return { x: x, y: y, dir: w.dir, moving: w.pause <= 0 };
+    const routeData = r.__route;
+    const period = 17 + (i % 4) * 3;
+    const phase = i * 1.37 + 0.4;
+    const k = 0.5 - 0.5 * Math.cos((t * Math.PI * 2) / period + phase);
+    const dist = k * routeData.total;
+    let seg = 0;
+    while (seg < routeData.cum.length - 2 && routeData.cum[seg + 1] < dist) seg++;
+    const p0 = routeData.pts[seg], p1 = routeData.pts[seg + 1] || p0;
+    const segLen = Math.max(1, routeData.cum[seg + 1] - routeData.cum[seg]);
+    const local = Math.max(0, Math.min(1, (dist - routeData.cum[seg]) / segLen));
+    const x = p0.x + (p1.x - p0.x) * local;
+    const y = p0.y + (p1.y - p0.y) * local + Math.sin(t * 1.8 + i) * 0.8;
+    const dir = (p1.x - p0.x) !== 0 ? Math.sign(p1.x - p0.x) : (k < 0.5 ? 1 : -1);
+    r.__walkPos = { x: x, y: y, k: k };
+    return { x: x, y: y, dir: dir, moving: Math.sin((t * Math.PI * 2) / period + phase) !== 0 };
   }
 
   function drawMaskedWanderers(t, mode) {
     if (!stateRef || !stateRef.genericResidents || !stateRef.genericResidents.length) return;
-    const dt = Math.max(0, Math.min(0.05, t - lastWanderTime));
+    const dt = lastFrameDt;
     lastWanderTime = t;
     const guests = mode === "expansion"
       ? stateRef.genericResidents.filter(function (r) { return (r.floor || 0) === (stateRef.currentFloor || 0); })
@@ -5303,6 +5338,7 @@ window.CastleScene = (function () {
   let lightsForFrame = [];
 
   function draw(dt, state) {
+    lastFrameDt = Math.max(0.001, Math.min(0.05, dt || 0.016));
     if (!ctx) return;
     stateRef = state;
     time += dt;
