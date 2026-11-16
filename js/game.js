@@ -1221,15 +1221,15 @@
   }
 
   function shopLevelScale(id) {
-    return 1 + (shopLevel(id) - 1) * 0.5;
+    return 1 + (shopLevel(id) - 1) * 0.25;
   }
 
   function shopUpgradeCost(shop, level) {
     const lv = Math.max(1, level || shopLevel(shop.id));
     return {
-      gold: Math.round((shop.cost.gold || 60) * 1.2 * lv),
-      wood: Math.round((shop.cost.wood || 30) * 0.8 * lv),
-      stone: Math.round((shop.cost.stone || 20) * 0.8 * lv)
+      gold: Math.round((shop.cost.gold || 60) * 2.2 * lv),
+      wood: Math.round((shop.cost.wood || 30) * 1.5 * lv),
+      stone: Math.round((shop.cost.stone || 20) * 1.5 * lv)
     };
   }
 
@@ -1299,7 +1299,19 @@
   }
 
   function totalFoodNeed() {
-    return (state.genericResidents || []).reduce(function (n, r) { return n + guestFoodNeed(r.klass || "resident"); }, 0);
+    let need = (state.genericResidents || []).reduce(function (n, r) { return n + guestFoodNeed(r.klass || "resident"); }, 0);
+    D.WORKERS.forEach(function (w) { if (state.workers[w.id] && state.workers[w.id].hired) need += 1; });
+    return need;
+  }
+
+  function castleGoldUpkeep() {
+    if (!state) return 0;
+    const floors = Math.max(1, state.expansionFloorCount || 1);
+    let rooms = 0;
+    state.expansionFloors.forEach(function (_, i) { rooms += floorRoomList(i).length; });
+    let decor = 0;
+    (state.decor || []).forEach(function (list) { decor += (list || []).length; });
+    return floors * 8 + rooms * 1 + decor * 1;
   }
 
   function kitchenDailyOutput() {
@@ -1349,7 +1361,14 @@
       fed = false;
       state.resources.food = 0;
     }
-    state.lastMeal = { day: state.day, fed: fed, upkeep: upkeep, residents: residents, need: need, made: madeFood };
+    const goldUpkeep = castleGoldUpkeep();
+    if (goldUpkeep > 0) {
+      const paid = Math.min(state.resources.gold, goldUpkeep);
+      state.resources.gold -= paid;
+      if (paid >= goldUpkeep) addLog("城堡维护支出 " + goldUpkeep + " 金币。", "info");
+      else addLog("金币不足，城堡维护只付了 " + Math.round(paid) + " / " + goldUpkeep + " 金币。", "bad");
+    }
+    state.lastMeal = { day: state.day, fed: fed, upkeep: upkeep, residents: residents, need: need, made: madeFood, goldUpkeep: goldUpkeep };
     state.menus.forEach(function (id) {
       const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
       if (!m || !m.special || !m.attract) return;
@@ -4395,9 +4414,9 @@
   function floorUnlockCost(nextIndex) {
     const n = Math.max(1, nextIndex || 1);
     return {
-      gold: 240 + (n - 1) * 180,
-      wood: 40 + (n - 1) * 22,
-      stone: 30 + (n - 1) * 18
+      gold: 620 + (n - 1) * 380,
+      wood: 80 + (n - 1) * 40,
+      stone: 60 + (n - 1) * 30
     };
   }
 

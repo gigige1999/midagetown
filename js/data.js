@@ -20,8 +20,8 @@ window.GameData = (function () {
 
   const SELL_INFO = {
     wood:  { amount: 10, gold: 6 },
-    stone: { amount: 10, gold: 9 },
-    food:  { amount: 10, gold: 5 }
+    stone: { amount: 10, gold: 8 },
+    food:  { amount: 10, gold: 4 }
   };
   const BUY_FOOD = { gold: 6, food: 10 };
 
@@ -373,8 +373,8 @@ window.GameData = (function () {
   ];
 
   const LAND_SHOPS = [
-    { id: "waystation", name: "驿站", icon: "cart", cost: { wood: 50, stone: 30, gold: 150 }, income: 0.35, residentBonus: 0.05, desc: "让路过的商队歇脚，顺带做点买卖。" },
-    { id: "orchard", name: "果园铺", icon: "farm", cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, foodBonus: 0.05, desc: "把领地里的果子直接卖给路人。" }
+    { id: "waystation", name: "驿站", icon: "cart", cost: { wood: 75, stone: 45, gold: 260 }, income: 0.14, residentBonus: 0.05, desc: "让路过的商队歇脚，顺带做点买卖。" },
+    { id: "orchard", name: "果园铺", icon: "farm", cost: { wood: 60, stone: 30, gold: 210 }, income: 0.11, foodBonus: 0.05, desc: "把领地里的果子直接卖给路人。" }
   ];
 
   const LAND_SHOP_RECTS = [
@@ -507,35 +507,35 @@ window.GameData = (function () {
   const SHOPS = [
     {
       id: "bakery", name: "面包房", category: "食物", icon: "tavern", plot: { x: 178, y: 186, w: 104, h: 114, baseY: 300 },
-      cost: { wood: 30, stone: 20, gold: 60 }, income: 0.20, residentBonus: 0.05,
+      cost: { wood: 45, stone: 30, gold: 90 }, income: 0.11, residentBonus: 0.05,
       unlock: "kitchen", unlockText: "修复厨房后开放",
       desc: "面包香会顺着风飘进每一个房间。",
       flavor: "每天清晨，第一炉面包会被放在窗台上。"
     },
     {
       id: "smithy", name: "铁匠铺", category: "工具", icon: "tower", plot: { x: 584, y: 206, w: 72, h: 70, baseY: 274 },
-      cost: { wood: 35, stone: 40, gold: 80 }, income: 0.26, productionBonus: 0.05,
+      cost: { wood: 53, stone: 60, gold: 120 }, income: 0.13, productionBonus: 0.05,
       unlock: "barracks", unlockText: "修复兵营后开放",
       desc: "钉马蹄、修刀剑、顺便听守卫抱怨。",
       flavor: "铁锤落下的节奏，听久了像一首歌。"
     },
     {
       id: "general", name: "杂货铺", category: "杂货", icon: "market", plot: { x: 490, y: 300, w: 150, h: 86, baseY: 386 },
-      cost: { wood: 50, stone: 35, gold: 100 }, income: 0.35, residentBonus: 0.10,
+      cost: { wood: 75, stone: 53, gold: 150 }, income: 0.18, residentBonus: 0.10,
       unlock: "allrooms", unlockText: "修复所有房间后开放",
       desc: "货架上什么都有，包括你昨天卖掉的那把勺子。",
       flavor: "金铃说，一家好的杂货铺应该让客人空手进来，满载出去。"
     },
     {
       id: "fishmonger", name: "鱼摊", category: "食物", icon: "market", plot: { x: 470, y: 210, w: 90, h: 60, baseY: 270 },
-      cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, residentBonus: 0.05,
+      cost: { wood: 60, stone: 30, gold: 180 }, income: 0.15, residentBonus: 0.05,
       unlock: "stage5", unlockText: "城堡阶段 5 开放",
       desc: "清晨的河鱼，带着水草和冰块的味道。",
       flavor: "鱼摊老板说，最好的鱼要留给最早来的人。"
     },
     {
       id: "flower", name: "花摊", icon: "farm", plot: { x: 214, y: 326, w: 88, h: 56, baseY: 382 },
-      cost: { wood: 30, stone: 15, gold: 90 }, income: 0.22, residentBonus: 0.03,
+      cost: { wood: 45, stone: 23, gold: 135 }, income: 0.12, residentBonus: 0.03,
       unlock: "floor2", unlockText: "扩建到第 2 层开放",
       desc: "花摊把颜色带进石头城堡。",
       flavor: "每束花都附赠一句不合时宜的祝福。"
@@ -544,122 +544,122 @@ window.GameData = (function () {
 
   const EXPANSION_ROOMS = [
     {
-      id: "toilet", name: "厕所", icon: "toilet", size: "S", cost: { wood: 10, stone: 8, gold: 15 },
+      id: "toilet", name: "厕所", icon: "toilet", size: "S", cost: { wood: 17, stone: 14, gold: 30 },
       capacity: 0, satisfaction: 6, basic: "toilet",
       desc: "小型基础房。缺少厕所时，该层效率与满意度都会下降。"
     },
     {
-      id: "dining", name: "餐厅", icon: "market", size: "S", cost: { wood: 25, stone: 15, gold: 80 },
+      id: "dining", name: "餐厅", icon: "market", size: "S", cost: { wood: 42, stone: 26, gold: 160 },
       capacity: 0, residentBonus: 0.10, satisfaction: 2, basic: "dining",
       desc: "中型基础房。提供餐厅后，这一层才算适合居住。"
     },
     {
-      id: "guest", name: "卧室", icon: "tavern", size: "M", cost: { wood: 30, stone: 20, gold: 60 },
+      id: "guest", name: "卧室", icon: "tavern", size: "M", cost: { wood: 51, stone: 34, gold: 120 },
       capacity: 2, residentBonus: 0.05, satisfaction: 1,
       desc: "中型卧室，增加 2 个床位。士兵/大臣/传教士的招募条件之一。"
     },
     {
-      id: "dorm", name: "宿舍", icon: "dorm", size: "M", cost: { wood: 40, stone: 18, gold: 45 },
+      id: "dorm", name: "宿舍", icon: "dorm", size: "M", cost: { wood: 68, stone: 31, gold: 90 },
       capacity: 4, residentBonus: 0.02,
       desc: "中型房。增加 4 个床位，空间紧凑，收入加成较低。"
     },
     {
-      id: "workshop", name: "工坊", icon: "hammer", size: "S", cost: { wood: 35, stone: 30, gold: 70 },
+      id: "workshop", name: "工坊", icon: "hammer", size: "S", cost: { wood: 60, stone: 51, gold: 140 },
       capacity: 0, productionBonus: 0.08,
       desc: "中型房。全城生产 +8%。"
     },
     {
-      id: "garden", name: "花园房", icon: "leaf", size: "S", cost: { wood: 20, stone: 25, gold: 50 },
+      id: "garden", name: "花园房", icon: "leaf", size: "S", cost: { wood: 34, stone: 42, gold: 100 },
       capacity: 1, foodBonus: 0.10, satisfaction: 3,
       desc: "小型房。增加 1 个床位，食物产出 +10%。"
     },
     {
-      id: "library", name: "图书室", icon: "book", size: "S", cost: { wood: 28, stone: 26, gold: 75 },
+      id: "library", name: "图书室", icon: "book", size: "S", cost: { wood: 48, stone: 44, gold: 150 },
       capacity: 0, productionBonus: 0.03, residentBonus: 0.08, satisfaction: 2,
       desc: "中型房。生产 +3%，居民收入 +8%。"
     },
     {
-      id: "bath", name: "浴场", icon: "bath", size: "S", cost: { wood: 22, stone: 30, gold: 65 },
+      id: "bath", name: "浴场", icon: "bath", size: "S", cost: { wood: 37, stone: 51, gold: 130 },
       capacity: 0, residentBonus: 0.05, satisfaction: 10,
       desc: "中型房。居民收入 +5%，满意度大幅提高。"
     },
     {
-      id: "armory", name: "武器库", icon: "hammer", size: "M", cost: { wood: 30, stone: 35, gold: 90 },
+      id: "armory", name: "武器库", icon: "hammer", size: "M", cost: { wood: 51, stone: 60, gold: 180 },
       capacity: 0, satisfaction: 1, defense: 6,
       desc: "中型军事房。提供防御，是招募士兵的必要房间。"
     },
     {
-      id: "study", name: "书房", icon: "book", size: "M", cost: { wood: 32, stone: 28, gold: 95 },
+      id: "study", name: "书房", icon: "book", size: "M", cost: { wood: 54, stone: 48, gold: 190 },
       capacity: 0, productionBonus: 0.05, residentBonus: 0.05,
       desc: "中型房。生产 +5%，居民收入 +5%。招募大臣的必要房间。"
     },
     {
-      id: "meeting", name: "会议室", icon: "scroll", size: "L", cost: { wood: 55, stone: 45, gold: 160 },
+      id: "meeting", name: "会议室", icon: "scroll", size: "L", cost: { wood: 94, stone: 76, gold: 320 },
       capacity: 0, productionBonus: 0.10, residentBonus: 0.08,
       desc: "大型房，造价较高。生产 +10%，居民收入 +8%。招募大臣的必要房间。"
     },
     {
-      id: "chapel", name: "小礼拜堂", icon: "crest", size: "L", cost: { wood: 48, stone: 50, gold: 140 },
+      id: "chapel", name: "小礼拜堂", icon: "crest", size: "L", cost: { wood: 82, stone: 85, gold: 280 },
       capacity: 0, satisfaction: 8, productionBonus: 0.03,
       desc: "大型房。满意度 +8%，生产 +3%。招募传教士的必要房间。"
     },
     {
-      id: "residence", name: "民居", icon: "tavern", size: "S", cost: { wood: 24, stone: 16, gold: 55 },
+      id: "residence", name: "民居", icon: "tavern", size: "S", cost: { wood: 41, stone: 27, gold: 110 },
       capacity: 2, residentBonus: 0.06, satisfaction: 2,
       desc: "中型居民住宅，增加 2 个床位。招募居民的必要房间。"
     },
     {
-      id: "soldier_quarters", name: "士兵营房", icon: "dorm", size: "M", cost: { wood: 34, stone: 30, gold: 85 },
+      id: "soldier_quarters", name: "士兵营房", icon: "dorm", size: "M", cost: { wood: 58, stone: 51, gold: 170 },
       capacity: 2, defense: 3, satisfaction: 1,
       desc: "中型营房，增加 2 个床位并提高防御。招募士兵的必要房间。"
     },
     {
-      id: "minister_office", name: "大臣办公室", icon: "scroll", size: "M", cost: { wood: 42, stone: 34, gold: 130 },
+      id: "minister_office", name: "大臣办公室", icon: "scroll", size: "M", cost: { wood: 71, stone: 58, gold: 260 },
       capacity: 1, productionBonus: 0.06, residentBonus: 0.04,
       desc: "中型办公室，增加 1 个床位并提高生产。招募大臣的必要房间。"
     },
     {
-      id: "missionary_cell", name: "静修室", icon: "crest", size: "S", cost: { wood: 18, stone: 22, gold: 60 },
+      id: "missionary_cell", name: "静修室", icon: "crest", size: "S", cost: { wood: 31, stone: 37, gold: 120 },
       capacity: 1, satisfaction: 5, productionBonus: 0.02,
       desc: "小型静修室，增加 1 个床位。招募传教士的必要房间。"
     },
     {
-      id: "infirmary", name: "医馆", icon: "bath", size: "S", cost: { wood: 26, stone: 24, gold: 85 },
+      id: "infirmary", name: "医馆", icon: "bath", size: "S", cost: { wood: 44, stone: 41, gold: 170 },
       capacity: 1, satisfaction: 5, residentBonus: 0.03,
       desc: "小型医馆。床位 +1，满意度 +5，居民收入 +3%。"
     },
     {
-      id: "brewery", name: "酿酒房", icon: "food", size: "M", cost: { wood: 40, stone: 28, gold: 110 },
+      id: "brewery", name: "酿酒房", icon: "food", size: "M", cost: { wood: 68, stone: 48, gold: 220 },
       capacity: 0, residentBonus: 0.08, foodBonus: 0.05,
       desc: "中型房。居民收入 +8%，食物产出 +5%。"
     },
     {
-      id: "observatory", name: "观星台", icon: "sparkle", size: "M", cost: { wood: 34, stone: 40, gold: 130 },
+      id: "observatory", name: "观星台", icon: "sparkle", size: "M", cost: { wood: 58, stone: 68, gold: 260 },
       capacity: 0, satisfaction: 6, productionBonus: 0.04,
       desc: "中型房。满意度 +6，生产 +4%。"
     },
     {
-      id: "treasury", name: "金库", icon: "coin", size: "M", cost: { wood: 38, stone: 46, gold: 150 },
+      id: "treasury", name: "金库", icon: "coin", size: "M", cost: { wood: 65, stone: 78, gold: 300 },
       capacity: 0, residentBonus: 0.10,
       desc: "中型房。居民收入 +10%，适合账房与大臣。"
     },
     {
-      id: "training", name: "训练场", icon: "hammer", size: "M", cost: { wood: 30, stone: 30, gold: 100 },
+      id: "training", name: "训练场", icon: "hammer", size: "M", cost: { wood: 51, stone: 51, gold: 200 },
       capacity: 0, defense: 8, satisfaction: -1,
       desc: "中型房。防御 +8，但操练声会让满意度 -1。"
     },
     {
-      id: "greenhouse", name: "温室", icon: "leaf", size: "M", cost: { wood: 36, stone: 22, gold: 120 },
+      id: "greenhouse", name: "温室", icon: "leaf", size: "M", cost: { wood: 61, stone: 37, gold: 240 },
       capacity: 0, foodBonus: 0.12, satisfaction: 3,
       desc: "中型房。食物产出 +12%，满意度 +3。"
     },
     {
-      id: "tavern", name: "酒馆", icon: "tavern", size: "L", cost: { wood: 60, stone: 40, gold: 200 },
+      id: "tavern", name: "酒馆", icon: "tavern", size: "L", cost: { wood: 102, stone: 68, gold: 400 },
       capacity: 0, residentBonus: 0.12, satisfaction: 4, foodBonus: 0.04,
       desc: "大型房。居民收入 +12%，满意度 +4，食物 +4%。"
     },
     {
-      id: "nursery", name: "育儿室", icon: "people", size: "M", cost: { wood: 34, stone: 20, gold: 95 },
+      id: "nursery", name: "育儿室", icon: "people", size: "M", cost: { wood: 58, stone: 34, gold: 190 },
       capacity: 3, satisfaction: 2,
       desc: "中型房。床位 +3，满意度 +2，适合年轻居民。"
     },
