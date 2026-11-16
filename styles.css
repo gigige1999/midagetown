@@ -3615,3 +3615,15 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .modal-tutorial .modal-actions { justify-content: center; }
 
 #progressFill { transition: width .25s linear; }
+
+/* 仓库 */
+.warehouse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.warehouse-card { display: grid; grid-template-columns: 66px minmax(0,1fr); grid-template-rows: auto auto; gap: 4px 7px; padding: 7px; background: #f4e7cc; border: 2px solid #c2a678; }
+.warehouse-card .catalog-preview { grid-row: 1 / span 2; }
+.warehouse-card .btn { grid-column: 2; justify-self: start; }
+.warehouse-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.warehouse-tile { display: flex; align-items: center; gap: 5px; padding: 4px; background: #efe3ca; border: 2px solid #c2a678; }
+.warehouse-tile .tile-swatch { width: 22px; height: 18px; flex: 0 0 22px; }
+.warehouse-tile b { font-size: 10px; font-weight: 400; color: #3f2b19; }
+.warehouse-tile em { margin-left: auto; font-style: normal; font-size: 10px; color: #8a6b48; }
+@media (max-width: 1080px) { .warehouse-grid { grid-template-columns: 1fr; } }

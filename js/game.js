@@ -241,6 +241,7 @@
       interiorSkin: { owned: ["stone"], selected: "stone" },
       menuDays: {},
       tipsSeen: {},
+      warehouseRooms: [],
       kitchenFresh: 0,
       land: { crops: {}, harvested: {}, plots: [
         { unlocked: true, crop: null, growth: 0, ready: false, plantedDay: null },
@@ -404,6 +405,9 @@
     if (!s.land.harvested || typeof s.land.harvested !== "object") s.land.harvested = {};
     s.kitchenFresh = Math.max(0, Math.floor(Number(s.kitchenFresh) || 0));
     s.tipsSeen = raw.tipsSeen && typeof raw.tipsSeen === "object" ? raw.tipsSeen : {};
+    s.warehouseRooms = Array.isArray(raw.warehouseRooms) ? raw.warehouseRooms.filter(function (r) {
+      return r && D.EXPANSION_ROOMS.some(function (t) { return t.id === r.type; });
+    }).map(function (r) { return { type: r.type, level: clamp(Math.floor(Number(r.level) || 1), 1, 3) }; }) : [];
     s.menuDays = raw.menuDays && typeof raw.menuDays === "object" ? raw.menuDays : {};
     s.menus.forEach(function (id) { if (!s.menuDays[id]) s.menuDays[id] = 3; });
     // 地砖：每层独立购买与铺设
@@ -3599,7 +3603,8 @@
     saveState();
   }
 
-  function startPlacement(kind, typeId) {
+  function startPlacement(kind, typeId, opts) {
+    const fromWarehouse = !!(opts && opts.fromWarehouse);
     if (!started) return;
     if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
     if (state.view !== "expansion") switchView("expansion");
@@ -3609,7 +3614,7 @@
       const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
       if (!type) return;
       if (floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms) { toast("这一层已经放满房间了。", "bad", "lock"); return; }
-      if (!canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return; }
+      if (!fromWarehouse && !canAfford(type.cost)) { toast("材料不够，还差：" + missingCostsText(type.cost), "bad", "hammer"); return; }
       const fp = roomFootprint(type);
       w = fp.w; h = fp.h;
     } else {
@@ -3618,7 +3623,7 @@
       if (!canAfford(item.cost)) { toast("还差：" + missingCostsText(item.cost), "bad", "coin"); return; }
       w = item.w; h = item.h;
     }
-    ui.placement = { kind: kind, typeId: typeId, w: w, h: h, x: null, y: null, valid: false };
+    ui.placement = { kind: kind, typeId: typeId, w: w, h: h, x: null, y: null, valid: false, fromWarehouse: fromWarehouse };
     closeModal(true);
     const layer = $("#placementLayer");
     if (layer) layer.hidden = false;
@@ -3681,8 +3686,15 @@
       toast("这个位置放不下，换个地方试试。", "bad", "lock");
       return;
     }
-    const id = p.kind === "room" ? placeRoomAt(p.typeId, p.x, p.y) : placeDecorAt(p.typeId, p.x, p.y);
-    if (id) cancelPlacement();
+    const id = p.kind === "room" ? placeRoomAt(p.typeId, p.x, p.y, p.fromWarehouse) : placeDecorAt(p.typeId, p.x, p.y);
+    if (id) {
+      if (p.fromWarehouse) {
+        const idx = (state.warehouseRooms || []).findIndex(function (r) { return r.type === p.typeId; });
+        if (idx >= 0) state.warehouseRooms.splice(idx, 1);
+        saveState();
+      }
+      cancelPlacement();
+    }
   }
 
   function tileStockOf(floor) {
@@ -4060,7 +4072,10 @@
   function roomShopCardsHTML() {
     const floor = state.currentFloor || 0;
     const full = floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms;
-    return '<div class="catalog-grid">' + D.EXPANSION_ROOMS.map(function (type) {
+    const wh = (state.warehouseRooms || []).length;
+    return '<div class="tile-floor-entry"><div><b>我的仓库</b><span>' + wh + ' 间房间可免费放回</span></div>' +
+      '<button class="btn btn-wood btn-small" data-action="open-warehouse">打开仓库</button></div>' +
+      '<div class="catalog-grid">' + D.EXPANSION_ROOMS.map(function (type) {
       const can = canAfford(type.cost) && !full;
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
         '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id, 1) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
@@ -4130,6 +4145,38 @@
     renderAll(true);
     saveState();
     openBuildShopModal("floors");
+  }
+
+  function openWarehouseModal() {
+    const rooms = state.warehouseRooms || [];
+    const groups = {};
+    rooms.forEach(function (r) {
+      if (!groups[r.type]) groups[r.type] = { count: 0, level: 1 };
+      groups[r.type].count++;
+      groups[r.type].level = Math.max(groups[r.type].level, r.level || 1);
+    });
+    const roomCards = Object.keys(groups).map(function (typeId) {
+      const type = D.EXPANSION_ROOMS.filter(function (t) { return t.id === typeId; })[0];
+      if (!type) return "";
+      const g = groups[typeId];
+      return '<div class="warehouse-card">' +
+        '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(typeId, g.level) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
+        '<div class="catalog-copy"><b>' + type.name + ' ×' + g.count + '</b><span>最高 Lv.' + g.level + ' · 放置不消耗材料</span></div>' +
+        '<button class="btn btn-gold btn-small" data-action="warehouse-place" data-type="' + typeId + '">放置</button></div>';
+    }).join("");
+    const stock = tileStockOf(state.currentFloor || 0);
+    const tileRows = D.TILE_PACKS.map(function (pack) {
+      return '<div class="warehouse-tile"><span class="tile-swatch ' + pack.id + '"></span><b>' + pack.name + '</b><em>×' + (stock[pack.id] || 0) + '</em></div>';
+    }).join("");
+    openModal(
+      modalHead("crest", "城堡仓库", "拆下来的都在这里", "拆除的房间会完整收进仓库，可以免费放回任意楼层；擦除的地砖退回本层库存。") +
+      '<div class="modal-body"><div class="decorate-head"><b>房间</b><span>' + rooms.length + ' 间</span></div>' +
+      (roomCards ? '<div class="warehouse-grid">' + roomCards + "</div>" : '<p class="decorate-tip">仓库里还没有房间。拆除扩建层房间后会收进这里。</p>') +
+      '<div class="decorate-head" style="margin-top:10px"><b>本层地砖库存</b><span>第 ' + ((state.currentFloor || 0) + 1) + ' 层</span></div>' +
+      '<div class="warehouse-tiles">' + tileRows + "</div>" +
+      '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-warehouse" }
+    );
   }
 
   function openFloorPickerModal() {
@@ -4952,11 +4999,9 @@
     if (!room) return;
     const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === room.type; })[0];
     if (!type) return;
-    const refund = expansionRoomRefund(type);
+    if (!state.warehouseRooms) state.warehouseRooms = [];
+    state.warehouseRooms.push({ type: room.type, level: room.level || 1 });
     rooms[slotId] = null;
-    Object.keys(refund).forEach(function (k) {
-      if (refund[k]) state.resources[k] = (state.resources[k] || 0) + refund[k];
-    });
     const floor = state.currentFloor;
     // 先移除因职业房间缺失而不满足条件的客人
     const keep = [];
@@ -4983,8 +5028,8 @@
     leaving.forEach(function (g) {
       addLog("拆除「" + type.name + "」后，「" + g.name + "」离开了城堡。", "bad");
     });
-    addLog("第 " + (floor + 1) + " 层拆除了「" + type.name + "」，返还 " + costTextOnly(refund) + "。", "info");
-    toast("已拆除「" + type.name + "」。" + (leaving.length ? " " + leaving.length + " 位客人离开。" : ""), "neutral", "hammer");
+    addLog("第 " + (floor + 1) + " 层的「" + type.name + "」已收进仓库。", "info");
+    toast("「" + type.name + "」已收进仓库。" + (leaving.length ? " " + leaving.length + " 位客人离开。" : ""), "good", "hammer");
     closeModal(true);
     ui.guideSig = "";
     renderAll(true);
@@ -5564,6 +5609,8 @@
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
+      else if (action === "open-warehouse") openWarehouseModal();
+      else if (action === "warehouse-place") { closeModal(true); startPlacement("room", el.dataset.type, { fromWarehouse: true }); }
       else if (action === "open-floor-picker") openFloorPickerModal();
       else if (action === "floor-pick") {
         const kind = el.dataset.kind;
@@ -5629,7 +5676,7 @@
       else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);
       else if (action === "buy-decor-set") buyDecorSet(el.dataset.set);
       else if (action === "demolish-open") openDemolishConfirm(el.dataset.room);
-      else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.room);
+      else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.room || el.dataset.slot);
       else if (action === "invite") inviteResident();
       else if (action === "go-recruit") { ui.tab = "build"; switchView("expansion"); }
       else if (action === "recruit-guest") inviteGuest(el.dataset.class);
