@@ -2393,6 +2393,9 @@
      ========================================================= */
   function switchView(view) {
     if (!started) return;
+    const tickerEl = $("#sceneTicker");
+    if (tickerEl) { tickerEl.hidden = true; tickerEl.textContent = ""; }
+    window.__castleBubbles = [];
     if (ui.placement) cancelPlacement();
     if (view === "indoor" && !state.interiorUnlocked) {
       toast("先建成两座庭院建筑，城堡内部才会开放。", "bad", "lock");

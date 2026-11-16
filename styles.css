@@ -3565,3 +3565,30 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .trade-icon.crop { background: #e6efd8; border-color: #a3b18b; }
 .trade-icon.crop img { width: 34px; height: 34px; image-rendering: pixelated; }
 .trade-row.crop-trade .trade-actions { gap: 4px; }
+
+
+/* 顶部提示区：与导航栏同排，不遮挡场景 */
+.scene-topnav { position: relative; }
+.scene-ticker {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 5; max-width: 46%; padding: 3px 10px;
+  background: rgba(24,16,11,.92); border: 2px solid #6b4f32; box-shadow: inset 0 0 0 1px #3a2a1c;
+  color: #f0ddb4; font-family: var(--px); font-size: 11px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.scene-ticker[hidden] { display: none !important; }
+.scene-topnav .toast-stack {
+  position: absolute; left: 50%; top: 50%; bottom: auto; z-index: 6;
+  transform: translate(-50%, -50%); flex-direction: row; gap: 4px;
+  width: auto; max-width: 46%; pointer-events: none;
+}
+.scene-topnav .toast { padding: 3px 8px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scene-topnav .toast img { width: 14px; height: 14px; flex-basis: 14px; }
+@media (max-width: 1280px) {
+  .scene-ticker { max-width: 40%; font-size: 10px; }
+  .scene-topnav .toast-stack { max-width: 40%; }
+}
+@media (max-width: 760px) {
+  .scene-ticker { display: none !important; }
+  .scene-topnav .toast-stack { max-width: 52%; }
+}

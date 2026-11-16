@@ -3327,33 +3327,24 @@ window.CastleScene = (function () {
   function drawSocialBubbles(pts) {
     const list = window.__castleBubbles || [];
     const now = Date.now();
-    for (let k = 0; k < list.length; k++) {
-      const b = list[k];
-      if (b.until && now > b.until) continue;
-      let pt = null;
-      for (let i = 0; i < pts.length; i++) if (pts[i].r.id === b.id) { pt = pts[i]; break; }
-      if (!pt) continue;
-      ctx.font = "9px 'PingFang SC', 'Microsoft YaHei', monospace";
-      const tw = ctx.measureText(b.text).width;
-      const w = Math.min(160, Math.max(36, tw + 12));
-      const shift = Math.abs(pt.x - 360) < 70 ? (pt.x >= 360 ? 54 : -54) : 0;
-      const x = Math.max(6, Math.min(W - w - 6, pt.x - w / 2 + shift));
-      const y = Math.max(8, pt.y - 58 - (k % 3) * 18);
-      ctx.globalAlpha = 0.94;
-      R(ctx, x, y, w, 16, "#1d140e");
-      ctx.globalAlpha = 1;
-      R(ctx, x, y, w, 1, b.tone === "love" ? "#e08aa0" : b.tone === "fight" ? "#c9654f" : "#d6a449");
-      R(ctx, x, y + 15, w, 1, "#120c08");
-      R(ctx, pt.x - 2, y + 16, 5, 3, "#1d140e");
-      ctx.fillStyle = b.tone === "love" ? "#f7b3c4" : b.tone === "fight" ? "#f2b296" : "#f0ddb4";
-      ctx.textAlign = "left";
-      ctx.fillText(b.text, x + 6, y + 11);
-      ctx.fillStyle = "#f0ddb4";
+    const ticker = document.getElementById("sceneTicker");
+    let active = null;
+    for (let i = 0; i < list.length; i++) {
+      if (!list[i].until || now <= list[i].until) { active = list[i]; break; }
+    }
+    if (ticker) {
+      if (active) {
+        ticker.textContent = active.text;
+        ticker.hidden = false;
+      } else {
+        ticker.hidden = true;
+      }
     }
     if (list.length && now > list[0].until) {
       window.__castleBubbles = list.filter(function (b) { return !b.until || now <= b.until; });
     }
   }
+
 
   function drawRaiders(t) {
     const raid = window.__castleRaid;
