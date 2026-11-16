@@ -76,6 +76,7 @@
     const steward = $("#stewardPortrait");
     if (steward) steward.src = I.npcPortrait("samuel");
     initScene();
+    if (window.CoverArt) window.CoverArt.init($("#coverCanvas"));
     bindEvents();
     detectSave();
     const previewSave = peekSave();
@@ -545,6 +546,7 @@
   }
 
   function hideStart() {
+    if (window.CoverArt) window.CoverArt.stop();
     if (ui.startHidden) return;
     ui.startHidden = true;
     const screen = $("#startScreen");

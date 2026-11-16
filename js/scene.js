@@ -4782,6 +4782,88 @@ window.CastleScene = (function () {
     }
   }
 
+  function drawCastleDetail(stage, t) {
+    if (!stateRef) return;
+    const bodyX = 300, bodyY = 116, bodyW = 144, bodyH = 154;
+    // 石缝
+    ctx.globalAlpha = 0.16;
+    let row = 0;
+    for (let y = bodyY + 8; y < bodyY + bodyH - 4; y += 13) {
+      R(ctx, bodyX + 2, y, bodyW - 4, 1, "#2c2820");
+      const off = (row % 2) * 9;
+      for (let x = bodyX + 8 + off; x < bodyX + bodyW - 6; x += 18) {
+        R(ctx, x, y - 8, 1, 8, "#2c2820");
+      }
+      row++;
+    }
+    ctx.globalAlpha = 1;
+
+    // 窗户框与窗台
+    CASTLE_WINDOWS.forEach(function (win) {
+      const x = win.x, y = win.y, w = win.w, h = win.h;
+      R(ctx, x - 2, y - 2, w + 4, h + 4, "rgba(30,24,18,0.75)");
+      R(ctx, x - 1, y - 1, w + 2, h + 2, "rgba(72,62,48,0.55)");
+      R(ctx, x - 4, y + h + 1, w + 8, 2, "rgba(52,46,36,0.8)");
+      R(ctx, x - 3, y + h + 1, w + 6, 1, "rgba(150,138,112,0.35)");
+      R(ctx, x + Math.floor(w / 2), y - 1, 1, h + 2, "rgba(30,24,18,0.5)");
+      R(ctx, x - 1, y + Math.floor(h / 2), w + 2, 1, "rgba(30,24,18,0.45)");
+    });
+
+    // 城门闸栏与暖光
+    const gateLit = stage >= 1;
+    if (gateLit) {
+      ctx.globalAlpha = 0.10 + 0.04 * Math.sin(t * 2.4);
+      R(ctx, 344, 216, 54, 56, "#ffcf72");
+      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.45;
+      for (let i = 0; i < 5; i++) R(ctx, 354 + i * 8, 220, 1, 50, "#241a11");
+      R(ctx, 350, 228, 44, 1, "#241a11");
+      R(ctx, 350, 252, 44, 1, "#241a11");
+      ctx.globalAlpha = 1;
+    }
+    // 门边火把
+    if (stage >= 2) {
+      [340, 401].forEach(function (x, i) {
+        R(ctx, x, 232, 2, 9, "#3b2a1a");
+        R(ctx, x - 1, 229, 4, 3, "#f2c56d");
+        drawGlow(x + 1, 231, 14 + Math.sin(t * 5 + i) * 2, "#ffcf72", 0.10);
+      });
+    }
+
+    // 藤蔓
+    if (stage >= 3) {
+      for (let v = 0; v < 22; v++) {
+        const side = v % 2 === 0 ? 0 : 1;
+        const vx = side === 0 ? bodyX + 4 + (v * 3) % 8 : bodyX + bodyW - 12 + (v * 3) % 8;
+        const vy = bodyY + 44 + v * 5;
+        if (vy > bodyY + bodyH - 8) continue;
+        R(ctx, vx, vy, 1, 3, "#4f6e3d");
+        if (v % 3 === 0) R(ctx, vx + 1, vy + 1, 2, 1, "#6d8a52");
+      }
+    }
+
+    // 中央塔屋顶瓦片
+    ctx.globalAlpha = 0.35;
+    for (let y = 58; y < 96; y += 6) {
+      R(ctx, 332, y, 56, 1, "#2f2a22");
+    }
+    for (let x = 336; x < 388; x += 8) {
+      R(ctx, x, 58, 1, 36, "rgba(47,42,34,0.6)");
+    }
+    ctx.globalAlpha = 1;
+
+    // 烟囱炊烟（阶段 5 起）
+    if (stage >= 5) {
+      for (let i = 0; i < 4; i++) {
+        const yy = 92 - ((t * 10 + i * 9) % 40);
+        const xx = 318 + Math.sin((t + i) * 0.9) * 3;
+        ctx.globalAlpha = 0.10 + 0.05 * (1 - i / 4);
+        R(ctx, xx, yy, 3, 3, "#d8d2c4");
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function drawOuterBailey(stage, t) {
     if (stage < 2) return;
     const stone = "#8a8474", stoneL = "#a8a190", stoneD = "#5e5a4f", stoneM = "#736d5f";
@@ -5090,6 +5172,7 @@ window.CastleScene = (function () {
     ctx.drawImage(bgLayer, 0, 0);
     drawOuterBailey(stage, time);
     ctx.drawImage(castleLayer(stage), 0, 0);
+    drawCastleDetail(stage, time);
 
     // 城堡动态
     drawCastleFlags(stage);

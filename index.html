@@ -7,7 +7,7 @@
   <title>城堡物语 · 废墟上的王冠</title>
   <meta name="description" content="像素风城堡模拟经营：雇人、建造、卖资源、进入城堡修复房间，让废墟重新亮起灯。">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23231712'/%3E%3Cpath d='M3 6l1 7h8l1-7-3 3-3-5-3 5z' fill='%23e3b24b'/%3E%3Cpath d='M4 13h8v1H4z' fill='%23a97427'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20261116-5">
+  <link rel="stylesheet" href="styles.css?v=20261116-6">
 </head>
 <body>
   <noscript><div style="padding:24px;color:#f0ddb4;background:#17110d;font-family:sans-serif">《城堡物语》需要启用 JavaScript 才能游玩。</div></noscript>
@@ -174,30 +174,27 @@
   <div id="modalRoot"></div>
 
   <div class="start-screen" id="startScreen">
-    <div class="start-vignette"></div>
-    <div class="start-deco start-deco-left"></div>
-    <div class="start-deco start-deco-right"></div>
-    <div class="start-card">
-      <div class="start-kicker">一段关于废墟、热汤与灯火的故事</div>
-      <div class="start-crest"><img data-icon="crest" alt=""></div>
-      <h1 class="start-title">城堡物语</h1>
-      <div class="start-subtitle">废墟上的王冠</div>
-      <div class="start-rule"><span></span><img data-icon="sparkle" alt=""><span></span></div>
-      <p class="start-quote">“先让炉火着起来，其他的慢慢来。”</p>
-      <p class="start-blurb">聘请工匠，修好伐木场，把木材卖给行商换金币；<br>再进入城堡，修复一个个房间，认识新的居民。</p>
-      <div class="start-actions">
+    <canvas class="cover-canvas" id="coverCanvas" aria-hidden="true"></canvas>
+    <div class="cover-shade"></div>
+    <div class="cover-content">
+      <div class="cover-kicker">A PIXEL CASTLE TALE</div>
+      <h1 class="cover-title">城堡物语</h1>
+      <div class="cover-subtitle">废墟上的王冠</div>
+      <p class="cover-quote">“先让炉火着起来，其他的慢慢来。”</p>
+      <div class="cover-actions">
         <button class="btn btn-gold btn-big" id="newGameBtn">开始新故事</button>
         <button class="btn btn-ghost btn-big" id="continueBtn" hidden>继续经营</button>
       </div>
-      <div class="start-foot">自动存档 · 无失败结局 · 跟着金色按钮就能玩</div>
+      <div class="cover-foot">自动存档 · 无失败结局 · 跟着金色按钮就能玩</div>
     </div>
     <div class="start-credit">像素手绘 · 纯 HTML / CSS / Canvas · 无外部图片素材</div>
   </div>
 
-  <script src="js/data.js?v=20261116-5"></script>
-  <script src="js/icons.js?v=20261116-5"></script>
-  <script src="js/audio.js?v=20261116-5"></script>
-  <script src="js/scene.js?v=20261116-5"></script>
-  <script src="js/game.js?v=20261116-5"></script>
+  <script src="js/data.js?v=20261116-6"></script>
+  <script src="js/icons.js?v=20261116-6"></script>
+  <script src="js/audio.js?v=20261116-6"></script>
+  <script src="js/scene.js?v=20261116-6"></script>
+  <script src="js/cover.js?v=20261116-6"></script>
+  <script src="js/game.js?v=20261116-6"></script>
 </body>
 </html>
