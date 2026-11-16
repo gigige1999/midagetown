@@ -4068,16 +4068,7 @@
           return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
         }).join("") + "</div></div>";
     }
-    html += '<div class="decorate-section"><div class="decorate-head"><b>装修模式</b><span>' + (ui.decorMode ? "进行中" : "未开启") + '</span></div>' +
-      '<div class="decorate-stats">' +
-      '<div><span>房间</span><b>' + floorRoomList(floor).length + "</b></div>" +
-      '<div><span>装饰</span><b>' + (state.decor[floor] || []).length + "</b></div>" +
-      '<div><span>地砖</span><b>' + Object.keys(state.floorTiles[floor] || {}).length + "</b></div></div>" +
-      '<div class="decorate-row"><button class="btn ' + (ui.decorMode ? "btn-ghost" : "btn-gold") + ' btn-small" data-action="decor-mode">' + (ui.decorMode ? "退出装修模式" : "进入装修模式") + '</button>' +
-      (state.currentFloor + 1 >= state.expansionFloorCount && state.expansionFloorCount < D.MAX_FLOORS
-        ? '<button class="btn btn-wood btn-small" data-action="buy-floor">购买第 ' + (state.expansionFloorCount + 1) + ' 层</button>' : "") +
-      '</div><p class="decorate-tip">装修模式里可拖动房间/装饰换位置；地砖可点击单块铺、拖动铺一片、擦除或撤销。</p></div>';
-    html += '<p class="decorate-hint">地板整层替换；地砖是铺在地板上的装饰层。</p></div>';
+    html += '<p class="decorate-hint">地板整层替换；移动房间用房间弹窗的「移动位置」，地砖在「地砖」页铺设。</p></div>';
     return html;
   }
 
