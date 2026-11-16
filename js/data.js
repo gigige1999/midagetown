@@ -597,42 +597,42 @@ window.GameData = (function () {
     },
     {
       id: "infirmary", name: "医馆", icon: "bath", size: "S", cost: { wood: 26, stone: 24, gold: 85 },
-      capacity: 1, satisfaction: 5, residentBonus: 0.03, drawAs: "library",
+      capacity: 1, satisfaction: 5, residentBonus: 0.03,
       desc: "小型医馆。床位 +1，满意度 +5，居民收入 +3%。"
     },
     {
       id: "brewery", name: "酿酒房", icon: "food", size: "M", cost: { wood: 40, stone: 28, gold: 110 },
-      capacity: 0, residentBonus: 0.08, foodBonus: 0.05, drawAs: "storeroom",
+      capacity: 0, residentBonus: 0.08, foodBonus: 0.05,
       desc: "中型房。居民收入 +8%，食物产出 +5%。"
     },
     {
       id: "observatory", name: "观星台", icon: "sparkle", size: "M", cost: { wood: 34, stone: 40, gold: 130 },
-      capacity: 0, satisfaction: 6, productionBonus: 0.04, drawAs: "library",
+      capacity: 0, satisfaction: 6, productionBonus: 0.04,
       desc: "中型房。满意度 +6，生产 +4%。"
     },
     {
       id: "treasury", name: "金库", icon: "coin", size: "M", cost: { wood: 38, stone: 46, gold: 150 },
-      capacity: 0, residentBonus: 0.10, drawAs: "minister_office",
+      capacity: 0, residentBonus: 0.10,
       desc: "中型房。居民收入 +10%，适合账房与大臣。"
     },
     {
       id: "training", name: "训练场", icon: "hammer", size: "M", cost: { wood: 30, stone: 30, gold: 100 },
-      capacity: 0, defense: 8, satisfaction: -1, drawAs: "armory",
+      capacity: 0, defense: 8, satisfaction: -1,
       desc: "中型房。防御 +8，但操练声会让满意度 -1。"
     },
     {
       id: "greenhouse", name: "温室", icon: "leaf", size: "M", cost: { wood: 36, stone: 22, gold: 120 },
-      capacity: 0, foodBonus: 0.12, satisfaction: 3, drawAs: "garden",
+      capacity: 0, foodBonus: 0.12, satisfaction: 3,
       desc: "中型房。食物产出 +12%，满意度 +3。"
     },
     {
       id: "tavern", name: "酒馆", icon: "tavern", size: "L", cost: { wood: 60, stone: 40, gold: 200 },
-      capacity: 0, residentBonus: 0.12, satisfaction: 4, foodBonus: 0.04, drawAs: "dining",
+      capacity: 0, residentBonus: 0.12, satisfaction: 4, foodBonus: 0.04,
       desc: "大型房。居民收入 +12%，满意度 +4，食物 +4%。"
     },
     {
       id: "nursery", name: "育儿室", icon: "people", size: "M", cost: { wood: 34, stone: 20, gold: 95 },
-      capacity: 3, satisfaction: 2, drawAs: "dorm",
+      capacity: 3, satisfaction: 2,
       desc: "中型房。床位 +3，满意度 +2，适合年轻居民。"
     },
   ];

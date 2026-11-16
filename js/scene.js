@@ -3794,6 +3794,23 @@ window.CastleScene = (function () {
           R(ctx, cx - 19 + i * 14, y + 26, 4, 4, i % 2 ? "#d4a44b" : "#c15c4f");
         }
         drawFlowerVase(cx - 8, y + 80, t);
+      } else if (type.id === "infirmary") {
+        R(ctx, cx - 28, y + 26, 56, 24, "#e6e1d2");
+        R(ctx, cx - 30, y + 24, 60, 4, "#b9b3a2");
+        R(ctx, cx - 26, y + 30, 24, 14, "#f7f4ea");
+        R(ctx, cx - 24, y + 28, 18, 6, "#ffffff");
+        R(ctx, cx - 2, y + 30, 26, 14, "#d8e4e0");
+        R(ctx, cx + 4, y + 34, 14, 2, "#ffffff");
+        R(ctx, cx - 30, y + 56, 60, 26, "#5b4029");
+        R(ctx, cx - 28, y + 58, 56, 22, "#7a5233");
+        R(ctx, cx - 24, y + 60, 18, 8, "#cfe0d8");
+        R(ctx, cx + 2, y + 60, 16, 8, "#e6d3b8");
+        R(ctx, cx - 24, y + 72, 18, 5, "#b9cdc6");
+        R(ctx, cx + 2, y + 72, 16, 5, "#d6c2a4");
+        // 红十字药箱
+        R(ctx, cx + 18, y + 20, 10, 10, "#eee8da");
+        R(ctx, cx + 22, y + 22, 2, 6, "#b54a3c");
+        R(ctx, cx + 20, y + 24, 6, 2, "#b54a3c");
       } else if (type.id === "missionary_cell") {
         interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#6b6052");
         R(ctx, cx - 24, y + 26, 44, 24, "#3b2a1a");
@@ -4122,6 +4139,146 @@ window.CastleScene = (function () {
       }
       interiorBanner(x + 12, y + 12, 14, 32, "#8e3731");
       interiorBanner(x + w - 26, y + 12, 14, 32, "#8e3731");
+    } else if (type.id === "brewery") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      // 铜制酿酒罐
+      circle(ctx, x + 38, y + 62, 20, "#3b2a1c");
+      circle(ctx, x + 38, y + 62, 18, "#a2673c");
+      circle(ctx, x + 38, y + 60, 14, "#c98a4e");
+      R(ctx, x + 36, y + 42, 4, 12, "#7a5233");
+      R(ctx, x + 30, y + 40, 16, 4, "#8a623b");
+      // 酒桶
+      interiorBarrel(x + 70, y + 48);
+      interiorBarrel(x + 70, y + 76);
+      interiorBarrel(x + 92, y + 62);
+      // 酒瓶架
+      interiorShelf(x + w - 46, y + 18, 36, 46);
+      for (let i = 0; i < 5; i++) {
+        R(ctx, x + w - 42 + (i % 3) * 10, y + 24 + Math.floor(i / 3) * 18, 4, 10, i % 2 ? "#4e6d4a" : "#6b4a2c");
+        R(ctx, x + w - 42 + (i % 3) * 10, y + 22 + Math.floor(i / 3) * 18, 4, 3, "#2f4a2f");
+      }
+      interiorCandle(x + 18, y + 84, t, true);
+    } else if (type.id === "observatory") {
+      interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#4a5266");
+      // 天窗
+      R(ctx, x + w / 2 - 28, y + 6, 56, 26, "#2b3350");
+      R(ctx, x + w / 2 - 26, y + 8, 52, 22, "#3f4f78");
+      for (let i = 0; i < 8; i++) R(ctx, x + w / 2 - 22 + (i * 7) % 44, y + 10 + (i * 5) % 16, 2, 2, "#dfe6ef");
+      R(ctx, x + w / 2 - 2, y + 8, 2, 22, "#5b432a");
+      R(ctx, x + w / 2 - 26, y + 18, 52, 2, "#5b432a");
+      // 望远镜
+      R(ctx, x + 34, y + 52, 3, 26, "#5b4029");
+      R(ctx, x + 50, y + 52, 3, 26, "#5b4029");
+      R(ctx, x + 30, y + 66, 28, 3, "#3b2a1a");
+      R(ctx, x + 24, y + 40, 36, 6, "#b08a4a");
+      R(ctx, x + 56, y + 38, 8, 9, "#c9a24e");
+      // 星图桌
+      interiorTable(x + 66, y + 64, 34, 20);
+      R(ctx, x + 70, y + 62, 22, 10, "#e6ddc4");
+      R(ctx, x + 74, y + 64, 2, 2, "#8e3731");
+      R(ctx, x + 80, y + 67, 2, 2, "#4e6d82");
+      drawGlow(x + w / 2, y + 30, 30, "#9fb4e0", 0.10);
+    } else if (type.id === "treasury") {
+      interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#5f5a4a");
+      // 铁栅与金库门
+      R(ctx, x + 12, y + 18, 40, 46, "#3b3b34");
+      R(ctx, x + 14, y + 20, 36, 42, "#4f4f46");
+      for (let i = 0; i < 6; i++) R(ctx, x + 16 + i * 6, y + 22, 2, 38, "#2b2b26");
+      circle(ctx, x + 38, y + 40, 5, "#c9a24e");
+      // 宝箱与金币
+      interiorChest(x + 66, y + 56);
+      interiorChest(x + 92, y + 64);
+      for (let i = 0; i < 12; i++) {
+        R(ctx, x + 60 + (i * 13) % 60, y + 84 - (i % 3) * 4, 4, 3, "#e0c05a");
+      }
+      interiorTable(x + 60, y + 24, 46, 18);
+      R(ctx, x + 64, y + 22, 18, 8, "#efe6cc");
+      R(ctx, x + 64, y + 22, 18, 1, "#c9a24e");
+      interiorCandle(x + 100, y + 16, t, true);
+    } else if (type.id === "training") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      // 训练假人
+      for (let i = 0; i < 2; i++) {
+        const dx = x + 30 + i * 46;
+        R(ctx, dx, y + 34, 3, 46, "#5b4029");
+        R(ctx, dx - 10, y + 46, 23, 3, "#5b4029");
+        R(ctx, dx - 6, y + 38, 15, 20, "#c9a86a");
+        R(ctx, dx - 4, y + 40, 11, 3, "#8a4a3c");
+        circle(ctx, dx + 2, y + 34, 6, "#d6b87c");
+        R(ctx, dx - 2, y + 32, 3, 2, "#3b2a1a");
+      }
+      // 靶子
+      R(ctx, x + w - 44, y + 22, 28, 28, "#3b2a1a");
+      circle(ctx, x + w - 30, y + 36, 11, "#e6ddc4");
+      circle(ctx, x + w - 30, y + 36, 7, "#b54a3c");
+      circle(ctx, x + w - 30, y + 36, 3, "#e6ddc4");
+      // 武器架与沙袋
+      interiorWeaponRack(x + 10, y + 74);
+      R(ctx, x + w - 56, y + 62, 16, 26, "#8a6a45");
+      R(ctx, x + w - 54, y + 64, 12, 3, "#b08a5a");
+      interiorCandle(x + w - 12, y + 20, t, true);
+    } else if (type.id === "greenhouse") {
+      interiorStoneFloor(x + 4, y + 4, w - 8, h - 8, "#5f6b4f");
+      // 玻璃顶
+      R(ctx, x + 6, y + 6, w - 12, 26, "#3f5f57");
+      for (let i = 0; i < 5; i++) R(ctx, x + 8 + i * ((w - 16) / 5), y + 6, 1, 26, "#7fa89a");
+      R(ctx, x + 6, y + 18, w - 12, 1, "#7fa89a");
+      ctx.globalAlpha = 0.12;
+      R(ctx, x + 8, y + 8, w - 16, 22, "#d8f0e0");
+      ctx.globalAlpha = 1;
+      // 花槽
+      for (let r = 0; r < 2; r++) {
+        R(ctx, x + 14, y + 42 + r * 24, w - 28, 18, "#5b4029");
+        R(ctx, x + 16, y + 44 + r * 24, w - 32, 14, "#6d4c30");
+        for (let i = 0; i < 5; i++) {
+          R(ctx, x + 20 + i * ((w - 44) / 5), y + 46 + r * 24, 2, 8, "#4f6e3d");
+          R(ctx, x + 19 + i * ((w - 44) / 5), y + 42 + r * 24, 5, 4, i % 2 ? "#8fae7a" : "#d4a44b");
+        }
+      }
+      interiorPlant(x + 8, y + 78);
+      interiorPlant(x + w - 22, y + 78);
+      drawGlow(x + w / 2, y + 20, 36, "#cfe8d0", 0.10);
+    } else if (type.id === "tavern") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      // 吧台
+      R(ctx, x + 16, y + 58, w - 32, 8, "#3b2a1a");
+      R(ctx, x + 18, y + 59, w - 36, 5, "#9a7048");
+      R(ctx, x + 16, y + 66, w - 32, 18, "#5b4029");
+      for (let i = 0; i < 5; i++) R(ctx, x + 22 + i * 14, y + 68, 10, 14, i % 2 ? "#6b4a2c" : "#7a5233");
+      // 酒桶与杯子
+      interiorBarrel(x + 8, y + 30);
+      interiorBarrel(x + w - 26, y + 28);
+      for (let i = 0; i < 4; i++) {
+        R(ctx, x + 30 + i * 12, y + 51, 4, 5, "#c9a24e");
+        R(ctx, x + 30 + i * 12, y + 50, 4, 2, "#e6d3a8");
+      }
+      // 吊灯与凳子
+      R(ctx, x + w / 2 - 1, y + 6, 2, 12, "#3f3122");
+      R(ctx, x + w / 2 - 14, y + 18, 28, 2, "#3f3122");
+      for (let i = 0; i < 3; i++) { R(ctx, x + w / 2 - 11 + i * 8, y + 19, 2, 4, "#f2c56d"); }
+      drawGlow(x + w / 2, y + 20, 30, "#ffcf72", 0.12);
+      interiorStool(x + 26, y + 86);
+      interiorStool(x + 44, y + 86);
+      interiorStool(x + 62, y + 86);
+    } else if (type.id === "nursery") {
+      interiorWoodFloor(x + 4, y + 4, w - 8, h - 8);
+      // 摇篮
+      R(ctx, x + 14, y + 30, 44, 8, "#8a623b");
+      R(ctx, x + 16, y + 38, 40, 16, "#6d4a2c");
+      R(ctx, x + 18, y + 39, 36, 13, "#cfe0e8");
+      R(ctx, x + 18, y + 39, 36, 3, "#f3f8fa");
+      circle(ctx, x + 24, y + 54, 3, "#3b2a1a");
+      circle(ctx, x + 48, y + 54, 3, "#3b2a1a");
+      R(ctx, x + 16, y + 24, 2, 26, "#5b4029");
+      R(ctx, x + 54, y + 24, 2, 26, "#5b4029");
+      // 玩具与地毯
+      interiorRug(x + 60, y + 52, 44, 26, "#6d5b7a");
+      for (let i = 0; i < 4; i++) {
+        R(ctx, x + 66 + i * 9, y + 58, 6, 6, ["#c95d5d", "#5d7c9a", "#d4a44b", "#6c8a54"][i]);
+      }
+      R(ctx, x + w - 40, y + 24, 18, 14, "#8a623b");
+      R(ctx, x + w - 38, y + 26, 14, 10, "#d8c2a0");
+      interiorCandle(x + 8, y + 82, t, true);
     }
     drawSkinRoomOverlay(skin, x, y, w, h);
     drawRoomUpgradeFurniture(type, level, x, y, w, h, t);

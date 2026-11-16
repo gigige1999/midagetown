@@ -4043,7 +4043,7 @@
   function openFloorPickerModal() {
     if (!state.expansionUnlocked) { toast("扩建层开放后才能更换地板。", "bad", "lock"); return; }
     openModal(
-      modalHead("sparkle", "扩建层 · 地板", "第 " + ((state.currentFloor || 0) + 1) + " 层地板", "整层替换，只影响当前层；购买后立即生效。") +
+      modalHead("sparkle", "扩建层 · 地板", "第 " + ((state.currentFloor || 0) + 1) + " 层地板", "本层单独购买，只影响当前层；购买后立即生效。") +
       '<div class="modal-body">' + floorsTabHTML() +
       '<div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>'
     );
@@ -4077,8 +4077,8 @@
       return html;
     }
     if (state.expansionUnlocked) {
-      html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层地板</b><span>整层替换</span></div>' +
-        '<p class="decorate-tip">每层单独购买、单独使用；这是整层地板，和「地砖」的单块装饰是两层东西。</p>' +
+      html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层地板</b><span>本层单独购买</span></div>' +
+        '<p class="decorate-tip">每层单独购买、单独使用；买下后只对这一层生效，换到别的楼层要重新买。</p>' +
         '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
           return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
         }).join("") + "</div></div>";
