@@ -3383,3 +3383,30 @@ body.placement-on .interior-hotspots { pointer-events: none; }
 
 /* 矩形铺砖预览 */
 .placement-ghost.tile { border-style: solid; background: rgba(160,210,140,.22); }
+
+/* 侧边栏与窗口框架交互 */
+.ledger { transition: opacity .16s ease; }
+.scene-frame { transition: width .16s ease, height .16s ease; }
+.ledger-body { scrollbar-width: thin; scrollbar-color: #a9855a #e9dcc2; }
+.ledger-body::-webkit-scrollbar { width: 9px; }
+.ledger-body::-webkit-scrollbar-track { background: #e6d8bd; }
+.ledger-body::-webkit-scrollbar-thumb { background: #b08c5c; border: 2px solid #e6d8bd; }
+.tab-btn:focus-visible, .ledger-collapse:focus-visible, .ledger-expand:focus-visible,
+.btn:focus-visible, .square-btn:focus-visible, .top-quick-btn:focus-visible { outline: 2px solid #ffd27a; outline-offset: 2px; }
+@media (max-width: 1080px) {
+  body.drawer-open { overflow: hidden; }
+  .ledger { transition: transform .2s ease, opacity .2s ease; }
+  .ledger-expand { transition: transform .15s ease, background .15s ease; }
+  .ledger-expand:active { transform: translateX(2px); }
+}
+
+/* 账房宽度可拖动 */
+.game { grid-template-columns: minmax(0, 1fr) var(--ledger-w, clamp(300px, 21vw, 360px)); }
+.ledger { position: relative; }
+.ledger-resizer {
+  position: absolute; left: -5px; top: 0; bottom: 0; width: 8px; z-index: 12;
+  cursor: col-resize; background: transparent;
+}
+.ledger-resizer:hover, body.resizing-ledger .ledger-resizer { background: rgba(214,164,73,.28); }
+body.resizing-ledger { cursor: col-resize; user-select: none; }
+@media (max-width: 1080px) { .ledger-resizer { display: none; } }

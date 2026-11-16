@@ -61,7 +61,8 @@
     dragDecor: null,
     painting: false,
     paintStart: null,
-    tileBrush: null
+    tileBrush: null,
+    ready: false
   };
 
   /* =========================================================
@@ -81,12 +82,23 @@
     setSpeedButtons(1);
     renderAll(true);
     fitScene();
+    const prefs = loadPrefs();
+    ui.ready = true;
+    if (prefs && prefs.ledgerWidth) applyLedgerWidth(prefs.ledgerWidth);
+    if (prefs && prefs.sidebarCollapsed) setSidebarCollapsed(true);
     if (window.ResizeObserver) {
       resizeObserver = new ResizeObserver(fitScene);
       const holder = $("#sceneHolder");
       if (holder) resizeObserver.observe(holder);
     }
-    window.addEventListener("resize", fitScene);
+    let fitQueued = false;
+    const queueFit = function () {
+      if (fitQueued) return;
+      fitQueued = true;
+      requestAnimationFrame(function () { fitQueued = false; fitScene(); });
+    };
+    window.addEventListener("resize", queueFit);
+    window.addEventListener("orientationchange", function () { setTimeout(queueFit, 120); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitScene);
     requestAnimationFrame(loop);
     updateSoundButton();
@@ -3747,7 +3759,59 @@
     if (activeFloorBtn && row) row.scrollLeft = Math.max(0, activeFloorBtn.offsetLeft - row.clientWidth / 2);
   }
 
+  const PREFS_KEY = "castle-story-prefs-v1";
+
+  function savePrefs() {
+    safeStorageSet(PREFS_KEY, JSON.stringify({ sidebarCollapsed: !!ui.sidebarCollapsed, ledgerWidth: ui.ledgerWidth || 0 }));
+  }
+
+  function loadPrefs() {
+    try {
+      const raw = safeStorageGet(PREFS_KEY);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      return p && typeof p === "object" ? p : null;
+    } catch (e) { return null; }
+  }
+
+  function applyLedgerWidth(w) {
+    const width = Math.max(280, Math.min(560, Math.round(Number(w) || 0)));
+    if (!width) return;
+    ui.ledgerWidth = width;
+    document.documentElement.style.setProperty("--ledger-w", width + "px");
+    window.dispatchEvent(new Event("resize"));
+  }
+
   function updateLedgerScrim() {
+    const resizer = $("#ledgerResizer");
+    const ledgerEl = $(".ledger");
+    if (resizer && ledgerEl) {
+      let drag = null;
+      resizer.addEventListener("pointerdown", function (e) {
+        if (window.innerWidth <= 1080) return;
+        drag = { x: e.clientX, w: ledgerEl.getBoundingClientRect().width };
+        resizer.setPointerCapture(e.pointerId);
+        document.body.classList.add("resizing-ledger");
+        e.preventDefault();
+      });
+      resizer.addEventListener("pointermove", function (e) {
+        if (!drag) return;
+        const width = drag.w - (e.clientX - drag.x);
+        applyLedgerWidth(width);
+      });
+      resizer.addEventListener("pointerup", function () {
+        if (!drag) return;
+        drag = null;
+        document.body.classList.remove("resizing-ledger");
+        savePrefs();
+      });
+      resizer.addEventListener("dblclick", function () {
+        ui.ledgerWidth = 0;
+        document.documentElement.style.removeProperty("--ledger-w");
+        window.dispatchEvent(new Event("resize"));
+        savePrefs();
+      });
+    }
     const scrim = $("#ledgerScrim");
     if (!scrim) return;
     const drawer = window.innerWidth <= 1080;
@@ -3763,8 +3827,10 @@
     const collapse = $("#ledgerCollapse");
     const expand = $("#ledgerExpand");
     if (game) game.classList.toggle("sidebar-collapsed", ui.sidebarCollapsed);
-    if (expand) expand.hidden = !ui.sidebarCollapsed;
-    if (collapse) collapse.title = "收起账房";
+    if (expand) { expand.hidden = !ui.sidebarCollapsed; expand.title = "展开账房（Ctrl/⌘+B）"; expand.setAttribute("aria-expanded", String(!ui.sidebarCollapsed)); }
+    if (collapse) { collapse.title = "收起账房（Ctrl/⌘+B）"; collapse.setAttribute("aria-expanded", String(!ui.sidebarCollapsed)); }
+    document.body.classList.toggle("drawer-open", window.innerWidth <= 1080 && !ui.sidebarCollapsed);
+    if (ui.ready) savePrefs();
     window.dispatchEvent(new Event("resize"));
   }
 
@@ -4576,6 +4642,35 @@
         if (ui.decorMode && ui.dragDecor) { e.preventDefault(); commitDecorDrag(); }
       });
     }
+    const resizer = $("#ledgerResizer");
+    const ledgerEl = $(".ledger");
+    if (resizer && ledgerEl) {
+      let drag = null;
+      resizer.addEventListener("pointerdown", function (e) {
+        if (window.innerWidth <= 1080) return;
+        drag = { x: e.clientX, w: ledgerEl.getBoundingClientRect().width };
+        resizer.setPointerCapture(e.pointerId);
+        document.body.classList.add("resizing-ledger");
+        e.preventDefault();
+      });
+      resizer.addEventListener("pointermove", function (e) {
+        if (!drag) return;
+        const width = drag.w - (e.clientX - drag.x);
+        applyLedgerWidth(width);
+      });
+      resizer.addEventListener("pointerup", function () {
+        if (!drag) return;
+        drag = null;
+        document.body.classList.remove("resizing-ledger");
+        savePrefs();
+      });
+      resizer.addEventListener("dblclick", function () {
+        ui.ledgerWidth = 0;
+        document.documentElement.style.removeProperty("--ledger-w");
+        window.dispatchEvent(new Event("resize"));
+        savePrefs();
+      });
+    }
     const scrim = $("#ledgerScrim");
     if (scrim) scrim.addEventListener("click", function () { setSidebarCollapsed(true); });
     if (window.innerWidth <= 1080) setSidebarCollapsed(true);
@@ -4598,10 +4693,7 @@
       if (dx < 0 && ui.sidebarCollapsed) setSidebarCollapsed(false);
       else if (dx > 0 && !ui.sidebarCollapsed) setSidebarCollapsed(true);
     }, { passive: true });
-    window.addEventListener("resize", function () {
-      updateLedgerScrim();
-      if (window.innerWidth > 1080 && ui.sidebarCollapsed) setSidebarCollapsed(false);
-    });
+    window.addEventListener("resize", updateLedgerScrim);
     $("#viewSwitch").addEventListener("click", function (e) {
       const b = e.target.closest("[data-view]");
       if (b) switchView(b.dataset.view);
@@ -4627,6 +4719,8 @@
         ui.tab = el.dataset.tab;
         updateTabs();
         renderLedger(true);
+        const body = $("#ledgerBody");
+        if (body) body.scrollTop = 0;
         A.sfx("page");
       } else if (action === "hire") hireWorker(el.dataset.id);
       else if (action === "build") startBuild(el.dataset.id);
@@ -4733,12 +4827,14 @@
       if (e.key === "Escape") {
         if (ui.placement) { e.preventDefault(); cancelPlacement(); return; }
         if (ui.decorMode) { e.preventDefault(); exitDecorMode(); return; }
+        if (window.innerWidth <= 1080 && !ui.sidebarCollapsed) { e.preventDefault(); setSidebarCollapsed(true); return; }
         if (ui.modalOpen) { e.preventDefault(); closeModal(); }
         return;
       }
       if (!started) return;
       if (e.target && ["INPUT", "SELECT", "TEXTAREA"].indexOf(e.target.tagName) >= 0) return;
       if (e.key === "`" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d")) { e.preventDefault(); setDebugMode(!ui.debugMode); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") { e.preventDefault(); setSidebarCollapsed(!ui.sidebarCollapsed); return; }
       if (e.code === "Space") { e.preventDefault(); state.speed = state.speed === 0 ? 1 : 0; setSpeedButtons(state.speed); }
       else if (["1", "2", "3"].indexOf(e.key) >= 0) { state.speed = Number(e.key); setSpeedButtons(state.speed); }
       else if (e.key === "m" || e.key === "M") toggleMute();
