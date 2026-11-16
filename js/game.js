@@ -238,7 +238,8 @@
       floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       interiorSkin: { owned: ["stone"], selected: "stone" },
       menuDays: {},
-      land: { crops: {}, plots: [
+      kitchenFresh: 0,
+      land: { crops: {}, harvested: {}, plots: [
         { unlocked: true, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
@@ -397,6 +398,8 @@
     }
     s.interiorDecor = D.DECOR_SETS.some(function (set) { return set.id === raw.interiorDecor; }) ? raw.interiorDecor : null;
     if (!s.land.crops || typeof s.land.crops !== "object") s.land.crops = {};
+    if (!s.land.harvested || typeof s.land.harvested !== "object") s.land.harvested = {};
+    s.kitchenFresh = Math.max(0, Math.floor(Number(s.kitchenFresh) || 0));
     s.menuDays = raw.menuDays && typeof raw.menuDays === "object" ? raw.menuDays : {};
     s.menus.forEach(function (id) { if (!s.menuDays[id]) s.menuDays[id] = 3; });
     // 地砖：每层独立购买与铺设
@@ -1274,9 +1277,27 @@
     });
   }
 
+  function guestFoodNeed(klass) {
+    const c = D.GUEST_CLASSES.filter(function (x) { return x.id === klass; })[0];
+    return (c && c.food) || 1;
+  }
+
+  function totalFoodNeed() {
+    return (state.genericResidents || []).reduce(function (n, r) { return n + guestFoodNeed(r.klass || "resident"); }, 0);
+  }
+
+  function kitchenDailyOutput() {
+    return 3 + Math.min(state.kitchenFresh || 0, 18);
+  }
+
   function onNewDay() {
     state.day += 1;
     growLandCrops();
+    const freshBefore = state.kitchenFresh || 0;
+    const madeFood = kitchenDailyOutput();
+    state.kitchenFresh = Math.max(0, freshBefore - Math.min(freshBefore, 18));
+    state.resources.food = (state.resources.food || 0) + madeFood;
+    addLog("厨房用新鲜食材做出 " + madeFood + " 份食物。", "good");
     const expired = [];
     state.menus.forEach(function (id) {
       if (state.menuDays[id] == null) state.menuDays[id] = 3;
@@ -1301,7 +1322,8 @@
     const reduction = kitchenFoodReduction();
     const shopUpkeep = D.SHOPS.filter(function (sh) { return state.shops[sh.id].status === "built"; }).length + landShopBuiltCount();
     const menuFood = menuUpkeep();
-    const upkeep = Math.max(0, residents - reduction) + shopUpkeep + menuFood;
+    const need = totalFoodNeed();
+    const upkeep = Math.max(0, need - reduction) + shopUpkeep + menuFood;
     let fed = true;
     if (ui.debugMode) {
       fed = true;
@@ -1311,7 +1333,25 @@
       fed = false;
       state.resources.food = 0;
     }
-    state.lastMeal = { day: state.day, fed: fed, upkeep: upkeep, residents: residents };
+    state.lastMeal = { day: state.day, fed: fed, upkeep: upkeep, residents: residents, need: need, made: madeFood };
+    state.menus.forEach(function (id) {
+      const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
+      if (!m || !m.special || !m.attract) return;
+      if (Math.random() > 0.7) return;
+      if (floorFreeBeds(0) <= 0) return;
+      const names = GUEST_NAMES[m.attract] || MASK_NAMES;
+      const guest = {
+        id: state.nextGenericId++,
+        type: D.MASK_TYPES[Math.floor(Math.random() * D.MASK_TYPES.length)].id,
+        klass: m.attract,
+        floor: 0,
+        variant: Math.floor(Math.random() * 4),
+        name: names[Math.floor(Math.random() * names.length)] + "·访客"
+      };
+      state.genericResidents.push(guest);
+      addLog("「" + m.name + "」的香气引来一位" + guestClass(m.attract).name + "访客。", "good");
+      setTimeout(function () { toast("「" + m.name + "」引来一位" + guestClass(m.attract).name + "访客。", "gold", "people"); }, 900);
+    });
     const weather = D.WEATHER[state.weather];
     addLog("第 " + state.day + " 天 · " + weather.name + "。" + (residents > 0
       ? "早餐消耗 " + upkeep + " 份食物，" + (fed ? "所有人都吃饱了。" : "食物不足，大家饿着肚子。")
@@ -1641,17 +1681,21 @@
       const owned = hasMenu(m.id);
       const crop = m.requiresCrop ? D.CROPS.filter(function (c) { return c.id === m.requiresCrop; })[0] : null;
       const cropHave = crop ? ((state.land.crops && state.land.crops[crop.id]) || 0) : 0;
+      const harvested = crop ? ((state.land.harvested && state.land.harvested[crop.id]) || 0) : 0;
       const cropOk = !m.requiresCrop || (state.land.cropsSeen && state.land.cropsSeen[m.requiresCrop]);
-      const hasCrop = !crop || cropHave >= 1;
-      const unlocked = countResidents() >= (m.minResidents || 0) && cropOk && hasCrop;
+      const cropCost = m.special ? (m.cropCost || 5) : 1;
+      const hasCrop = !crop || cropHave >= cropCost;
+      const specialOk = !m.special || harvested >= (m.harvestNeed || 10);
+      const unlocked = countResidents() >= (m.minResidents || 0) && cropOk && hasCrop && specialOk;
+      const cropLine = crop ? ('<div class="menu-crop"><img src="' + (window.CastleScene && window.CastleScene.cropThumb ? window.CastleScene.cropThumb(crop.id) : "") + '" alt=""><span>' + (m.special ? '特殊菜谱 · 需要 ' + cropCost + ' 份' + crop.name : '需要 1 份' + crop.name) + '</span><em class="' + (hasCrop && specialOk ? "" : "lack") + '">库存 ' + cropHave + (m.special ? ' · 已收获 ' + harvested + '/' + m.harvestNeed : '') + '</em></div>') : "";
       const afford = canAfford(m.cost);
       return '<div class="menu-row' + (owned ? " owned" : "") + (unlocked ? "" : " locked") + '">' +
         '<div class="menu-icon"><img src="' + I.icon(m.icon) + '" alt=""></div>' +
         '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + (owned || unlocked ? "" : '<span class="menu-lock">' + (!cropOk ? "需要收获" + (D.CROPS.filter(function (c) { return c.id === m.requiresCrop; })[0] || {}).name : "需要 " + m.minResidents + " 位居民") + "</span>") + "</div>" +
         '<div class="menu-desc">' + m.desc + "</div>" +
         '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · 商铺 +5% · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div>" +
-        (crop ? '<div class="menu-crop"><img src="' + (window.CastleScene && window.CastleScene.cropThumb ? window.CastleScene.cropThumb(crop.id) : "") + '" alt=""><span>需要 1 份' + crop.name + '</span><em' + (cropHave > 0 ? "" : ' class="lack"') + '>库存 ' + cropHave + '</em></div>' : "") +
-        '<div class="menu-meta small">' + affinityText(m) + ' · 上桌后供应 4 天</div></div>' +
+        cropLine +
+        '<div class="menu-meta small">' + (m.special ? '<b class="menu-special">特殊菜谱</b> · ' : "") + affinityText(m) + ' · 上桌后供应 ' + (m.duration || 4) + ' 天' + (m.attract ? ' · 引来' + (D.GUEST_CLASSES.filter(function (c) { return c.id === m.attract; })[0] || {}).name : '') + '</div></div>' +
         '<div class="menu-actions">' + (owned
           ? '<span class="menu-check">已解锁</span>'
           : '<button class="btn btn-gold btn-small" data-action="buy-menu" data-id="' + m.id + '"' + (afford && unlocked ? "" : " disabled") + '>' + (unlocked ? "购买" : "未解锁") + '</button>') +
@@ -1664,7 +1708,10 @@
       '<div><span>居民收入倍率</span><b>×' + mult.toFixed(2) + "</b></div>" +
       '<div><span>居民收入</span><b>+' + (residentGoldRate() * 60).toFixed(1) + " 金/分</b></div>" +
       '<div><span>菜品食物</span><b>' + menuUpkeep() + " /天</b></div>" +
-      '<div><span>商铺加成</span><b>+' + Math.round(menuShopBonus() * 100) + "%</b></div></div>" +
+      '<div><span>商铺加成</span><b>+' + Math.round(menuShopBonus() * 100) + "%</b></div>" +
+      '<div><span>每日食物需求</span><b>' + totalFoodNeed() + " /天</b></div>" +
+      '<div><span>厨房今日产出</span><b>+' + kitchenDailyOutput() + " /天</b></div>" +
+      '<div><span>新鲜食材</span><b>' + (state.kitchenFresh || 0) + "</b></div></div>" +
       (note ? '<p class="modal-copy" style="margin-top:8px">' + escapeHTML(note) + "</p>" : '<p class="modal-copy" style="margin-top:8px">做菜需要金币、食物和 1 份对应作物；每道菜供应 4 天，同时提升居民收入与所有商铺收入。</p>') +
       '<div class="menu-list">' + rows + "</div>" +
       '<div class="modal-actions"><span class="modal-note">菜单收入也受「吃饱」和商铺加成影响</span>' +
@@ -1688,13 +1735,21 @@
       return;
     }
     if (m.requiresCrop) {
+      const c = D.CROPS.filter(function (x) { return x.id === m.requiresCrop; })[0];
       const have = (state.land.crops && state.land.crops[m.requiresCrop]) || 0;
-      if (have < 1) {
-        const c = D.CROPS.filter(function (x) { return x.id === m.requiresCrop; })[0];
-        toast("「" + m.name + "」需要 1 份" + (c ? c.name : "作物") + "，现在没有库存。去领地种，或找行商买。", "bad", "food");
+      const cost = m.special ? (m.cropCost || 5) : 1;
+      if (m.special) {
+        const harvested = (state.land.harvested && state.land.harvested[m.requiresCrop]) || 0;
+        if (harvested < (m.harvestNeed || 10)) {
+          toast("特殊菜谱需要累计收获 " + m.harvestNeed + " 份" + (c ? c.name : "作物") + "（当前 " + harvested + "）。", "bad", "lock");
+          return;
+        }
+      }
+      if (have < cost) {
+        toast("「" + m.name + "」需要 " + cost + " 份" + (c ? c.name : "作物") + "，现在只有 " + have + " 份。", "bad", "food");
         return;
       }
-      state.land.crops[m.requiresCrop] = have - 1;
+      state.land.crops[m.requiresCrop] = have - cost;
     }
     if (!canAfford(m.cost)) {
       toast("买不起这道菜，还差：" + missingCostsText(m.cost), "bad", "food");
@@ -1702,7 +1757,7 @@
     }
     payCost(m.cost);
     state.menus.push(id);
-    state.menuDays[id] = 4;
+    state.menuDays[id] = m.duration || 4;
     addLog("厨房添了一道新菜：" + m.name + "（供应 4 天）。居民收入提高 " + Math.round(m.bonus * 100) + "%。", "good");
     toast(m.name + "上桌了！居民收入 +" + Math.round(m.bonus * 100) + "%。", "gold", "food");
     A.sfx("complete");
@@ -3332,6 +3387,8 @@
     const cropAmount = Math.max(1, Math.round(2 * yieldMult));
     if (!state.land.crops) state.land.crops = {};
     state.land.crops[crop.id] = (state.land.crops[crop.id] || 0) + cropAmount;
+    state.land.harvested[crop.id] = (state.land.harvested[crop.id] || 0) + cropAmount;
+    state.kitchenFresh = (state.kitchenFresh || 0) + 5;
     const gains = "「" + crop.name + "」×" + cropAmount + " · " + Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + Math.round(crop.harvest[k] * yieldMult); }).join(" · ");
     addLog("收获第 " + (index + 1) + " 块田的" + crop.name + "：" + gains + "。", "good");
     toast("收获" + crop.name + "：" + gains, "gold", "food");

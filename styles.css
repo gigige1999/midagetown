@@ -3603,3 +3603,6 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 /* 真实房间缩略图：完整显示 */
 .catalog-preview.room img { object-fit: contain; }
 .room-preview img { object-fit: contain; background: #2a1d17; }
+
+.menu-special { color: #b8862f; font-weight: 400; }
+.scene-topnav .toast-stack { z-index: 7; }
