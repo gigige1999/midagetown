@@ -320,3 +320,11 @@ python3 -m http.server 8765
 ## 字体
 
 中文像素字体使用 [Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)（SIL OFL 1.1），授权见 `assets/fonts/OFL.txt`。
+
+
+### 24. 小红书打包
+
+- 打包脚本会生成扁平化 zip（index.html 在根目录，10 个文件）。
+- 移动端额外加载 `mobile.css` 与 `xhs-mobile.js`：进入游戏尝试锁定横屏，竖屏时显示「请横屏游玩」提示层，可点击「已横屏，继续」重新锁定。
+- 顶部栏在手机横屏压成一行，账房默认收起为右侧抽屉。
+- 产物：`castle-story-xhs.zip`（约 260KB，audit PASS）。
