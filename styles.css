@@ -3372,3 +3372,14 @@ body.placement-on .interior-hotspots { pointer-events: none; }
   .brand { gap: 0; }
   .brand-mark { width: 26px; height: 26px; flex-basis: 26px; }
 }
+
+/* 房间弹窗内景预览 */
+.room-preview-pair { display: flex; gap: 8px; justify-content: center; margin: 4px 0 10px; }
+.room-preview { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; background: #3b2a1a; border: 2px solid #8a6a44; }
+.room-preview.next { border-color: #a3b18b; box-shadow: inset 0 0 0 1px #d7e2c4; }
+.room-preview img { width: 96px; height: 112px; object-fit: cover; image-rendering: pixelated; display: block; }
+.room-preview span { font-size: 10px; color: #f0d28a; }
+.room-preview.next span { color: #d7e2c4; }
+
+/* 矩形铺砖预览 */
+.placement-ghost.tile { border-style: solid; background: rgba(160,210,140,.22); }

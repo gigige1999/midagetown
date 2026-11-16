@@ -60,6 +60,7 @@
     dragRoom: null,
     dragDecor: null,
     painting: false,
+    paintStart: null,
     tileBrush: null
   };
 
@@ -3354,6 +3355,50 @@
     saveState();
   }
 
+  function tileCellRect(cx0, cy0, cx1, cy1) {
+    const cell = D.TILE_CELL;
+    const x0 = Math.min(cx0, cx1), x1 = Math.max(cx0, cx1);
+    const y0 = Math.min(cy0, cy1), y1 = Math.max(cy0, cy1);
+    return { x0: x0, y0: y0, x1: x1, y1: y1, px: 20 + x0 * cell, py: 40 + y0 * cell, w: (x1 - x0 + 1) * cell, h: (y1 - y0 + 1) * cell };
+  }
+
+  function showTileRectGhost(rect, valid) {
+    const ghost = $("#placementGhost");
+    if (!ghost) return;
+    ghost.hidden = false;
+    ghost.className = "placement-ghost tile " + (valid ? "valid" : "invalid");
+    ghost.style.left = (rect.px / 720 * 100) + "%";
+    ghost.style.top = (rect.py / 405 * 100) + "%";
+    ghost.style.width = (rect.w / 720 * 100) + "%";
+    ghost.style.height = (rect.h / 405 * 100) + "%";
+  }
+
+  function fillTileRect(cx0, cy0, cx1, cy1) {
+    if (!ui.tileBrush) return;
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    const rect = tileCellRect(cx0, cy0, cx1, cy1);
+    let placed = 0;
+    for (let cy = rect.y0; cy <= rect.y1; cy++) {
+      for (let cx = rect.x0; cx <= rect.x1; cx++) {
+        if ((stock[ui.tileBrush] || 0) <= 0) break;
+        const key = cx + "," + cy;
+        if (state.floorTiles[floor][key] === ui.tileBrush) continue;
+        stock[ui.tileBrush] -= 1;
+        state.floorTiles[floor][key] = ui.tileBrush;
+        placed++;
+      }
+    }
+    if (placed) {
+      toast("铺了 " + placed + " 块地砖。", "good", "sparkle");
+      A.sfx("build");
+      renderAll(true);
+      saveState();
+    } else if ((stock[ui.tileBrush] || 0) <= 0) {
+      toast("这种地砖用完了，去「地砖」补货。", "bad", "coin");
+    }
+  }
+
   function enterDecorMode() {
     if (!state.expansionUnlocked) { toast("修好所有房间后，装修模式才会开放。", "bad", "lock"); return; }
     if (state.view !== "expansion") switchView("expansion");
@@ -3377,6 +3422,7 @@
     ui.dragRoom = null;
     ui.dragDecor = null;
     ui.painting = false;
+    ui.paintStart = null;
     ui.tileBrush = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
@@ -4128,7 +4174,11 @@
     const afford = canAfford(cost);
     openModal(
       modalHead(type.icon, "扩建层 · 第 " + (state.currentFloor + 1) + " 层", type.name + " · Lv." + lv, type.size + " 尺寸房间") +
-      '<div class="modal-body"><div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
+      '<div class="modal-body"><div class="room-preview-pair">' +
+      '<div class="room-preview"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id, lv) : "") + '" alt=""><span>当前 Lv.' + lv + '</span></div>' +
+      (lv < 3 ? '<div class="room-preview next"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id, lv + 1) : "") + '" alt=""><span>升级 Lv.' + (lv + 1) + '</span></div>' : "") +
+      "</div>" +
+      '<div class="upgrade-preview"><div><span>当前等级</span><b>Lv.' + lv + "</b></div><div><span>房间尺寸</span><b>" + type.size + "</b></div></div>" +
       '<div class="requirement"><img src="' + I.icon("sparkle") + '" alt="">' +
       "当前加成：床位 " + roomCapacity(type, room) +
       (type.residentBonus ? " · 居民收入 +" + Math.round(type.residentBonus * roomScale(room) * 100) + "%" : "") +
@@ -4140,6 +4190,7 @@
         '<div class="cost-row">' + costHTML(cost, true) + "</div></div>" : '<div class="floor-full-note">这间房已达到 Lv.3 上限。</div>') +
       '<div class="modal-actions"><span class="modal-note">' + (lv < 3 && !afford ? "升级材料不足：" + missingCostsText(cost) : "") + "</span>" +
       '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+      '<button class="btn btn-ghost" data-action="focus-room" data-room="' + roomId + '">场景定位</button>' +
       '<button class="btn btn-wood" data-action="move-room" data-room="' + roomId + '"><img src="' + I.icon("arrow") + '" alt="">移动位置</button>' +
       '<button class="btn btn-danger" data-action="demolish-open" data-room="' + roomId + '">拆除</button>' +
       (lv < 3 ? '<button class="btn btn-gold" data-action="upgrade-expansion" data-room="' + roomId + '"' + (afford ? "" : " disabled") + '><img src="' + I.icon("arrow") + '" alt="">升级房间</button>' : "") +
@@ -4471,7 +4522,13 @@
         if (ui.placement) { movePlacement(p.x, p.y); return; }
         if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); return; }
         if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); return; }
-        if (ui.decorMode && ui.painting && ui.tileBrush) { paintTileAt(p.x, p.y); }
+        if (ui.decorMode && ui.painting && ui.paintStart && ui.tileBrush) {
+          const t = tileAt(state.currentFloor || 0, p.x, p.y);
+          if (!t) return;
+          const rect = tileCellRect(ui.paintStart.cx, ui.paintStart.cy, t.cx, t.cy);
+          const stock = tileStockOf(state.currentFloor || 0);
+          showTileRectGhost(rect, (stock[ui.tileBrush] || 0) > 0);
+        }
       });
       placeLayer.addEventListener("pointerdown", function (e) {
         const p = layerPoint(e);
@@ -4483,14 +4540,27 @@
         const room = roomAtPoint(p.x, p.y);
         if (room) { beginRoomDrag(room, p.x, p.y); return; }
         if (ui.tileBrush) {
+          const t = tileAt(state.currentFloor || 0, p.x, p.y);
+          if (!t) return;
           ui.painting = true;
+          ui.paintStart = { cx: t.cx, cy: t.cy };
           if (placeLayer.setPointerCapture && e.pointerId != null) {
             try { placeLayer.setPointerCapture(e.pointerId); } catch (err) {}
           }
           paintTileAt(p.x, p.y);
+          showTileRectGhost(tileCellRect(t.cx, t.cy, t.cx, t.cy), true);
         }
       });
       placeLayer.addEventListener("pointerup", function (e) {
+        if (ui.painting && ui.paintStart && ui.tileBrush) {
+          const p = layerPoint(e);
+          const t = p ? tileAt(state.currentFloor || 0, p.x, p.y) : null;
+          const end = t || ui.paintStart;
+          fillTileRect(ui.paintStart.cx, ui.paintStart.cy, end.cx, end.cy);
+          ui.paintStart = null;
+          const ghost = $("#placementGhost");
+          if (ghost) ghost.hidden = true;
+        }
         ui.painting = false;
         if (ui.placement) {
           if (ui.placement.valid) commitPlacement();
@@ -4581,6 +4651,17 @@
       else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
       else if (action === "brush-tile") { ui.tileBrush = el.dataset.id; closeModal(true); enterDecorMode(); }
       else if (action === "decor-mode") { if (ui.decorMode) exitDecorMode(); else enterDecorMode(); }
+      else if (action === "focus-room") {
+        const id = el.dataset.room;
+        const room = currentFloorRooms()[id];
+        if (room) {
+          const r = roomRectOf(room);
+          window.__focusRoom = { x: r.x, y: r.y, w: r.w, h: r.h, until: Date.now() + 3200 };
+          closeModal(true);
+          if (window.innerWidth <= 1080) setSidebarCollapsed(true);
+          toast("已在场景中标出这间房。", "neutral", "sparkle");
+        }
+      }
       else if (action === "move-room") { closeModal(true); enterDecorMode(); toast("按住房间拖动即可换位置。", "neutral", "arrow"); }
       else if (action === "place-room-start") startPlacement("room", el.dataset.type);
       else if (action === "place-decor-start") startPlacement("decor", el.dataset.type);

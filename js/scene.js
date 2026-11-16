@@ -4027,6 +4027,17 @@ window.CastleScene = (function () {
     sceneFloorRooms(floor).forEach(function (entry) {
       drawExpansionRoom(entry.type, entry, time, entry.room ? entry.room.level || 1 : 1, skin);
     });
+    const focus = window.__focusRoom;
+    if (focus && Date.now() < focus.until) {
+      const a = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 7));
+      ctx.globalAlpha = a;
+      const fx = focus.x, fy = focus.y, fw = focus.w, fh = focus.h;
+      R(ctx, fx - 4, fy - 4, fw + 8, 2, "#ffd27a");
+      R(ctx, fx - 4, fy + fh + 2, fw + 8, 2, "#ffd27a");
+      R(ctx, fx - 4, fy - 4, 2, fh + 8, "#ffd27a");
+      R(ctx, fx + fw + 2, fy - 4, 2, fh + 8, "#ffd27a");
+      ctx.globalAlpha = 1;
+    }
     drawFloorDecor(floor, time);
     // 楼梯
     R(ctx, 318, 352, 84, 32, "#2b1e17");
@@ -5374,8 +5385,10 @@ window.CastleScene = (function () {
 
   const roomThumbCache = {};
 
-  function roomThumb(typeId) {
-    if (roomThumbCache[typeId]) return roomThumbCache[typeId];
+  function roomThumb(typeId, level) {
+    const lv = Math.max(1, Math.min(3, Number(level) || 1));
+    const key = typeId + "-" + lv;
+    if (roomThumbCache[key]) return roomThumbCache[key];
     const type = D.EXPANSION_ROOMS.filter(function (r) { return r.id === typeId; })[0];
     if (!type) return "";
     const c = document.createElement("canvas");
@@ -5387,14 +5400,14 @@ window.CastleScene = (function () {
     ctx = tctx;
     tctx.scale(2, 2);
     try {
-      drawExpansionRoom(type, { x: 0, y: 0, w: 88, h: 104, size: type.size }, 0.6, 1, "stone");
+      drawExpansionRoom(type, { x: 0, y: 0, w: 88, h: 104, size: type.size }, 0.6, lv, "stone");
     } catch (e) {
       ctx = prev;
       return "";
     }
     ctx = prev;
-    roomThumbCache[typeId] = c.toDataURL("image/png");
-    return roomThumbCache[typeId];
+    roomThumbCache[key] = c.toDataURL("image/png");
+    return roomThumbCache[key];
   }
 
   return {
