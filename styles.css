@@ -3554,3 +3554,14 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .info-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 7px; background: #eef2df; border: 1px solid #a3b18b; }
 .info-row span { font-size: 10px; color: #6f7f58; }
 .info-row b { margin-left: auto; font-size: 12px; font-weight: 400; color: #3f5330; }
+
+/* 菜单作物与行商作物 */
+.menu-crop { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 3px 5px; background: #eef2df; border: 1px solid #a3b18b; }
+.menu-crop img { width: 28px; height: 28px; image-rendering: pixelated; }
+.menu-crop span { font-size: 10px; color: #4b6b3a; }
+.menu-crop em { margin-left: auto; font-style: normal; font-size: 10px; color: #6f7f58; }
+.menu-crop em.lack { color: #b0483a; }
+.menu-meta.small { font-size: 9px; color: #8a6b48; }
+.trade-icon.crop { background: #e6efd8; border-color: #a3b18b; }
+.trade-icon.crop img { width: 34px; height: 34px; image-rendering: pixelated; }
+.trade-row.crop-trade .trade-actions { gap: 4px; }

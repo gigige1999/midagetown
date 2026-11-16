@@ -141,7 +141,7 @@ window.GameData = (function () {
       desc: "从沉睡的山岩里凿出下一座城堡。",
       flavor: "花岗说，石头只是睡得很沉的云。",
       completionGold: 15,
-      plot: { x: 536, y: 116, w: 118, h: 88, baseY: 204, labelY: 116 }
+      plot: { x: 536, y: 244, w: 118, h: 88, baseY: 326, labelY: 244 }
     },
     {
       id: "kitchen", name: "厨房", icon: "tavern", scene: "indoor",

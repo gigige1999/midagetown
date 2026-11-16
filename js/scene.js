@@ -5716,6 +5716,61 @@ window.CastleScene = (function () {
     return roomThumbCache[key];
   }
 
+  const cropThumbCache = {};
+
+  function cropThumb(id) {
+    if (cropThumbCache[id]) return cropThumbCache[id];
+    const crop = (D.CROPS || []).filter(function (c) { return c.id === id; })[0];
+    if (!crop) return "";
+    const c = document.createElement("canvas");
+    c.width = 48; c.height = 48;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    const col = crop.color;
+    const dark = "rgba(20,14,10,0.55)";
+    const leaf = "#5f7f47";
+    function r(x, y, w, h, cc) { g.fillStyle = cc; g.fillRect(x, y, w, h); }
+    if (id === "wheat") {
+      r(21, 12, 5, 30, "#b98a3c");
+      for (let i = 0; i < 4; i++) { r(14, 12 + i * 6, 8, 3, col); r(26, 12 + i * 6, 8, 3, col); }
+      r(23, 6, 2, 8, "#8a6230");
+    } else if (id === "carrot") {
+      r(17, 18, 14, 20, col);
+      r(20, 38, 8, 6, col);
+      r(14, 10, 4, 10, leaf); r(22, 8, 4, 12, leaf); r(30, 10, 4, 10, leaf);
+    } else if (id === "pumpkin") {
+      g.fillStyle = col; g.beginPath(); g.arc(24, 28, 14, 0, Math.PI * 2); g.fill();
+      r(22, 10, 4, 8, "#6d4a2a");
+      r(12, 26, 2, 10, "rgba(90,45,10,0.35)"); r(34, 26, 2, 10, "rgba(90,45,10,0.35)");
+      r(23, 24, 2, 10, "rgba(90,45,10,0.3)");
+    } else if (id === "herb") {
+      r(22, 18, 3, 22, "#4f6e3d");
+      for (let i = 0; i < 4; i++) { r(12 + i * 2, 16 + i * 4, 10, 3, leaf); r(26 - i, 18 + i * 4, 9, 3, col); }
+    } else if (id === "tomato") {
+      g.fillStyle = col; g.beginPath(); g.arc(24, 28, 13, 0, Math.PI * 2); g.fill();
+      r(21, 12, 6, 4, leaf); r(16, 16, 6, 3, leaf); r(26, 16, 8, 3, leaf);
+      r(18, 22, 4, 3, "rgba(255,255,255,0.25)");
+    } else if (id === "corn") {
+      r(18, 12, 12, 28, col);
+      for (let i = 0; i < 5; i++) r(20, 14 + i * 5, 8, 2, "#a8862e");
+      r(14, 18, 4, 18, leaf); r(30, 18, 4, 18, leaf);
+    } else if (id === "grape") {
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3 - i; j++) {
+        g.fillStyle = col; g.beginPath(); g.arc(18 + i * 8, 18 + j * 8, 5, 0, Math.PI * 2); g.fill();
+      }
+      r(23, 8, 2, 8, "#5f7f47");
+    } else if (id === "lavender") {
+      r(23, 18, 2, 22, "#5f7f47");
+      for (let i = 0; i < 4; i++) { r(18, 10 + i * 4, 4, 3, col); r(24, 12 + i * 4, 4, 3, col); r(21, 14 + i * 4, 4, 2, "#a79ccc"); }
+    } else {
+      g.fillStyle = col; g.beginPath(); g.arc(24, 26, 12, 0, Math.PI * 2); g.fill();
+      r(22, 10, 3, 6, leaf);
+    }
+    r(20, 42, 10, 2, dark);
+    cropThumbCache[id] = c.toDataURL("image/png");
+    return cropThumbCache[id];
+  }
+
   function coreInfo(id) {
     const c = HALL_CAST.filter(function (x) { return x.id === id; })[0];
     return c ? { name: c.name, role: c.role, klass: c.klass, type: c.type } : null;
@@ -5724,6 +5779,7 @@ window.CastleScene = (function () {
   return {
     init: init,
     roomThumb: roomThumb,
+    cropThumb: cropThumb,
     coreInfo: coreInfo,
     draw: draw,
     petCat: petCat,

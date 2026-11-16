@@ -237,7 +237,8 @@
       interiorDecor: null,
       floorSkins: { 0: { owned: ["stone"], selected: "stone" } },
       interiorSkin: { owned: ["stone"], selected: "stone" },
-      land: { plots: [
+      menuDays: {},
+      land: { crops: {}, plots: [
         { unlocked: true, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
         { unlocked: false, crop: null, growth: 0, ready: false, plantedDay: null },
@@ -395,6 +396,9 @@
       }));
     }
     s.interiorDecor = D.DECOR_SETS.some(function (set) { return set.id === raw.interiorDecor; }) ? raw.interiorDecor : null;
+    if (!s.land.crops || typeof s.land.crops !== "object") s.land.crops = {};
+    s.menuDays = raw.menuDays && typeof raw.menuDays === "object" ? raw.menuDays : {};
+    s.menus.forEach(function (id) { if (!s.menuDays[id]) s.menuDays[id] = 3; });
     // 地砖：每层独立购买与铺设
     const rawTiles = Array.isArray(raw.floorTiles) ? raw.floorTiles : [];
     const rawStock = Array.isArray(raw.tileStock) ? raw.tileStock : [];
@@ -1210,6 +1214,10 @@
     };
   }
 
+  function menuShopBonus() {
+    return Math.min(0.30, state.menus.length * 0.05);
+  }
+
   function shopBonuses() {
     let residentBonus = 0, productionBonus = 0, income = 0;
     D.SHOPS.forEach(function (shop) {
@@ -1226,6 +1234,7 @@
       residentBonus += shop.residentBonus || 0;
       income += shop.income || 0;
     });
+    income *= 1 + menuShopBonus();
     return { residentBonus: residentBonus, productionBonus: productionBonus, income: income };
   }
 
@@ -1268,6 +1277,24 @@
   function onNewDay() {
     state.day += 1;
     growLandCrops();
+    const expired = [];
+    state.menus.forEach(function (id) {
+      if (state.menuDays[id] == null) state.menuDays[id] = 3;
+      state.menuDays[id] -= 1;
+      if (state.menuDays[id] <= 0) expired.push(id);
+    });
+    if (expired.length) {
+      expired.forEach(function (id) {
+        state.menus = state.menus.filter(function (x) { return x !== id; });
+        delete state.menuDays[id];
+        const m = D.MENUS.filter(function (x) { return x.id === id; })[0];
+        if (m) addLog("「" + m.name + "」已经吃完了，需要重新准备。", "info");
+      });
+      setTimeout(function () {
+        const names = expired.map(function (id) { const m = D.MENUS.filter(function (x) { return x.id === id; })[0]; return m ? m.name : id; }).join("、");
+        toast("菜单吃完了：" + names + "。用领地作物再做一份吧。", "bad", "food");
+      }, 600);
+    }
     state.trade = { day: state.day, bought: { wood: 0, stone: 0, food: 0 } };
     state.weather = pickWeather();
     const residents = countResidents();
@@ -1612,14 +1639,19 @@
     const mult = menuMultiplier();
     const rows = D.MENUS.map(function (m) {
       const owned = hasMenu(m.id);
+      const crop = m.requiresCrop ? D.CROPS.filter(function (c) { return c.id === m.requiresCrop; })[0] : null;
+      const cropHave = crop ? ((state.land.crops && state.land.crops[crop.id]) || 0) : 0;
       const cropOk = !m.requiresCrop || (state.land.cropsSeen && state.land.cropsSeen[m.requiresCrop]);
-      const unlocked = countResidents() >= (m.minResidents || 0) && cropOk;
+      const hasCrop = !crop || cropHave >= 1;
+      const unlocked = countResidents() >= (m.minResidents || 0) && cropOk && hasCrop;
       const afford = canAfford(m.cost);
       return '<div class="menu-row' + (owned ? " owned" : "") + (unlocked ? "" : " locked") + '">' +
         '<div class="menu-icon"><img src="' + I.icon(m.icon) + '" alt=""></div>' +
         '<div class="menu-copy"><div class="menu-name">' + m.name + (owned ? '<span class="menu-owned">已上桌</span>' : "") + (owned || unlocked ? "" : '<span class="menu-lock">' + (!cropOk ? "需要收获" + (D.CROPS.filter(function (c) { return c.id === m.requiresCrop; })[0] || {}).name : "需要 " + m.minResidents + " 位居民") + "</span>") + "</div>" +
         '<div class="menu-desc">' + m.desc + "</div>" +
-        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · " + affinityText(m) + " · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div></div>" +
+        '<div class="menu-meta">居民收入 +' + Math.round(m.bonus * 100) + "% · 商铺 +5% · 每天 " + (m.dailyFood || 1) + " 食物 · " + costHTML(m.cost, true) + "</div>" +
+        (crop ? '<div class="menu-crop"><img src="' + (window.CastleScene && window.CastleScene.cropThumb ? window.CastleScene.cropThumb(crop.id) : "") + '" alt=""><span>需要 1 份' + crop.name + '</span><em' + (cropHave > 0 ? "" : ' class="lack"') + '>库存 ' + cropHave + '</em></div>' : "") +
+        '<div class="menu-meta small">' + affinityText(m) + ' · 上桌后供应 4 天</div></div>' +
         '<div class="menu-actions">' + (owned
           ? '<span class="menu-check">已解锁</span>'
           : '<button class="btn btn-gold btn-small" data-action="buy-menu" data-id="' + m.id + '"' + (afford && unlocked ? "" : " disabled") + '>' + (unlocked ? "购买" : "未解锁") + '</button>') +
@@ -1631,8 +1663,9 @@
       '<div class="menu-summary"><div><span>菜品数量</span><b>' + state.menus.length + " / " + D.MENUS.length + "</b></div>" +
       '<div><span>居民收入倍率</span><b>×' + mult.toFixed(2) + "</b></div>" +
       '<div><span>居民收入</span><b>+' + (residentGoldRate() * 60).toFixed(1) + " 金/分</b></div>" +
-      '<div><span>菜品食物</span><b>' + menuUpkeep() + " /天</b></div></div>" +
-      (note ? '<p class="modal-copy" style="margin-top:8px">' + escapeHTML(note) + "</p>" : '<p class="modal-copy" style="margin-top:8px">购买菜单会消耗金币和食物，永久提升所有居民（包括戴面具的新居民）的金币收入。</p>') +
+      '<div><span>菜品食物</span><b>' + menuUpkeep() + " /天</b></div>" +
+      '<div><span>商铺加成</span><b>+' + Math.round(menuShopBonus() * 100) + "%</b></div></div>" +
+      (note ? '<p class="modal-copy" style="margin-top:8px">' + escapeHTML(note) + "</p>" : '<p class="modal-copy" style="margin-top:8px">做菜需要金币、食物和 1 份对应作物；每道菜供应 4 天，同时提升居民收入与所有商铺收入。</p>') +
       '<div class="menu-list">' + rows + "</div>" +
       '<div class="modal-actions"><span class="modal-note">菜单收入也受「吃饱」和商铺加成影响</span>' +
       '<button class="btn btn-primary" data-action="close-modal">回去吃饭</button></div></div>',
@@ -1654,13 +1687,23 @@
       toast("先收获一份" + (c ? c.name : "作物") + "，才能解锁「" + m.name + "」。", "bad", "lock");
       return;
     }
+    if (m.requiresCrop) {
+      const have = (state.land.crops && state.land.crops[m.requiresCrop]) || 0;
+      if (have < 1) {
+        const c = D.CROPS.filter(function (x) { return x.id === m.requiresCrop; })[0];
+        toast("「" + m.name + "」需要 1 份" + (c ? c.name : "作物") + "，现在没有库存。去领地种，或找行商买。", "bad", "food");
+        return;
+      }
+      state.land.crops[m.requiresCrop] = have - 1;
+    }
     if (!canAfford(m.cost)) {
       toast("买不起这道菜，还差：" + missingCostsText(m.cost), "bad", "food");
       return;
     }
     payCost(m.cost);
     state.menus.push(id);
-    addLog("厨房添了一道新菜：" + m.name + "。居民收入提高 " + Math.round(m.bonus * 100) + "%。", "good");
+    state.menuDays[id] = 4;
+    addLog("厨房添了一道新菜：" + m.name + "（供应 4 天）。居民收入提高 " + Math.round(m.bonus * 100) + "%。", "good");
     toast(m.name + "上桌了！居民收入 +" + Math.round(m.bonus * 100) + "%。", "gold", "food");
     A.sfx("complete");
     ui.guideSig = "";
@@ -1704,6 +1747,7 @@
       rows.push(["金币收入", "+" + (shop.income * k * 60).toFixed(1) + " / 分"]);
       if (shop.residentBonus) rows.push(["居民收入", "+" + Math.round(shop.residentBonus * k * 100) + "%"]);
       if (shop.productionBonus) rows.push(["生产效率", "+" + Math.round(shop.productionBonus * k * 100) + "%"]);
+      if (menuShopBonus() > 0) rows.push(["菜单加成", "+" + Math.round(menuShopBonus() * 100) + "%"]);
     } else {
       rows.push(["解锁条件", shop.unlockText]);
     }
@@ -2591,6 +2635,51 @@
     return Math.max(0, D.BUY_INFO[res].daily - tradeBought(res));
   }
 
+  function merchantDealCrop() {
+    return D.CROPS[Math.floor((state.day || 1) % D.CROPS.length)];
+  }
+
+  function cropSellPrice(crop) {
+    return Math.max(1, Math.round(crop.cost * 1.25 * (1 + storeroomSellBonus())));
+  }
+
+  function cropBuyPrice(crop) {
+    const deal = merchantDealCrop().id === crop.id;
+    return Math.max(1, Math.round(crop.cost * 1.8 * (deal ? 0.8 : 1)));
+  }
+
+  function sellCrop(id) {
+    const crop = D.CROPS.filter(function (c) { return c.id === id; })[0];
+    if (!crop) return;
+    const have = (state.land.crops && state.land.crops[id]) || 0;
+    if (have <= 0) { toast("没有可卖的" + crop.name + "。", "bad", "lock"); return; }
+    state.land.crops[id] = have - 1;
+    const price = cropSellPrice(crop);
+    state.resources.gold += price;
+    addLog("向行商卖出 1 份" + crop.name + "，+" + price + " 金币。", "good");
+    toast("卖出" + crop.name + "，金币 +" + price + "。", "good", "coin");
+    A.sfx("coin");
+    renderAll(true);
+    saveState();
+    refreshTradeModal();
+  }
+
+  function buyCrop(id) {
+    const crop = D.CROPS.filter(function (c) { return c.id === id; })[0];
+    if (!crop) return;
+    const price = cropBuyPrice(crop);
+    if (state.resources.gold < price) { toast("金币不够，买一份" + crop.name + "需要 " + price + " 金。", "bad", "coin"); return; }
+    state.resources.gold -= price;
+    if (!state.land.crops) state.land.crops = {};
+    state.land.crops[id] = (state.land.crops[id] || 0) + 1;
+    addLog("向行商买入 1 份" + crop.name + "，花费 " + price + " 金币。", "info");
+    toast("买入" + crop.name + "，金币 -" + price + "。", "good", "coin");
+    A.sfx("coin");
+    renderAll(true);
+    saveState();
+    refreshTradeModal();
+  }
+
   function openTradeModal(note, tab) {
     tradeNote = note || "";
     if (tab) ui.tradeTab = tab;
@@ -2627,7 +2716,24 @@
         '<button class="btn btn-wood btn-small" data-action="buy-resource-all" data-res="' + res + '"' + (maxBatches > 1 ? "" : " disabled") + '>全部 ' + (maxBatches > 1 ? "+" + maxBatches * info.gold + "金币" : "") + "</button>" +
         "</div></div>";
     }).join("");
-    const content = active === "sell"
+    const deal = merchantDealCrop();
+    const cropRows = D.CROPS.map(function (crop) {
+      const have = (state.land.crops && state.land.crops[crop.id]) || 0;
+      const sellP = cropSellPrice(crop);
+      const buyP = cropBuyPrice(crop);
+      const isDeal = deal.id === crop.id;
+      return '<div class="trade-row crop-trade">' +
+        '<div class="trade-icon crop"><img src="' + (window.CastleScene && window.CastleScene.cropThumb ? window.CastleScene.cropThumb(crop.id) : "") + '" alt=""></div>' +
+        '<div class="trade-copy"><div class="trade-name">' + crop.name + ' <span>库存 ' + have + '</span>' + (isDeal ? '<span class="merchant-tag">今日特价</span>' : "") + '</div>' +
+        '<div class="trade-rate">卖 1 份 <b>' + sellP + ' 金</b> · 买 1 份 <b>' + buyP + ' 金</b></div></div>' +
+        '<div class="trade-actions">' +
+        '<button class="btn btn-wood btn-small" data-action="sell-crop" data-crop="' + crop.id + '"' + (have > 0 ? "" : " disabled") + '>卖 1</button>' +
+        '<button class="btn btn-gold btn-small" data-action="buy-crop" data-crop="' + crop.id + '"' + (state.resources.gold >= buyP ? "" : " disabled") + '>买 1</button>' +
+        "</div></div>";
+    }).join("");
+    const content = active === "crops"
+      ? '<p class="modal-copy">作物既能下厨，也能直接卖给行商。金铃的今日特价作物买起来更便宜。</p><div class="trade-list">' + cropRows + "</div>"
+      : active === "sell"
       ? '<p class="modal-copy">' + (tradeNote || "把多余的木材、石料和食物换成金币。金铃在账房时，出售价格会更高。") + '</p><div class="trade-list">' + sellRows + "</div>"
       : '<p class="modal-copy">用金币补缺口。每种物资每天能买的量有限，黎明时刷新。价格比卖出高，别指望靠倒卖发财。</p><div class="trade-list">' + buyRows + "</div>";
     openModal(
@@ -2636,6 +2742,7 @@
       '<div class="trade-tabs">' +
       '<button class="trade-tab' + (active === "sell" ? " active" : "") + '" data-action="trade-tab" data-tab="sell">卖出 · 换金币</button>' +
       '<button class="trade-tab' + (active === "buy" ? " active" : "") + '" data-action="trade-tab" data-tab="buy">买入 · 每日限购</button>' +
+      '<button class="trade-tab' + (active === "crops" ? " active" : "") + '" data-action="trade-tab" data-tab="crops">作物 · 今日特价</button>' +
       "</div>" + content +
       '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b> · 第 " + state.day + " 天</span>" +
       '<button class="btn btn-primary" data-action="close-modal">继续经营</button></div></div>',
@@ -3219,7 +3326,10 @@
     Object.keys(crop.harvest).forEach(function (k) {
       state.resources[k] = (state.resources[k] || 0) + Math.round(crop.harvest[k] * yieldMult);
     });
-    const gains = Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + Math.round(crop.harvest[k] * yieldMult); }).join(" · ");
+    const cropAmount = Math.max(1, Math.round(2 * yieldMult));
+    if (!state.land.crops) state.land.crops = {};
+    state.land.crops[crop.id] = (state.land.crops[crop.id] || 0) + cropAmount;
+    const gains = "「" + crop.name + "」×" + cropAmount + " · " + Object.keys(crop.harvest).map(function (k) { return D.RESOURCES[k].name + " +" + Math.round(crop.harvest[k] * yieldMult); }).join(" · ");
     addLog("收获第 " + (index + 1) + " 块田的" + crop.name + "：" + gains + "。", "good");
     toast("收获" + crop.name + "：" + gains, "gold", "food");
     plot.crop = null;
@@ -5317,6 +5427,8 @@
       else if (action.indexOf("debug-") === 0) debugAction(action);
       else if (action === "trade-tab") { ui.tradeTab = el.dataset.tab; openTradeModal(tradeNote); }
       else if (action === "buy-resource") buyResource(el.dataset.res, false);
+      else if (action === "sell-crop") sellCrop(el.dataset.crop);
+      else if (action === "buy-crop") buyCrop(el.dataset.crop);
       else if (action === "buy-resource-all") buyResource(el.dataset.res, true);
       else if (action === "upgrade-open") openUpgradeModal(el.dataset.id);
       else if (action === "upgrade-confirm") upgradeBuilding(el.dataset.id);
@@ -5573,6 +5685,7 @@
     buyFloor: function (id) { buyFloorSkin(id); },
     upgrade: function (id) { upgradeBuilding(id); },
     invite: function () { inviteResident(); },
+    nextDay: function () { onNewDay(); renderAll(true); saveState(); },
     fastForward: function (seconds) {
       const wasModal = ui.modalOpen, wasDialogue = ui.dialogueOpen;
       ui.modalOpen = false; ui.dialogueOpen = false;
