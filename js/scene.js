@@ -54,6 +54,7 @@ window.CastleScene = (function () {
   let bgLayer = null;
   const castleLayers = {};
   let hitAreas = [];
+  let suppressRoomFloor = false;
   let hover = null;
   let mouseX = 0;
   let mouseY = 0;
@@ -2347,7 +2348,7 @@ window.CastleScene = (function () {
   }
 
   function interiorStoneFloor(x, y, w, h, tint) {
-    if (hasFloorSkin()) return;
+    if (suppressRoomFloor) return;
     const base = tint || IN.floorStone;
     const rng = mulberry32((x * 31 + y * 17) | 0);
     R(ctx, x, y, w, h, base);
@@ -2364,7 +2365,7 @@ window.CastleScene = (function () {
   }
 
   function interiorWoodFloor(x, y, w, h) {
-    if (hasFloorSkin()) return;
+    if (suppressRoomFloor) return;
     R(ctx, x, y, w, h, IN.floorWood);
     const rng = mulberry32((x * 7 + y * 23) | 0);
     for (let yy = y + 6; yy < y + h; yy += 8) {
@@ -3395,6 +3396,55 @@ window.CastleScene = (function () {
     ctx.textAlign = "left";
   }
 
+  const EXP_ROUTES = {
+    soldier: [["armory"], ["soldier_quarters", "guest"]],
+    minister: [["meeting"], ["study", "library"]],
+    missionary: [["chapel"], ["residence", "guest"]],
+    cook: [["dining"], ["kitchen", "storeroom"]],
+    farmer: [["garden", "farm"], ["storeroom"]],
+    resident: [["guest", "residence"], ["dining", "meeting"]]
+  };
+  const EXP_LINES = {
+    soldier: ["巡逻一圈，没发现异常。", "武器架又该擦了。", "楼梯口我盯着。"],
+    minister: ["这份账得重新核对。", "会议室的灯还亮着。", "再招点人手吧。"],
+    missionary: ["愿灯火不灭。", "礼拜堂今天很安静。", "有人需要祷告吗？"],
+    cook: ["汤在灶上，别走开。", "餐厅的桌子擦好了。", "晚饭很快就好。"],
+    farmer: ["仓库该补货了。", "这层的地板真结实。", "种子还够用。"],
+    resident: ["这里的走廊真长。", "新房间收拾好了。", "大厅那边更热闹。"]
+  };
+  let lastExpansionTalk = -99;
+
+  function expansionAnchor(types, fallback) {
+    for (var i = 0; i < types.length; i++) {
+      const slot = expansionRoomSlot(stateRef.currentFloor || 0, types[i]);
+      if (slot) return { x: slot.x + slot.w / 2, y: slot.y + slot.h - 18 };
+    }
+    return fallback;
+  }
+
+  function expansionWalker(r, i, dt, t) {
+    const klass = r.klass || "resident";
+    const route = EXP_ROUTES[klass] || EXP_ROUTES.resident;
+    const a = expansionAnchor(route[0], { x: 70 + (i % 6) * 96, y: 330 });
+    const b = expansionAnchor(route[1], { x: 600 - (i % 5) * 80, y: 200 });
+    const sig = [a.x, a.y, b.x, b.y].join(",");
+    if (!r.__walk || r.__walk.sig !== sig) {
+      r.__walk = { sig: sig, p: Math.random(), dir: Math.random() < 0.5 ? 1 : -1, pause: 0, a: a, b: b };
+    }
+    const w = r.__walk;
+    const dist = Math.max(24, Math.hypot(b.x - a.x, b.y - a.y));
+    if (w.pause > 0) {
+      w.pause -= dt;
+    } else {
+      w.p += (18 / dist) * dt * w.dir;
+      if (w.p >= 1) { w.p = 1; w.dir = -1; w.pause = 1.6 + Math.random() * 2.2; }
+      if (w.p <= 0) { w.p = 0; w.dir = 1; w.pause = 1.6 + Math.random() * 2.2; }
+    }
+    const x = a.x + (b.x - a.x) * w.p;
+    const y = a.y + (b.y - a.y) * w.p + Math.sin(t * 1.8 + i) * 0.8;
+    return { x: x, y: y, dir: w.dir, moving: w.pause <= 0 };
+  }
+
   function drawMaskedWanderers(t, mode) {
     if (!stateRef || !stateRef.genericResidents || !stateRef.genericResidents.length) return;
     const dt = Math.max(0, Math.min(0.05, t - lastWanderTime));
@@ -3409,6 +3459,7 @@ window.CastleScene = (function () {
       shown.forEach(function (r, i) {
         const g = stepGuest(r, outdoorRoute(r.klass || "resident"), dt);
         drawGuestSprite(g.x, g.y, r, t, i * 2.3);
+        hitAreas.push({ type: "resident", id: r.id, x: g.x - 8, y: g.y - 26, w: 16, h: 28 });
         pts.push({ r: r, x: g.x, y: g.y });
       });
       for (let i = 0; i < pts.length; i++) {
@@ -3426,26 +3477,40 @@ window.CastleScene = (function () {
       return;
     }
 
+    const pts = [];
     guests.slice(0, mode === "expansion" ? 14 : 5).forEach(function (r, i) {
       const klass = r.klass || "resident";
       let x, y;
       if (mode === "expansion") {
-        const prefs = klass === "soldier" ? ["armory"] : klass === "minister" ? ["meeting", "study"] : klass === "missionary" ? ["chapel"] : ["guest", "dining"];
-        let slot = null;
-        for (let p = 0; p < prefs.length && !slot; p++) slot = expansionRoomSlot(stateRef.currentFloor || 0, prefs[p]);
-        if (slot) {
-          x = slot.x + 22 + (i % 3) * Math.max(16, (slot.w - 44) / 2) + Math.sin(t * 0.45 + i * 1.7) * 6;
-          y = slot.y + slot.h - 20 + Math.sin(t * 0.8 + i) * 2;
-        } else {
-          x = 60 + (i % 7) * 88 + Math.sin(t * 0.25 + i * 1.7) * 12;
-          y = 196 + (i % 2) * 20;
-        }
+        const w = expansionWalker(r, i, dt, t);
+        x = w.x; y = w.y;
       } else {
         x = 300 + (i % 3) * 42 + Math.sin(t * 0.32 + i * 2.1) * 14;
         y = 330 - (i % 2) * 12;
       }
-      drawGuestSprite(x, y, r, t, i * 2.3);
+      if (mode === "expansion") {
+        const w = r.__walk || { dir: 1 };
+        ctx.save();
+        if (w.dir < 0) { ctx.translate(x, y); ctx.scale(-1, 1); ctx.translate(-x, -y); }
+        drawGuestSprite(x, y, r, t, i * 2.3);
+        ctx.restore();
+      } else {
+        drawGuestSprite(x, y, r, t, i * 2.3);
+      }
+      hitAreas.push({ type: "resident", id: r.id, x: x - 8, y: y - 26, w: 16, h: 28 });
+      if (mode === "expansion") pts.push({ r: r, x: x, y: y });
     });
+    if (mode === "expansion") {
+      if (t - lastExpansionTalk > 6 && pts.length) {
+        lastExpansionTalk = t;
+        const p = pts[Math.floor(Math.random() * pts.length)];
+        const klass = p.r.klass || "resident";
+        const lines = EXP_LINES[klass] || EXP_LINES.resident;
+        window.__castleBubbles = (window.__castleBubbles || []).filter(function (b) { return !b.until || Date.now() <= b.until; });
+        window.__castleBubbles.push({ id: p.r.id, text: lines[Math.floor(Math.random() * lines.length)], until: Date.now() + 4200, tone: "talk" });
+      }
+      drawSocialBubbles(pts);
+    }
   }
 
   function floorSkinData(id) {
@@ -4067,6 +4132,7 @@ window.CastleScene = (function () {
   }
 
   function drawExpansion(state, dt) {
+    suppressRoomFloor = false;
     const floor = (state && state.currentFloor) || 0;
     const rooms = state && state.expansionFloors ? state.expansionFloors[floor] || {} : {};
     const skinState = state && state.floorSkins ? state.floorSkins[floor] : null;
@@ -4369,10 +4435,10 @@ window.CastleScene = (function () {
   };
 
   const HALL_CAST = [
-    { id: "core-samuel", type: "envoy", klass: "minister", x0: 248, x1: 330, y: 342, speed: 0.20, phase: 0.4 },
-    { id: "core-mabel", type: "gardener", klass: "cook", x0: 336, x1: 430, y: 350, speed: 0.16, phase: 2.2 },
-    { id: "core-bart", type: "merchant", klass: "resident", x0: 444, x1: 480, y: 344, speed: 0.14, phase: 4.1 },
-    { id: "core-tiehu", type: "smith", klass: "soldier", x0: 300, x1: 420, y: 200, speed: 0.12, phase: 5.3 }
+    { id: "core-samuel", name: "塞缪尔", role: "老管家", type: "envoy", klass: "minister", x0: 248, x1: 330, y: 342, speed: 0.20, phase: 0.4 },
+    { id: "core-mabel", name: "布丁", role: "厨娘", type: "gardener", klass: "cook", x0: 336, x1: 430, y: 350, speed: 0.16, phase: 2.2 },
+    { id: "core-bart", name: "巴特", role: "伐木工", type: "merchant", klass: "resident", x0: 444, x1: 480, y: 344, speed: 0.14, phase: 4.1 },
+    { id: "core-tiehu", name: "铁壶", role: "守卫", type: "smith", klass: "soldier", x0: 300, x1: 420, y: 200, speed: 0.12, phase: 5.3 }
   ];
   const HALL_LINES = [
     "今天的汤很香，别放凉了。",
@@ -4395,6 +4461,7 @@ window.CastleScene = (function () {
       if (dir < 0) { ctx.translate(x, y); ctx.scale(-1, 1); ctx.translate(-x, -y); }
       drawGuestSprite(x, y, { id: c.id, klass: c.klass, type: c.type, variant: i }, t, i * 2.2);
       ctx.restore();
+      hitAreas.push({ type: "core", id: c.id, x: x - 8, y: y - 26, w: 16, h: 28 });
       pts.push({ r: { id: c.id }, x: x, y: y });
     });
     if (t - lastHallTalk > 7) {
@@ -4547,6 +4614,7 @@ window.CastleScene = (function () {
     drawHall(time);
     drawBedroom(time);
     drawQuarters(time);
+    suppressRoomFloor = false;
 
     // 礼拜堂彩窗与暖色空气
     drawChapelWindow(time);
@@ -5484,6 +5552,10 @@ window.CastleScene = (function () {
       if (handlers.onStairs) handlers.onStairs();
     } else if (target.type === "shop") {
       if (handlers.onShop) handlers.onShop(target.id);
+    } else if (target.type === "resident") {
+      if (handlers.onResident) handlers.onResident(target.id);
+    } else if (target.type === "core") {
+      if (handlers.onCore) handlers.onCore(target.id);
     }
   }
 
@@ -5608,9 +5680,15 @@ window.CastleScene = (function () {
     return roomThumbCache[key];
   }
 
+  function coreInfo(id) {
+    const c = HALL_CAST.filter(function (x) { return x.id === id; })[0];
+    return c ? { name: c.name, role: c.role, klass: c.klass, type: c.type } : null;
+  }
+
   return {
     init: init,
     roomThumb: roomThumb,
+    coreInfo: coreInfo,
     draw: draw,
     petCat: petCat,
     burstBuilding: burstBuilding,
