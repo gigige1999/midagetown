@@ -1325,7 +1325,7 @@
     const madeFood = kitchenDailyOutput();
     state.kitchenFresh = Math.max(0, freshBefore - Math.min(freshBefore, 20));
     state.resources.food = (state.resources.food || 0) + madeFood;
-    addLog("厨房用新鲜食材做出 " + madeFood + " 份食物。", "good");
+    addLog("厨房做出 " + madeFood + " 份食物（基础 5 + 新鲜食材 " + Math.min(freshBefore || 0, 20) + "）。", "good");
     const expired = [];
     state.menus.forEach(function (id) {
       if (state.menuDays[id] == null) state.menuDays[id] = 3;
