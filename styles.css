@@ -3649,3 +3649,4 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 
 .warehouse-place-badge { grid-column: 2; font-size: 10px; color: #6f7f58; align-self: end; }
 .catalog-card[data-action="warehouse-place"] { grid-template-rows: auto auto auto; }
+.floor-actions { flex-wrap: wrap; }

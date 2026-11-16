@@ -4122,8 +4122,8 @@
     const floor = state.currentFloor || 0;
     const full = floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms;
     const wh = (state.warehouseRooms || []).length;
-    return (wh ? '<div class="tile-floor-entry"><div><b>仓库</b><span>' + wh + ' 间房可取出</span></div>' +
-      '<button class="btn btn-wood btn-small" data-action="open-warehouse">打开仓库</button></div>' : "") +
+    return '<div class="tile-floor-entry"><div><b>我的仓库</b><span>' + (wh ? wh + ' 间房可取出' : "还没有收起的房间") + '</span></div>' +
+      '<button class="btn btn-wood btn-small" data-action="open-warehouse">打开仓库</button></div>' +
       '<div class="catalog-grid">' + D.EXPANSION_ROOMS.map(function (type) {
       const can = canAfford(type.cost) && !full;
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
@@ -4317,8 +4317,9 @@
       modalHead("hammer", "工坊 · 装修", "第 " + (floor + 1) + " 层", "房间、装饰、地砖与地板都在这里；购买后进入放置模式。") +
       '<div class="modal-body"><div class="shop-tabs">' + tabs + "</div>" + body +
       '<div class="modal-actions"><span class="modal-note">' +
-      (t === "room" ? "本层 " + floorRoomCount(floor) + " / " + D.FLOOR_GRID.maxRooms + " 间" : t === "tile" ? "已铺 " + Object.keys(state.floorTiles[floor] || {}).length + " 块" : "") +
-      '</span><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      (t === "room" ? "本层 " + floorRoomCount(floor) + " / " + D.FLOOR_GRID.maxRooms + " 间 · 仓库 " + (state.warehouseRooms || []).length + " 间" : t === "tile" ? "已铺 " + Object.keys(state.floorTiles[floor] || {}).length + " 块" : "") +
+      '</span><button class="btn btn-wood" data-action="open-warehouse">仓库</button>' +
+      '<button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
       { className: "modal-shop" }
     );
   }
@@ -4512,6 +4513,7 @@
       '<div class="floor-stat"><span>传教</span><b>' + classCount("missionary") + "</b></div></div>";
     if (missing.length) html += '<div class="floor-warning">' + missing.join(" · ") + "</div>";
     html += '<div class="floor-actions"><button class="btn btn-gold btn-small" data-action="recruit-open"><img src="' + I.icon("people") + '" alt="">招募客人</button>' +
+      '<button class="btn btn-wood btn-small" data-action="open-warehouse">仓库 ' + (state.warehouseRooms || []).length + '</button>' +
       '<span class="floor-guest-line">居民 ' + classCountOnFloor(floor, "resident") + " · 兵 " + classCountOnFloor(floor, "soldier") + " · 臣 " + classCountOnFloor(floor, "minister") + " · 传 " + classCountOnFloor(floor, "missionary") + " · 农 " + classCountOnFloor(floor, "farmer") + " · 厨 " + classCountOnFloor(floor, "cook") + "</span></div>";
 
     // 已建房间
