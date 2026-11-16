@@ -65,6 +65,7 @@
     ready: false,
     sections: { rooms: false, shops: false, decor: false },
     teachQueue: [],
+    progressTick: 0,
     tileTool: "paint",
     tileHistory: [],
     moveSel: null,
@@ -660,6 +661,14 @@
   }
 
   function updateGame(dt) {
+    if (state) {
+      ui.progressTick = (ui.progressTick || 0) + dt;
+      if (ui.progressTick > 0.25) {
+        ui.progressTick = 0;
+        const working = D.BUILDINGS.some(function (b) { return state.buildings[b.id].status === "building"; });
+        if (working) updateProgressWidget();
+      }
+    }
     if (!state) return;
     state.stats.playSeconds += dt;
     state.dayProgress += dt / D.DAY_LENGTH;
@@ -2253,8 +2262,21 @@
   function updateProgressWidget() {
     const total = D.COMPLETION_TOTAL;
     const built = D.countBuilt(state);
+    let partial = 0;
+    let buildingName = "";
+    let buildingPct = 0;
+    D.BUILDINGS.forEach(function (b) {
+      const bs = state.buildings[b.id];
+      if (!bs) return;
+      if (bs.status === "built") partial += 1;
+      else if (bs.status === "building") {
+        const pr = Math.max(0, Math.min(1, bs.progress || 0));
+        partial += pr;
+        if (!buildingName) { buildingName = b.name; buildingPct = Math.round(pr * 100); }
+      }
+    });
     $("#progressValue").textContent = built + " / " + total;
-    $("#progressFill").style.width = (built / total * 100).toFixed(1) + "%";
+    $("#progressFill").style.width = (partial / total * 100).toFixed(1) + "%";
     const info = castleLevelInfo();
     const stage = castleProgressStage();
     state.castleLevel = info.level;
@@ -2263,7 +2285,9 @@
     const pw = $("#progressWidget");
     if (pw) {
       pw.title = "城堡阶段 " + stage + "/8 · " + CASTLE_STAGE_NAMES[stage] + " · Lv." + info.level + " " + info.name + " · 威望 " + info.prestige;
-      $("#progressSub").textContent = "阶段 " + stage + "/8 · " + CASTLE_STAGE_NAMES[stage] + " · Lv." + info.level;
+      $("#progressSub").textContent = buildingName
+        ? "建造中：" + buildingName + " " + buildingPct + "%"
+        : "阶段 " + stage + "/8 · " + CASTLE_STAGE_NAMES[stage] + " · Lv." + info.level;
     }
     const levelEl = $("#castleLevelText");
     if (levelEl) levelEl.textContent = "Lv." + info.level;
