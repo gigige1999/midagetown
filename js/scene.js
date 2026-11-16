@@ -2347,7 +2347,7 @@ window.CastleScene = (function () {
   }
 
   function interiorStoneFloor(x, y, w, h, tint) {
-    if (drawSelectedFloor(x, y, w, h)) return;
+    if (hasFloorSkin()) return;
     const base = tint || IN.floorStone;
     const rng = mulberry32((x * 31 + y * 17) | 0);
     R(ctx, x, y, w, h, base);
@@ -2364,7 +2364,7 @@ window.CastleScene = (function () {
   }
 
   function interiorWoodFloor(x, y, w, h) {
-    if (drawSelectedFloor(x, y, w, h)) return;
+    if (hasFloorSkin()) return;
     R(ctx, x, y, w, h, IN.floorWood);
     const rng = mulberry32((x * 7 + y * 23) | 0);
     for (let yy = y + 6; yy < y + h; yy += 8) {
@@ -3554,10 +3554,14 @@ window.CastleScene = (function () {
     R(ctx, x, y, w, 1, "rgba(255,244,214,0.10)");
   }
 
-  function drawSelectedFloor(x, y, w, h) {
+  function hasFloorSkin() {
     const skin = stateRef && stateRef.interiorSkin ? stateRef.interiorSkin.selected : "stone";
-    if (!skin || skin === "stone") return false;
-    drawFloorSkin(x, y, w, h, skin);
+    return !!skin && skin !== "stone";
+  }
+
+  function drawSelectedFloor(x, y, w, h) {
+    if (!hasFloorSkin()) return false;
+    drawFloorSkin(x, y, w, h, stateRef.interiorSkin.selected);
     return true;
   }
 
@@ -4367,7 +4371,8 @@ window.CastleScene = (function () {
   const HALL_CAST = [
     { id: "core-samuel", type: "envoy", klass: "minister", x0: 248, x1: 330, y: 342, speed: 0.20, phase: 0.4 },
     { id: "core-mabel", type: "gardener", klass: "cook", x0: 336, x1: 430, y: 350, speed: 0.16, phase: 2.2 },
-    { id: "core-bart", type: "merchant", klass: "resident", x0: 444, x1: 480, y: 344, speed: 0.14, phase: 4.1 }
+    { id: "core-bart", type: "merchant", klass: "resident", x0: 444, x1: 480, y: 344, speed: 0.14, phase: 4.1 },
+    { id: "core-tiehu", type: "smith", klass: "soldier", x0: 300, x1: 420, y: 200, speed: 0.12, phase: 5.3 }
   ];
   const HALL_LINES = [
     "今天的汤很香，别放凉了。",
@@ -4392,7 +4397,7 @@ window.CastleScene = (function () {
       ctx.restore();
       pts.push({ r: { id: c.id }, x: x, y: y });
     });
-    if (t - lastHallTalk > 10) {
+    if (t - lastHallTalk > 7) {
       lastHallTalk = t;
       const c = HALL_CAST[Math.floor(Math.random() * HALL_CAST.length)];
       const line = HALL_LINES[Math.floor(Math.random() * HALL_LINES.length)];
@@ -4451,15 +4456,23 @@ window.CastleScene = (function () {
     const st = state && state.buildings ? state.buildings : {};
     const built = function (id) { return st[id] && st[id].status === "built"; };
 
-    // 房间地板
-    interiorWoodFloor(26, 28, 176, 116);
-    interiorStoneFloor(220, 28, 280, 116, "#645346");
-    interiorStoneFloor(518, 28, 176, 116, "#6a594a");
-    interiorStoneFloor(26, 158, 176, 98, "#665547");
-    interiorStoneFloor(220, 158, 280, 218, "#6b5a4b");
-    interiorWoodFloor(518, 158, 176, 98);
-    interiorStoneFloor(26, 272, 176, 104, "#5f5043");
-    interiorStoneFloor(518, 272, 176, 104, "#665648");
+    // 地板层：先统一铺一层底色，再按所选地板样式覆盖（在墙与家具之下）
+    const floorRects = [
+      [26, 28, 176, 116, "wood"],
+      [220, 28, 280, 116, "stone"],
+      [518, 28, 176, 116, "stone"],
+      [26, 158, 176, 98, "stone"],
+      [220, 158, 280, 218, "stone"],
+      [518, 158, 176, 98, "wood"],
+      [26, 272, 176, 104, "stone"],
+      [518, 272, 176, 104, "stone"]
+    ];
+    const skinOn = hasFloorSkin();
+    floorRects.forEach(function (fr) {
+      if (skinOn) drawFloorSkin(fr[0], fr[1], fr[2], fr[3], stateRef.interiorSkin.selected);
+      else if (fr[4] === "wood") interiorWoodFloor(fr[0], fr[1], fr[2], fr[3]);
+      else interiorStoneFloor(fr[0], fr[1], fr[2], fr[3]);
+    });
 
     const interiorSkin = state && state.interiorSkin && state.interiorSkin.selected ? state.interiorSkin.selected : "stone";
     const interiorSkinData = floorSkinData(interiorSkin);
