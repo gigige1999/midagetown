@@ -4489,12 +4489,7 @@ window.CastleScene = (function () {
       const x = 20 + cx * tileCell;
       const y = 40 + cy * tileCell;
       const id = tiles[key];
-      const pal = { stone: ["#8d8474", "#7c7364"], wood: ["#a9764a", "#8f5f3a"], checker: ["#cfc4ad", "#4e4942"], moss: ["#7d8a63", "#64714e"], royal: ["#8e5a51", "#6b3f3a"] }[id] || ["#8d8474", "#7c7364"];
-      R(ctx, x, y, tileCell, tileCell, pal[1]);
-      R(ctx, x + 1, y + 1, tileCell - 2, tileCell - 2, pal[0]);
-      if (id === "checker") R(ctx, x + 1, y + 1, tileCell / 2 - 1, tileCell / 2 - 1, "#3f3a34");
-      if (id === "wood") R(ctx, x + 1, y + tileCell / 2, tileCell - 2, 1, "rgba(70,40,20,.35)");
-      if (id === "royal") R(ctx, x + 3, y + 3, tileCell - 6, 1, "#d6a449");
+      drawFloorSkin(x, y, tileCell, tileCell, id);
     });
     if (window.__decorMode) {
       ctx.globalAlpha = 0.18;
@@ -6121,6 +6116,23 @@ window.CastleScene = (function () {
 
   const decorThumbCache = {};
 
+  const tileThumbCache = {};
+
+  function tileThumb(id) {
+    if (tileThumbCache[id]) return tileThumbCache[id];
+    const c = document.createElement("canvas");
+    c.width = 96; c.height = 96;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    const prev = ctx;
+    ctx = g;
+    g.scale(4, 4);
+    try { drawFloorSkin(0, 0, 24, 24, id); } catch (e) { ctx = prev; return ""; }
+    ctx = prev;
+    tileThumbCache[id] = c.toDataURL("image/png");
+    return tileThumbCache[id];
+  }
+
   function decorThumb(id) {
     if (decorThumbCache[id]) return decorThumbCache[id];
     const item = (D.DECOR_ITEMS || []).filter(function (d) { return d.id === id; })[0];
@@ -6150,6 +6162,7 @@ window.CastleScene = (function () {
     roomThumb: roomThumb,
     cropThumb: cropThumb,
     decorThumb: decorThumb,
+    tileThumb: tileThumb,
     coreInfo: coreInfo,
     draw: draw,
     petCat: petCat,

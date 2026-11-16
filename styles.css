@@ -3650,3 +3650,8 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .warehouse-place-badge { grid-column: 2; font-size: 10px; color: #6f7f58; align-self: end; }
 .catalog-card[data-action="warehouse-place"] { grid-template-rows: auto auto auto; }
 .floor-actions { flex-wrap: wrap; }
+
+.tile-swatch { width: 46px; height: 36px; flex: 0 0 46px; }
+.tile-row .tile-copy em { font-size: 9px; }
+
+.tile-thumb { width: 46px; height: 46px; flex: 0 0 46px; image-rendering: pixelated; border: 2px solid #4b3320; background: #3b2a1a; }

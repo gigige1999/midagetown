@@ -3759,18 +3759,18 @@
     if (!pack) return;
     const floor = state.currentFloor || 0;
     const n = Math.max(1, Math.floor(count || 1));
-    const cost = { gold: pack.cost.gold * n };
+    const unit = tileUnitPrice(pack);
+    const cost = { gold: unit * n };
     if (!canAfford(cost)) { toast("金币不够，还差：" + missingCostsText(cost), "bad", "coin"); return; }
     payCost(cost);
     const stock = tileStockOf(floor);
-    stock[id] += pack.count * n;
-    toast("买到 " + pack.count * n + " 块「" + pack.name + "」地砖。", "good", "sparkle");
-    addLog("第 " + (floor + 1) + " 层补充了 " + pack.name + " 地砖。", "good");
+    stock[id] += n;
+    toast("买到 " + n + " 块「" + pack.name + "」地砖。", "good", "sparkle");
+    addLog("第 " + (floor + 1) + " 层补充了 " + n + " 块" + pack.name + "。", "good");
     renderAll(true);
     saveState();
     if (ui.modalOpen) openBuildShopModal("tile");
   }
-
   function tileAt(floor, lx, ly) {
     const cell = D.TILE_CELL;
     const cx = Math.floor((lx - D.FLOOR_GRID.left) / cell);
@@ -4145,27 +4145,26 @@
     }).join("") + "</div>";
   }
 
+  function tileUnitPrice(pack) {
+    return Math.max(1, Math.round(pack.cost.gold / pack.count));
+  }
+
   function tileRowsHTML() {
-    const fst = currentFloorSkin();
-    const skin = floorSkinById(fst.selected);
-    const note = '<div class="decorate-head"><b>地板</b><span>' + (skin ? skin.name : "灰石砖") + ' · 单独购买</span></div>' +
-      '<p class="decorate-tip">每款地板单独购买、只对这一层生效；点一下即购买并使用。</p>' +
-      '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
-        return floorSwatchHTML(f, fst.selected === f.id, fst.owned.indexOf(f.id) >= 0, "floor");
-      }).join("") + "</div>" +
-      '<div class="decorate-head" style="margin-top:10px"><b>装饰地砖</b><span>铺在地板之上</span></div>' +
-      '<p class="decorate-tip">地砖是地板上的小块图案：买一包后逐块或拖矩形铺设，可擦除、可撤销。</p>';
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
+    const note = '<p class="decorate-tip">地砖按块购买，单价 1–5 金；买好后点「铺这种」进入铺设，可单块点选、拖矩形、擦除与撤销。</p>';
     return note + '<div class="tile-list">' + D.TILE_PACKS.map(function (pack) {
       const owned = stock[pack.id] || 0;
-      const can = canAfford(pack.cost);
+      const unit = tileUnitPrice(pack);
+      const can1 = state.resources.gold >= unit;
+      const can10 = state.resources.gold >= unit * 10;
       return '<div class="tile-row">' +
-        '<div class="tile-swatch ' + pack.id + '"></div>' +
+        '<img class="tile-thumb" src="' + (window.CastleScene && window.CastleScene.tileThumb ? window.CastleScene.tileThumb(pack.id) : "") + '" alt="">' +
         '<div class="tile-copy"><b>' + pack.name + '</b><span>' + pack.desc + '</span>' +
-        '<em>每包 ' + pack.count + ' 块 · 本层已有 ' + owned + ' 块</em></div>' +
-        '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
-        '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '"' + (can ? "" : " disabled") + '>买一包</button>' +
+        '<em>单价 ' + unit + ' 金/块 · 本层库存 ' + owned + ' 块</em></div>' +
+        '<div class="tile-actions"><span class="tile-price">' + unit + ' 金/块</span>' +
+        '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '" data-count="1"' + (can1 ? "" : " disabled") + '>买 1</button>' +
+        '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '" data-count="10"' + (can10 ? "" : " disabled") + '>买 10</button>' +
         '<button class="btn btn-gold btn-small" data-action="brush-tile" data-id="' + pack.id + '">铺这种</button>' +
         "</div></div>";
     }).join("") + "</div>";
@@ -4414,7 +4413,7 @@
       const owned = stock[pack.id] || 0;
       const can = canAfford(pack.cost);
       return '<div class="tile-row">' +
-        '<div class="tile-swatch ' + pack.id + '"></div>' +
+        '<img class="tile-thumb" src="' + (window.CastleScene && window.CastleScene.tileThumb ? window.CastleScene.tileThumb(pack.id) : "") + '" alt="">' +
         '<div class="tile-copy"><b>' + pack.name + '</b><span>' + pack.desc + '</span>' +
         '<em>每包 ' + pack.count + ' 块 · 本层已有 ' + owned + ' 块</em></div>' +
         '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
@@ -5685,7 +5684,7 @@
       else if (action === "tile-undo") undoTile();
       else if (action === "open-decor-catalog") openDecorCatalogModal();
       else if (action === "open-tile-shop") openBuildShopModal("tile");
-      else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
+      else if (action === "buy-tile") buyTilePack(el.dataset.id, Number(el.dataset.count) || 1);
       else if (action === "brush-tile") { ui.tileBrush = el.dataset.id; closeModal(true); enterDecorMode(); }
       else if (action === "decor-mode") { if (ui.decorMode) exitDecorMode(); else enterDecorMode(); }
       else if (action === "toggle-section") {
