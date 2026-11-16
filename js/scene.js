@@ -4779,8 +4779,10 @@ window.CastleScene = (function () {
       if (st === "locked") return;
       if (st === "available") {
         drawShopSign(shop.plot.x + shop.plot.w / 2, shop.plot.baseY - 8, t);
+        hitAreas.push({ type: "shop", id: shop.id, x: shop.plot.x, y: shop.plot.y, w: shop.plot.w, h: shop.plot.h });
         return;
       }
+      hitAreas.push({ type: "shop", id: shop.id, x: shop.plot.x, y: shop.plot.y, w: shop.plot.w, h: shop.plot.h });
       if (shop.id === "bakery") {
         drawTavern(t, true, false, lights);
       } else if (shop.id === "general") {
@@ -4896,15 +4898,15 @@ window.CastleScene = (function () {
   function drawCastleDetail(stage, t) {
     if (!stateRef) return;
     const bodyX = 300, bodyY = 116, bodyW = 144, bodyH = 154;
-    // 石缝
-    ctx.globalAlpha = 0.16;
+    // 石缝：只画短竖缝与少量横缝，避免整片细线
+    ctx.globalAlpha = 0.10;
     let row = 0;
-    for (let y = bodyY + 8; y < bodyY + bodyH - 4; y += 13) {
-      R(ctx, bodyX + 2, y, bodyW - 4, 1, "#2c2820");
-      const off = (row % 2) * 9;
-      for (let x = bodyX + 8 + off; x < bodyX + bodyW - 6; x += 18) {
-        R(ctx, x, y - 8, 1, 8, "#2c2820");
+    for (let y = bodyY + 10; y < bodyY + bodyH - 8; y += 15) {
+      const off = (row % 2) * 11;
+      for (let x = bodyX + 10 + off; x < bodyX + bodyW - 8; x += 22) {
+        R(ctx, x, y - 7, 1, 7, "#2c2820");
       }
+      if (row % 2 === 0) R(ctx, bodyX + 6, y, bodyW - 12, 1, "rgba(44,40,32,0.5)");
       row++;
     }
     ctx.globalAlpha = 1;
@@ -4916,8 +4918,7 @@ window.CastleScene = (function () {
       R(ctx, x - 1, y - 1, w + 2, h + 2, "rgba(72,62,48,0.55)");
       R(ctx, x - 4, y + h + 1, w + 8, 2, "rgba(52,46,36,0.8)");
       R(ctx, x - 3, y + h + 1, w + 6, 1, "rgba(150,138,112,0.35)");
-      R(ctx, x + Math.floor(w / 2), y - 1, 1, h + 2, "rgba(30,24,18,0.5)");
-      R(ctx, x - 1, y + Math.floor(h / 2), w + 2, 1, "rgba(30,24,18,0.45)");
+
     });
 
     // 城门闸栏与暖光
@@ -4953,15 +4954,7 @@ window.CastleScene = (function () {
       }
     }
 
-    // 中央塔屋顶瓦片
-    ctx.globalAlpha = 0.35;
-    for (let y = 58; y < 96; y += 6) {
-      R(ctx, 332, y, 56, 1, "#2f2a22");
-    }
-    for (let x = 336; x < 388; x += 8) {
-      R(ctx, x, 58, 1, 36, "rgba(47,42,34,0.6)");
-    }
-    ctx.globalAlpha = 1;
+
 
     // 烟囱炊烟（阶段 5 起）
     if (stage >= 5) {
@@ -5489,6 +5482,8 @@ window.CastleScene = (function () {
       if (handlers.onLandShop) handlers.onLandShop(target.index);
     } else if (target.type === "stairs") {
       if (handlers.onStairs) handlers.onStairs();
+    } else if (target.type === "shop") {
+      if (handlers.onShop) handlers.onShop(target.id);
     }
   }
 

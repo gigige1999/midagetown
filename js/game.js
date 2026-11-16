@@ -119,6 +119,7 @@
         if (b && b.scene === "indoor") return;
         openAreaModal(id);
       },
+      onShop: function (id) { openShopManageModal(id); },
       onWorker: function (id) {
         if (!started) return;
         ui.tab = "people";
@@ -206,7 +207,7 @@
       interiorUnlocked: false,
       expansionUnlocked: false,
       menus: [],
-      shops: { bakery: { status: "locked" }, smithy: { status: "locked" }, general: { status: "locked" }, fishmonger: { status: "locked" }, flower: { status: "locked" } },
+      shops: { bakery: { status: "locked", level: 1 }, smithy: { status: "locked", level: 1 }, general: { status: "locked", level: 1 }, fishmonger: { status: "locked", level: 1 }, flower: { status: "locked", level: 1 } },
       expansionFloors: [{}],
       expansionFloorCount: 1,
       nextRoomId: 1,
@@ -1171,13 +1172,32 @@
     return out;
   }
 
+  function shopLevel(id) {
+    const st = state && state.shops ? state.shops[id] : null;
+    return clamp(Math.floor(Number(st && st.level) || 1), 1, 3);
+  }
+
+  function shopLevelScale(id) {
+    return 1 + (shopLevel(id) - 1) * 0.5;
+  }
+
+  function shopUpgradeCost(shop, level) {
+    const lv = Math.max(1, level || shopLevel(shop.id));
+    return {
+      gold: Math.round((shop.cost.gold || 60) * 1.2 * lv),
+      wood: Math.round((shop.cost.wood || 30) * 0.8 * lv),
+      stone: Math.round((shop.cost.stone || 20) * 0.8 * lv)
+    };
+  }
+
   function shopBonuses() {
     let residentBonus = 0, productionBonus = 0, income = 0;
     D.SHOPS.forEach(function (shop) {
       if (state.shops[shop.id] && state.shops[shop.id].status === "built") {
-        residentBonus += shop.residentBonus || 0;
-        productionBonus += shop.productionBonus || 0;
-        income += shop.income || 0;
+        const k = shopLevelScale(shop.id);
+        residentBonus += (shop.residentBonus || 0) * k;
+        productionBonus += (shop.productionBonus || 0) * k;
+        income += (shop.income || 0) * k;
       }
     });
     (state.land && state.land.shops || []).forEach(function (id) {
@@ -1632,6 +1652,71 @@
   /* =========================================================
      商铺
      ========================================================= */
+  function upgradeShop(id) {
+    const shop = D.SHOPS.filter(function (s) { return s.id === id; })[0];
+    if (!shop) return;
+    const st = state.shops[id];
+    if (!st || st.status !== "built") { toast("商铺还没开张。", "bad", "lock"); return; }
+    const lv = shopLevel(id);
+    if (lv >= 3) { toast("这家店已经到 Lv.3 了。", "neutral", "star"); return; }
+    const cost = shopUpgradeCost(shop, lv);
+    if (!canAfford(cost)) { toast("材料不够，还差：" + missingCostsText(cost), "bad", "coin"); return; }
+    payCost(cost);
+    st.level = lv + 1;
+    addLog("「" + shop.name + "」升级到 Lv." + st.level + "。", "good");
+    toast(shop.name + " 升级到 Lv." + st.level + "，收入与加成提高 50%。", "gold", "star");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+    openShopManageModal(id);
+  }
+
+  function shopInfoRows(shop, st) {
+    const lv = shopLevel(shop.id);
+    const k = shopLevelScale(shop.id);
+    const statusText = st.status === "built" ? "营业中" : st.status === "available" ? "可建造" : "未解锁";
+    const rows = [];
+    rows.push(["类型", (shop.category || "商铺")]);
+    rows.push(["状态", statusText]);
+    if (st.status === "built") {
+      rows.push(["等级", "Lv." + lv + " / 3"]);
+      rows.push(["金币收入", "+" + (shop.income * k * 60).toFixed(1) + " / 分"]);
+      if (shop.residentBonus) rows.push(["居民收入", "+" + Math.round(shop.residentBonus * k * 100) + "%"]);
+      if (shop.productionBonus) rows.push(["生产效率", "+" + Math.round(shop.productionBonus * k * 100) + "%"]);
+    } else {
+      rows.push(["解锁条件", shop.unlockText]);
+    }
+    return rows.map(function (r) {
+      return '<div class="info-row"><span>' + r[0] + "</span><b>" + r[1] + "</b></div>";
+    }).join("");
+  }
+
+  function openShopManageModal(id) {
+    const shop = D.SHOPS.filter(function (s) { return s.id === id; })[0];
+    if (!shop || !started) return;
+    refreshShopUnlocks();
+    const st = state.shops[id];
+    const lv = shopLevel(id);
+    let actions = '<button class="btn btn-ghost" data-action="close-modal">关闭</button>';
+    if (st.status === "available") {
+      const afford = canAfford(shop.cost);
+      actions = '<button class="btn btn-ghost" data-action="close-modal">稍后</button>' +
+        '<button class="btn btn-gold" data-action="shop-build" data-id="' + id + '"' + (afford ? "" : " disabled") + ">建造商铺 · " + costShort(shop.cost) + "</button>";
+    } else if (st.status === "built" && lv < 3) {
+      const cost = shopUpgradeCost(shop, lv);
+      const afford = canAfford(cost);
+      actions = '<button class="btn btn-ghost" data-action="close-modal">关闭</button>' +
+        '<button class="btn btn-gold" data-action="shop-upgrade" data-id="' + id + '"' + (afford ? "" : " disabled") + ">升级到 Lv." + (lv + 1) + " · " + costShort(cost) + "</button>";
+    }
+    openModal(
+      modalHead(shop.icon, "庭院商铺 · " + (shop.category || "商铺"), shop.name + (st.status === "built" ? " · Lv." + lv : ""), shop.desc) +
+      '<div class="modal-body"><div class="info-rows">' + shopInfoRows(shop, st) + "</div>" +
+      '<div class="modal-flavor">“' + shop.flavor + '”</div>' +
+      '<div class="modal-actions">' + actions + "</div></div>"
+    );
+  }
+
   function buyShop(id) {
     if (!started) return;
     const shop = D.SHOPS.filter(function (s) { return s.id === id; })[0];
@@ -2378,6 +2463,22 @@
     const status = b.scene === "indoor" ? (state.interiorUnlocked ? D.statusText(bs) : "未进入") : D.statusText(bs);
     const workerActive = w && state.workers[w.id].hired;
     const output = outputRateText(b);
+    const rows = [];
+    rows.push(["类型", b.scene === "indoor" ? "城堡房间" : "庭院建筑"]);
+    rows.push(["状态", status]);
+    if (bs.status === "built") {
+      rows.push(["等级", "Lv." + (bs.level || 1) + " / " + D.MAX_BUILDING_LEVEL]);
+      rows.push(["产出", output]);
+      rows.push(["负责人", workerActive ? w.name : "尚未安排"]);
+    } else if (bs.status === "available") {
+      rows.push(["建造耗时", "约 " + b.time + " 秒"]);
+      rows.push(["造价", costShort(b.cost)]);
+    } else if (bs.status === "locked") {
+      rows.push(["解锁条件", b.scene === "indoor" ? "先开放城堡内部" : (w ? "先雇佣 " + w.name : "完成前置目标")]);
+    }
+    const infoRows = '<div class="info-rows">' + rows.map(function (r) {
+      return '<div class="info-row"><span>' + r[0] + "</span><b>" + r[1] + "</b></div>";
+    }).join("") + "</div>";
     let extra = "";
     let actions = '<button class="btn btn-ghost" data-action="close-modal">关闭</button>';
     if (bs.status === "built") {
@@ -2413,12 +2514,7 @@
     openModal(
       modalHead(b.icon, b.scene === "indoor" ? "城堡内部 · 房间" : "庭院 · 生产建筑", b.name, "需要 " + b.time + " 秒") +
       '<div class="modal-body"><p class="modal-copy">' + b.desc + "</p>" +
-      '<div class="modal-stats">' +
-      '<div class="modal-stat"><img src="' + I.icon("hammer") + '" alt=""><span>状态<b>' + status + "</b></span></div>" +
-      '<div class="modal-stat"><img src="' + I.icon("people") + '" alt=""><span>居民<b>' + (w ? w.name : "无") + "</b></span></div>" +
-      '<div class="modal-stat"><img src="' + I.icon("sparkle") + '" alt=""><span>效果<b>' + (b.effect || "生产 " + output) + "</b></span></div>" +
-      '<div class="modal-stat"><img src="' + I.icon("clock") + '" alt=""><span>等级<b>Lv.' + (bs.level || 1) + "</b></span></div>" +
-      "</div>" +
+      infoRows +
       (bs.status === "available" ? '<div class="cost-row" style="margin-top:9px"><span class="cost-label">所需材料</span>' + costHTML(b.cost, true) + "</div>" : "") +
       extra +
       '<div class="modal-actions">' + actions + "</div></div>"
@@ -4198,9 +4294,9 @@
     if (!anyUnlocked) return "";
     const builtShops = D.SHOPS.filter(function (s) { return state.shops[s.id].status === "built"; });
     const built = builtShops.length;
-    const shopIncome = builtShops.reduce(function (n, s) { return n + (s.income || 0); }, 0) * 60;
-    const resBonus = builtShops.reduce(function (n, s) { return n + (s.residentBonus || 0); }, 0);
-    const prodBonus = builtShops.reduce(function (n, s) { return n + (s.productionBonus || 0); }, 0);
+    const shopIncome = builtShops.reduce(function (n, s) { return n + (s.income || 0) * shopLevelScale(s.id); }, 0) * 60;
+    const resBonus = builtShops.reduce(function (n, s) { return n + (s.residentBonus || 0) * shopLevelScale(s.id); }, 0);
+    const prodBonus = builtShops.reduce(function (n, s) { return n + (s.productionBonus || 0) * shopLevelScale(s.id); }, 0);
     let html = '<div class="shop-section-head"><b>庭院商铺</b><span>' + built + " / " + D.SHOPS.length + " 营业中</span></div>";
     html += '<div class="shop-income-summary">' +
       '<div><span>金币收入</span><b>+' + shopIncome.toFixed(1) + "/分</b></div>" +
@@ -5141,6 +5237,7 @@
       else if (action === "menu") openMenuModal("");
       else if (action === "buy-menu") buyMenu(el.dataset.id);
       else if (action === "shop-build") buyShop(el.dataset.id);
+      else if (action === "shop-upgrade") upgradeShop(el.dataset.id);
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
@@ -5381,6 +5478,8 @@
     shop: function (id) { buyShop(id); },
     expand: function (type) { startPlacement("room", type || "guest"); },
     workshop: function (tab) { openBuildShopModal(tab || "room"); },
+    shopModal: function (id) { openShopManageModal(id); },
+    shopUpgrade: function (id) { upgradeShop(id); },
     floors: function () { openInteriorSkinModal(); },
     buyFloor: function (id) { buyFloorSkin(id); },
     upgrade: function (id) { upgradeBuilding(id); },

@@ -3548,3 +3548,9 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .floor-buy:hover { background: #8d6739; }
 .floor-skin-swatch { display: flex; overflow: hidden; }
 .floor-skin-swatch i { flex: 1; }
+
+/* 统一详情行 */
+.info-rows { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.info-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 7px; background: #eef2df; border: 1px solid #a3b18b; }
+.info-row span { font-size: 10px; color: #6f7f58; }
+.info-row b { margin-left: auto; font-size: 12px; font-weight: 400; color: #3f5330; }

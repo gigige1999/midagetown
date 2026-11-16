@@ -141,7 +141,7 @@ window.GameData = (function () {
       desc: "从沉睡的山岩里凿出下一座城堡。",
       flavor: "花岗说，石头只是睡得很沉的云。",
       completionGold: 15,
-      plot: { x: 536, y: 150, w: 118, h: 88, baseY: 238, labelY: 150 }
+      plot: { x: 536, y: 116, w: 118, h: 88, baseY: 204, labelY: 116 }
     },
     {
       id: "kitchen", name: "厨房", icon: "tavern", scene: "indoor",
@@ -468,28 +468,28 @@ window.GameData = (function () {
 
   const SHOPS = [
     {
-      id: "bakery", name: "面包房", icon: "tavern", plot: { x: 178, y: 186, w: 104, h: 114, baseY: 300 },
+      id: "bakery", name: "面包房", category: "食物", icon: "tavern", plot: { x: 178, y: 186, w: 104, h: 114, baseY: 300 },
       cost: { wood: 30, stone: 20, gold: 60 }, income: 0.20, residentBonus: 0.05,
       unlock: "kitchen", unlockText: "修复厨房后开放",
       desc: "面包香会顺着风飘进每一个房间。",
       flavor: "每天清晨，第一炉面包会被放在窗台上。"
     },
     {
-      id: "smithy", name: "铁匠铺", icon: "tower", plot: { x: 584, y: 206, w: 72, h: 70, baseY: 274 },
+      id: "smithy", name: "铁匠铺", category: "工具", icon: "tower", plot: { x: 584, y: 206, w: 72, h: 70, baseY: 274 },
       cost: { wood: 35, stone: 40, gold: 80 }, income: 0.26, productionBonus: 0.05,
       unlock: "barracks", unlockText: "修复兵营后开放",
       desc: "钉马蹄、修刀剑、顺便听守卫抱怨。",
       flavor: "铁锤落下的节奏，听久了像一首歌。"
     },
     {
-      id: "general", name: "杂货铺", icon: "market", plot: { x: 490, y: 300, w: 150, h: 86, baseY: 386 },
+      id: "general", name: "杂货铺", category: "杂货", icon: "market", plot: { x: 490, y: 300, w: 150, h: 86, baseY: 386 },
       cost: { wood: 50, stone: 35, gold: 100 }, income: 0.35, residentBonus: 0.10,
       unlock: "allrooms", unlockText: "修复所有房间后开放",
       desc: "货架上什么都有，包括你昨天卖掉的那把勺子。",
       flavor: "金铃说，一家好的杂货铺应该让客人空手进来，满载出去。"
     },
     {
-      id: "fishmonger", name: "鱼摊", icon: "market", plot: { x: 470, y: 210, w: 90, h: 60, baseY: 270 },
+      id: "fishmonger", name: "鱼摊", category: "食物", icon: "market", plot: { x: 470, y: 210, w: 90, h: 60, baseY: 270 },
       cost: { wood: 40, stone: 20, gold: 120 }, income: 0.28, residentBonus: 0.05,
       unlock: "stage5", unlockText: "城堡阶段 5 开放",
       desc: "清晨的河鱼，带着水草和冰块的味道。",
