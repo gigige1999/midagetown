@@ -1892,6 +1892,13 @@
     if (ui.audioAccum >= 1.5) { ui.audioAccum = 0; updateAudioEnvironment(); }
   }
 
+  function updateBuildShopButton() {
+    const btn = $("#buildShopBtn");
+    if (!btn || !state) return;
+    btn.hidden = !state.expansionUnlocked;
+    btn.classList.toggle("locked", !state.expansionUnlocked);
+  }
+
   function updateShopButton() {
     const btn = $("#shopBtn");
     if (!btn || !state) return;
@@ -2602,6 +2609,7 @@
     updateTopbar();
     updateMenuButton();
     updateShopButton();
+    updateBuildShopButton();
     updateSceneChrome();
     ui.guideSig = "";
     renderGuideBar();
@@ -3554,26 +3562,88 @@
     saveState();
   }
 
-  function openRoomCatalogModal() {
+  function roomShopCardsHTML() {
     const floor = state.currentFloor || 0;
     const full = floorRoomCount(floor) >= D.FLOOR_GRID.maxRooms;
-    const cards = D.EXPANSION_ROOMS.map(function (type) {
+    return '<div class="catalog-grid">' + D.EXPANSION_ROOMS.map(function (type) {
       const can = canAfford(type.cost) && !full;
-      const fp = roomFootprint(type);
       return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
-        '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
-        '<div class="catalog-copy"><b>' + type.name + '</b><span>' + type.desc + "</span>" +
-        '<em>' + costHTML(type.cost, true) + "</em></div>" +
-        '<button class="btn btn-gold btn-small" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + ">购买并放置</button></div>";
+        '<div class="catalog-preview room"><img src="' + (window.CastleScene && window.CastleScene.roomThumb ? window.CastleScene.roomThumb(type.id, 1) : "") + '" alt=""><span class="catalog-size">' + type.size + '</span></div>' +
+        '<div class="catalog-copy"><b>' + type.name + '</b><span>' + type.desc + '</span>' +
+        '<em>' + costHTML(type.cost, true) + '</em></div>' +
+        '<button class="btn btn-gold btn-small" data-action="place-room-start" data-type="' + type.id + '"' + (can ? "" : " disabled") + '>购买并放置</button></div>';
+    }).join("") + "</div>";
+  }
+
+  function decorShopCardsHTML() {
+    return '<div class="catalog-grid">' + D.DECOR_ITEMS.map(function (item) {
+      const can = canAfford(item.cost);
+      return '<div class="catalog-card ' + (can ? "" : "locked") + '">' +
+        '<div class="catalog-preview decor"><img src="' + I.icon(item.icon) + '" alt=""></div>' +
+        '<div class="catalog-copy"><b>' + item.name + '</b><span>' + item.desc + '</span>' +
+        '<em>' + costHTML(item.cost, true) + '</em></div>' +
+        '<button class="btn btn-gold btn-small" data-action="place-decor-start" data-type="' + item.id + '"' + (can ? "" : " disabled") + '>购买并摆放</button></div>';
+    }).join("") + "</div>";
+  }
+
+  function tileRowsHTML() {
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    return '<div class="tile-list">' + D.TILE_PACKS.map(function (pack) {
+      const owned = stock[pack.id] || 0;
+      const can = canAfford(pack.cost);
+      return '<div class="tile-row">' +
+        '<div class="tile-swatch ' + pack.id + '"></div>' +
+        '<div class="tile-copy"><b>' + pack.name + '</b><span>' + pack.desc + '</span>' +
+        '<em>每包 ' + pack.count + ' 块 · 本层已有 ' + owned + ' 块</em></div>' +
+        '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
+        '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '"' + (can ? "" : " disabled") + '>买一包</button>' +
+        '<button class="btn btn-gold btn-small" data-action="brush-tile" data-id="' + pack.id + '">铺这种</button>' +
+        "</div></div>";
+    }).join("") + "</div>";
+  }
+
+  function decorateTabHTML() {
+    const floor = state.currentFloor || 0;
+    const rooms = floorRoomList(floor).length;
+    const decors = (state.decor[floor] || []).length;
+    const tiles = Object.keys(state.floorTiles[floor] || {}).length;
+    return '<div class="decorate-panel">' +
+      '<div class="decorate-stats">' +
+      '<div><span>本层房间</span><b>' + rooms + "</b></div>" +
+      '<div><span>已摆装饰</span><b>' + decors + "</b></div>" +
+      '<div><span>已铺地砖</span><b>' + tiles + "</b></div></div>" +
+      '<p class="decorate-tip">装修模式里可以拖动房间和装饰调整位置；选中地砖后拖出矩形批量铺设。</p>' +
+      '<button class="btn ' + (ui.decorMode ? "btn-ghost" : "btn-gold") + ' decorate-btn" data-action="decor-mode">' +
+      (ui.decorMode ? "退出装修模式" : "进入装修模式") + "</button>" +
+      '<p class="decorate-hint">快捷键：Esc 退出装修；WASD/方向键不参与布局。</p></div>';
+  }
+
+  function openBuildShopModal(tab) {
+    if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
+    const t = ["room", "decor", "tile", "decorate"].indexOf(tab) >= 0 ? tab : "room";
+    const floor = state.currentFloor || 0;
+    const tabs = [["room", "房间"], ["decor", "装饰"], ["tile", "地砖"], ["decorate", "装修"]].map(function (item) {
+      return '<button class="shop-tab' + (item[0] === t ? " active" : "") + '" data-action="shop-tab" data-tab="' + item[0] + '">' + item[1] + "</button>";
     }).join("");
+    let body = "";
+    if (t === "room") body = roomShopCardsHTML();
+    else if (t === "decor") body = decorShopCardsHTML();
+    else if (t === "tile") body = tileRowsHTML();
+    else body = decorateTabHTML();
     openModal(
-      modalHead("hammer", "扩建层 · 房间商店", "买一间房，自己摆", full ? "本层已放满 " + D.FLOOR_GRID.maxRooms + " 间" : "小型 / 中型 / 大型，占地不同") +
-      '<div class="modal-body"><div class="catalog-grid">' + cards + "</div>" +
-      '<div class="modal-actions"><span class="modal-note">购买后进入放置模式，绿色才能放下</span>' +
-      '<button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
-      { className: "modal-catalog" }
+      modalHead("hammer", "扩建层 · 工坊", "第 " + (floor + 1) + " 层工坊", "房间、装饰、地砖与装修都在这里；购买后进入放置模式。") +
+      '<div class="modal-body"><div class="shop-tabs">' + tabs + "</div>" + body +
+      '<div class="modal-actions"><span class="modal-note">' +
+      (t === "room" ? "本层 " + floorRoomCount(floor) + " / " + D.FLOOR_GRID.maxRooms + " 间" : t === "tile" ? "已铺 " + Object.keys(state.floorTiles[floor] || {}).length + " 块" : "") +
+      '</span><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-shop" }
     );
   }
+
+  function openRoomCatalogModal() { openBuildShopModal("room"); }
+
+
 
   function openDecorCatalogModal() {
     const floor = state.currentFloor || 0;
@@ -3673,14 +3743,6 @@
       html += '<div class="floor-warning" style="background:#f1e6cd;border-color:#c2a678;color:#7a5c39">这一层还空着，从下面的房间商店买一间放上去。</div>';
     }
 
-    // 商店入口
-    html += '<button class="section-toggle' + (ui.sections.shops ? " collapsed" : "") + '" data-action="toggle-section" data-section="shops"><span>商店与装修</span><em>房间 / 装饰 / 地砖</em></button>';
-    if (!ui.sections.shops) html += '<div class="store-entry-grid">' +
-      '<button class="store-entry" data-action="open-room-catalog"><img src="' + I.icon("hammer") + '" alt=""><b>房间商店</b><span>' + built + "/" + D.FLOOR_GRID.maxRooms + '</span></button>' +
-      '<button class="store-entry" data-action="open-decor-catalog"><img src="' + I.icon("sparkle") + '" alt=""><b>装饰商店</b><span>' + (state.decor[floor] || []).length + ' 件</span></button>' +
-      '<button class="store-entry" data-action="open-tile-shop"><img src="' + I.icon("leaf") + '" alt=""><b>地砖</b><span>' + Object.keys(state.floorTiles[floor] || {}).length + ' 块</span></button>' +
-      '<button class="store-entry" data-action="decor-mode"><img src="' + I.icon("arrow") + '" alt=""><b>' + (ui.decorMode ? "退出装修" : "装修模式") + '</b><span>拖动/铺砖</span></button>' +
-      "</div>";
     const decors = state.decor[floor] || [];
     if (decors.length) {
       html += '<button class="section-toggle' + (ui.sections.decor ? " collapsed" : "") + '" data-action="toggle-section" data-section="decor"><span>已摆装饰</span><em>' + decors.length + ' 件</em></button>';
@@ -4588,6 +4650,14 @@
     $("#tradeBtn").addEventListener("click", function () { if (started) openTradeModal(""); });
     $("#menuBtn").addEventListener("click", function () { if (started) openMenuModal(""); });
     $("#shopBtn").addEventListener("click", function () { if (started) openShopModal(); });
+    const buildShopBtn = $("#buildShopBtn");
+    if (buildShopBtn) {
+      buildShopBtn.addEventListener("click", function () {
+        if (!started) return;
+        if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层工坊才会开放。", "bad", "lock"); return; }
+        openBuildShopModal("room");
+      });
+    }
     const collapseBtn = $("#ledgerCollapse");
     if (collapseBtn) collapseBtn.addEventListener("click", function () { setSidebarCollapsed(true); });
     const expandBtn = $("#ledgerExpand");
@@ -4769,7 +4839,8 @@
       else if (action === "buy-menu") buyMenu(el.dataset.id);
       else if (action === "shop-build") buyShop(el.dataset.id);
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
-      else if (action === "open-room-catalog") openRoomCatalogModal();
+      else if (action === "open-room-catalog") openBuildShopModal("room");
+      else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
       else if (action === "open-decor-catalog") openDecorCatalogModal();
       else if (action === "open-tile-shop") openTileShopModal();
       else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
