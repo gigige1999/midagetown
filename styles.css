@@ -3627,3 +3627,9 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 .warehouse-tile b { font-size: 10px; font-weight: 400; color: #3f2b19; }
 .warehouse-tile em { margin-left: auto; font-style: normal; font-size: 10px; color: #8a6b48; }
 @media (max-width: 1080px) { .warehouse-grid { grid-template-columns: 1fr; } }
+
+.warehouse-floor-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding: 6px; margin-bottom: 8px; background: #eef2df; border: 2px solid #a3b18b; }
+.warehouse-floor-row b { font-size: 11px; font-weight: 400; color: #3f5330; }
+.warehouse-card.clickable { cursor: pointer; grid-template-rows: auto; }
+.warehouse-card.clickable:hover { background: #fbf0d8; border-color: #a98654; }
+.warehouse-place-hint { grid-column: 2; font-size: 10px; color: #8a6b48; }
