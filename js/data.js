@@ -383,12 +383,33 @@ window.GameData = (function () {
   ];
 
   const FLOOR_SKINS = [
-    { id: "stone", name: "灰石砖", cost: 0, desc: "风息堡原本的灰石地砖，免费。" },
-    { id: "wood", name: "暖木地板", cost: 120, desc: "温暖的木板地面，适合卧室与书房。" },
-    { id: "checker", name: "黑白棋盘", cost: 180, desc: "整齐的黑白石板，带一点贵族气。" },
-    { id: "moss", name: "青苔石砖", cost: 160, desc: "带苔藓的旧石砖，像被花园包住。" },
-    { id: "royal", name: "皇家红石", cost: 300, desc: "深红与金色拼花，最贵也最气派。" }
+    { id: "stone", name: "灰石砖", cost: 0, pattern: "tile", base: "#6e5a49", a: "#7a6652", b: "#5f5044", accent: "#a98d68", desc: "风息堡原本的灰石地砖，免费。" },
+    { id: "wood", name: "暖木地板", cost: 120, pattern: "plank", base: "#7c5939", a: "#8b653f", b: "#69492d", accent: "#c9a24e", desc: "温暖的木板地面，适合卧室与书房。" },
+    { id: "checker", name: "黑白棋盘", cost: 180, pattern: "checker", base: "#8f8677", a: "#d2c6ad", b: "#4e4942", accent: "#e6dfcc", desc: "整齐的黑白石板，带一点贵族气。" },
+    { id: "moss", name: "青苔石砖", cost: 160, pattern: "moss", base: "#64705a", a: "#718061", b: "#526048", accent: "#a7bd76", desc: "带苔藓的旧石砖，像被花园包住。" },
+    { id: "royal", name: "皇家红石", cost: 300, pattern: "tile", base: "#6f4e4b", a: "#8e5a51", b: "#3d2e31", accent: "#d6a449", desc: "深红与金色拼花，最贵也最气派。" },
+    { id: "marble", name: "月白大理石", cost: 260, pattern: "marble", base: "#cfc9bd", a: "#e3ded3", b: "#b4ada0", accent: "#f2eee4", desc: "浅色大理石，反光柔和，显厅堂高挑。" },
+    { id: "terracotta", name: "陶土红砖", cost: 140, pattern: "tile", base: "#9b5a44", a: "#b06a4e", b: "#7f4636", accent: "#d9a077", desc: "南边窑里烧的陶砖，配色温暖。" },
+    { id: "slate", name: "青灰板岩", cost: 150, pattern: "tile", base: "#5d6670", a: "#6b7580", b: "#4b535c", accent: "#9aa6b2", desc: "冷色板岩，适合兵营与走廊。" },
+    { id: "parquet", name: "拼花木地板", cost: 220, pattern: "parquet", base: "#8a6238", a: "#a07345", b: "#6d4a29", accent: "#d2a468", desc: "人字拼花木地板，做工讲究。" },
+    { id: "mosaic", name: "马赛克拼花", cost: 280, pattern: "mosaic", base: "#7d6b7f", a: "#b9a3b5", b: "#584a5e", accent: "#e6d38f", desc: "细碎彩色石片拼成的小花图案。" },
+    { id: "brick", name: "红砖地", cost: 120, pattern: "brick", base: "#8e4f3d", a: "#a05c46", b: "#713c2f", accent: "#cf8f6d", desc: "朴素的红砖，耐脏又便宜。" },
+    { id: "redcarpet", name: "深红地毯", cost: 240, pattern: "carpet", base: "#7a2f38", a: "#9c3a44", b: "#5c2029", accent: "#d6a449", desc: "整片深红地毯，踩上去没有脚步声。" },
+    { id: "bluecarpet", name: "靛蓝地毯", cost: 240, pattern: "carpet", base: "#2f4460", a: "#3d587a", b: "#22303f", accent: "#c9b06a", desc: "靛蓝地毯，配金线滚边。" },
+    { id: "tatami", name: "草编席面", cost: 170, pattern: "tatami", base: "#a8945f", a: "#bda873", b: "#8d7a4b", accent: "#5c6b3f", desc: "草席铺地，夏天踩上去凉凉的。" },
+    { id: "flagstone", name: "乱拼石板", cost: 130, pattern: "flag", base: "#6b6258", a: "#7d7466", b: "#544c44", accent: "#a89c88", desc: "大小不一的石板随意拼成。" },
+    { id: "cobble", name: "鹅卵石地", cost: 110, pattern: "cobble", base: "#77705f", a: "#8a8270", b: "#5f594b", accent: "#b0a68c", desc: "圆润的鹅卵石，走起来有细碎声响。" },
+    { id: "ivory", name: "象牙白砖", cost: 250, pattern: "tile", base: "#d8cdb4", a: "#e8dfc9", b: "#bdb098", accent: "#fff6e2", desc: "浅象牙色方砖，显得大厅明亮。" },
+    { id: "emerald", name: "祖母绿石", cost: 320, pattern: "marble", base: "#3f6b55", a: "#4f8468", b: "#2d4f3f", accent: "#d6c27a", desc: "深绿色石材，金线勾边。" },
+    { id: "obsidian", name: "黑曜石地", cost: 340, pattern: "tile", base: "#2f2c33", a: "#3d3943", b: "#211f26", accent: "#7a6f9a", desc: "近乎黑色的石面，映出烛光。" },
+    { id: "sand", name: "细沙色砖", cost: 100, pattern: "tile", base: "#c2a878", a: "#d3b988", b: "#a58c60", accent: "#e8d4a6", desc: "暖沙色的方砖，像晒过太阳。" },
+    { id: "lavender", name: "薰衣草石", cost: 190, pattern: "tile", base: "#8d7f97", a: "#a291ad", b: "#716380", accent: "#d8c8e0", desc: "带一点紫的浅色石砖。" },
+    { id: "gold", name: "鎏金地砖", cost: 420, pattern: "tile", base: "#8a6a2f", a: "#a8843c", b: "#6b5124", accent: "#ffe08a", desc: "镀金的方砖，只在最气派的厅堂出现。" },
+    { id: "walnut", name: "深胡桃木", cost: 230, pattern: "plank", base: "#5c4028", a: "#6d4c30", b: "#483021", accent: "#b08a5c", desc: "深色胡桃木，沉静耐看。" },
+    { id: "jade", name: "青玉拼石", cost: 300, pattern: "marble", base: "#4f7d72", a: "#629a8b", b: "#3a5d55", accent: "#cfe3d6", desc: "青玉色石材，带细腻纹路。" }
   ];
+
+
 
   const MENUS = [
     {

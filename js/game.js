@@ -63,7 +63,11 @@
     paintStart: null,
     tileBrush: null,
     ready: false,
-    sections: { rooms: false, shops: false, decor: false }
+    sections: { rooms: false, shops: false, decor: false },
+    tileTool: "paint",
+    tileHistory: [],
+    moveSel: null,
+    tileGesture: false
   };
 
   /* =========================================================
@@ -1897,8 +1901,9 @@
   function updateBuildShopButton() {
     const btn = $("#buildShopBtn");
     if (!btn || !state) return;
-    btn.hidden = !state.expansionUnlocked;
+    btn.hidden = !started;
     btn.classList.toggle("locked", !state.expansionUnlocked);
+    btn.title = state.expansionUnlocked ? "工坊：房间 / 装饰 / 地砖 / 装修" : "工坊：大厅地板 / 装修";
   }
 
   function updateShopButton() {
@@ -2255,11 +2260,6 @@
           b.disabled = !state.expansionUnlocked;
         }
       });
-    }
-    const decorBtn = $("#decorBtn");
-    if (decorBtn) {
-      decorBtn.hidden = !(indoor || expansion);
-      decorBtn.textContent = expansion ? "第 " + (state.currentFloor + 1) + " 层装修" : "装修";
     }
     const frame = $("#sceneFrame");
     if (frame) {
@@ -2806,41 +2806,51 @@
   }
 
   function openInteriorSkinModal() {
-    const st = currentInteriorSkin();
-    const rows = D.FLOOR_SKINS.map(function (skin) {
-      const owned = st.owned.indexOf(skin.id) >= 0;
-      const selected = st.selected === skin.id;
-      const can = skin.cost === 0 || canAfford({ gold: skin.cost });
-      return '<div class="floor-skin-row' + (selected ? " selected" : "") + '">' +
-        '<div class="floor-skin-swatch ' + skin.id + '"></div>' +
-        '<div class="floor-skin-copy"><b>' + skin.name + '</b><span>' + skin.desc + "</span>" +
-        '<em>' + (owned ? "城堡内部已拥有" : "城堡内部 · " + skin.cost + " 金币") + "</em></div>" +
-        '<div class="floor-skin-action">' + (selected
-          ? '<span class="menu-check">使用中</span>'
-          : owned
-            ? '<button class="btn btn-wood btn-small" data-action="apply-interior-skin" data-id="' + skin.id + '">使用</button>'
-            : '<button class="btn btn-gold btn-small" data-action="buy-interior-skin" data-id="' + skin.id + '"' + (can ? "" : " disabled") + '>购买</button>') +
-        "</div></div>";
+    const st = interiorSkinState();
+    const cards = D.FLOOR_SKINS.map(function (f) {
+      const owned = st.owned.indexOf(f.id) >= 0;
+      const active = st.selected === f.id;
+      const can = owned || canAfford({ gold: f.cost });
+      return '<div class="floor-card' + (active ? " active" : "") + '">' +
+        '<div class="floor-swatch" style="background:' + f.base + ';border-color:' + f.b + '">' +
+        '<span style="background:' + f.a + '"></span><span style="background:' + f.b + '"></span></div>' +
+        '<div class="floor-copy"><b>' + f.name + '</b><em>' + (f.cost ? f.cost + " 金" : "默认") + '</em></div>' +
+        (active
+          ? '<button class="btn btn-ghost btn-small" disabled>使用中</button>'
+          : '<button class="btn ' + (owned ? "btn-gold" : "btn-wood") + ' btn-small" data-action="pick-hall-floor" data-id="' + f.id + '"' + (can ? "" : " disabled") + '>' + (owned ? "使用" : "购买") + '</button>') +
+        '</div>';
     }).join("");
     openModal(
-      modalHead("sparkle", "城堡内部 · 装修", "套装与地板", "整套购买，地板、墙面与陈设一起换；不再单卖地板。") +
-      '<div class="modal-body">' +
-      '<div class="decor-set-list">' + D.DECOR_SETS.map(function (set) {
-        const active = state.interiorDecor === set.id;
-        const can = canAfford(set.cost);
-        return '<div class="decor-set-row' + (active ? " active" : "") + '">' +
-          '<div class="decor-set-copy"><b>' + set.name + '</b><span>' + set.desc + "</span>" +
-          "<em>" + (active ? "大厅正在使用" : "套装价 " + costShort(set.cost)) + "</em></div>" +
-          '<div class="decor-set-action">' + (active
-            ? '<span class="menu-check">已布置</span>'
-            : '<button class="btn btn-gold btn-small" data-action="buy-decor-set" data-set="' + set.id + '"' + (can ? "" : " disabled") + ">购买套装</button>") +
-          "</div></div>";
-      }).join("") + "</div>" +
-      '<div class="modal-actions"><span class="modal-note">当前金币：<b>' + (ui.debugMode ? "无限" : Math.floor(state.resources.gold)) + "</b></span>" +
-      '<button class="btn btn-primary" data-action="close-modal">完成</button></div></div>',
-      { className: "modal-floor-skin" }
+      modalHead("sparkle", "城堡大厅 · 装修", "地板样式", "只替换大厅地板，不影响家具与人物；共 " + D.FLOOR_SKINS.length + " 种。") +
+      '<div class="modal-body"><div class="floor-grid">' + cards + "</div>" +
+      '<div class="modal-actions"><span class="modal-note">当前金币：' + Math.floor(state.resources.gold) + '</span>' +
+      '<button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
+      { className: "modal-floors" }
     );
   }
+
+  function buyFloorSkin(id) {
+    const f = D.FLOOR_SKINS.filter(function (x) { return x.id === id; })[0];
+    if (!f) return;
+    const st = interiorSkinState();
+    const owned = st.owned.indexOf(id) >= 0;
+    if (!owned) {
+      if (f.cost > 0) {
+        if (!canAfford({ gold: f.cost })) { toast("金币不够，还差 " + (f.cost - Math.floor(state.resources.gold)) + " 金。", "bad", "coin"); return; }
+        payCost({ gold: f.cost });
+      }
+      st.owned.push(id);
+    }
+    st.selected = id;
+    addLog("大厅地板换成了「" + f.name + "」。", "good");
+    toast("地板已换成「" + f.name + "」。", "gold", "sparkle");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
+    openInteriorSkinModal();
+  }
+
 
   function floorSkinState(index) {
     if (!state.floorSkins) state.floorSkins = {};
@@ -2872,7 +2882,7 @@
     saveState();
   }
 
-  function buyFloorSkin(id) {
+  function buyExpansionFloorSkin(id) {
     const skin = floorSkinById(id);
     const st = currentFloorSkin();
     if (st.owned.indexOf(skin.id) >= 0) { applyFloorSkin(id); return; }
@@ -3291,6 +3301,8 @@
     ui.dragDecor = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
+    const tools = $("#placementTools");
+    if (tools) tools.hidden = true;
     document.body.classList.remove("placement-on");
   }
 
@@ -3364,7 +3376,42 @@
     return { key: cx + "," + cy, cx: cx, cy: cy };
   }
 
+  function pushTileSnapshot() {
+    const f = state.currentFloor || 0;
+    ui.tileHistory.push({
+      floor: f,
+      tiles: Object.assign({}, state.floorTiles[f]),
+      stock: Object.assign({}, state.tileStock[f])
+    });
+    if (ui.tileHistory.length > 40) ui.tileHistory.shift();
+  }
+
+  function undoTile() {
+    const snap = ui.tileHistory.pop();
+    if (!snap) { toast("没有可撤销的地砖操作。", "neutral", "arrow"); return; }
+    state.floorTiles[snap.floor] = snap.tiles;
+    state.tileStock[snap.floor] = snap.stock;
+    toast("已撤销上一步地砖操作。", "good", "arrow");
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+  }
+
+  function eraseTileAt(lx, ly, silent) {
+    const t = tileAt(state.currentFloor || 0, lx, ly);
+    if (!t) return 0;
+    const floor = state.currentFloor || 0;
+    const cur = state.floorTiles[floor][t.key];
+    if (!cur) return 0;
+    delete state.floorTiles[floor][t.key];
+    const stock = tileStockOf(floor);
+    stock[cur] = (stock[cur] || 0) + 1;
+    if (!silent) { renderAll(true); saveState(); }
+    return 1;
+  }
+
   function paintTileAt(lx, ly) {
+    if ((ui.tileTool || "paint") === "erase") { eraseTileAt(lx, ly); return; }
     if (!ui.tileBrush) { toast("先在「地砖」里选一种砖。", "neutral", "sparkle"); return; }
     const t = tileAt(state.currentFloor || 0, lx, ly);
     if (!t) return;
@@ -3402,9 +3449,13 @@
     const floor = state.currentFloor || 0;
     const stock = tileStockOf(floor);
     const rect = tileCellRect(cx0, cy0, cx1, cy1);
+    const cols = Math.floor((D.FLOOR_GRID.right - D.FLOOR_GRID.left) / D.TILE_CELL);
+    const rows = Math.floor((D.FLOOR_GRID.bottom - D.FLOOR_GRID.top) / D.TILE_CELL);
     let placed = 0;
     for (let cy = rect.y0; cy <= rect.y1; cy++) {
+      if (cy < 0 || cy >= rows) continue;
       for (let cx = rect.x0; cx <= rect.x1; cx++) {
+        if (cx < 0 || cx >= cols) continue;
         if ((stock[ui.tileBrush] || 0) <= 0) break;
         const key = cx + "," + cy;
         if (state.floorTiles[floor][key] === ui.tileBrush) continue;
@@ -3423,6 +3474,100 @@
     }
   }
 
+  function tileRegionAt(cx, cy) {
+    const floor = state.currentFloor || 0;
+    const tiles = state.floorTiles[floor];
+    if (!tiles[cx + "," + cy]) return null;
+    const seen = {};
+    const cells = [];
+    const stack = [[cx, cy]];
+    while (stack.length) {
+      const cur = stack.pop();
+      const key = cur[0] + "," + cur[1];
+      if (seen[key] || !tiles[key]) continue;
+      seen[key] = true;
+      cells.push({ cx: cur[0], cy: cur[1], type: tiles[key] });
+      stack.push([cur[0] + 1, cur[1]], [cur[0] - 1, cur[1]], [cur[0], cur[1] + 1], [cur[0], cur[1] - 1]);
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    cells.forEach(function (c) {
+      minX = Math.min(minX, c.cx); minY = Math.min(minY, c.cy);
+      maxX = Math.max(maxX, c.cx); maxY = Math.max(maxY, c.cy);
+    });
+    return { cells: cells, minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+  }
+
+  function showMoveGhost(sel, dx, dy) {
+    const ghost = $("#placementGhost");
+    if (!ghost) return;
+    const cell = D.TILE_CELL;
+    const x = 20 + (sel.minX + dx) * cell;
+    const y = 40 + (sel.minY + dy) * cell;
+    const w = (sel.maxX - sel.minX + 1) * cell;
+    const h = (sel.maxY - sel.minY + 1) * cell;
+    ghost.hidden = false;
+    ghost.className = "placement-ghost tile " + (sel.valid ? "valid" : "invalid");
+    ghost.style.left = (x / 720 * 100) + "%";
+    ghost.style.top = (y / 405 * 100) + "%";
+    ghost.style.width = (w / 720 * 100) + "%";
+    ghost.style.height = (h / 405 * 100) + "%";
+  }
+
+  function updateMoveSelection(lx, ly) {
+    const sel = ui.moveSel;
+    if (!sel) return;
+    const t = tileAt(state.currentFloor || 0, lx, ly);
+    if (!t) return;
+    sel.dx = t.cx - sel.startCx;
+    sel.dy = t.cy - sel.startCy;
+    const floor = state.currentFloor || 0;
+    const tiles = state.floorTiles[floor];
+    const cols = Math.floor((D.FLOOR_GRID.right - D.FLOOR_GRID.left) / D.TILE_CELL);
+    const rows = Math.floor((D.FLOOR_GRID.bottom - D.FLOOR_GRID.top) / D.TILE_CELL);
+    let ok = true;
+    sel.cells.forEach(function (c) {
+      const nx = c.cx + sel.dx, ny = c.cy + sel.dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) { ok = false; return; }
+      const other = tiles[nx + "," + ny];
+      if (other && !sel.cellSet[nx + "," + ny]) ok = false;
+    });
+    sel.valid = ok;
+    showMoveGhost(sel, sel.dx, sel.dy);
+  }
+
+  function commitMoveSelection() {
+    const sel = ui.moveSel;
+    ui.moveSel = null;
+    const ghost = $("#placementGhost");
+    if (ghost) ghost.hidden = true;
+    if (!sel || !sel.valid || (!sel.dx && !sel.dy)) { renderAll(true); return; }
+    const floor = state.currentFloor || 0;
+    const tiles = state.floorTiles[floor];
+    pushTileSnapshot();
+    sel.cells.forEach(function (c) { delete tiles[c.cx + "," + c.cy]; });
+    sel.cells.forEach(function (c) { tiles[(c.cx + sel.dx) + "," + (c.cy + sel.dy)] = c.type; });
+    toast("已移动 " + sel.cells.length + " 块地砖。", "good", "sparkle");
+    A.sfx("page");
+    renderAll(true);
+    saveState();
+  }
+
+  function setTileToolUI() {
+    const box = $("#placementTools");
+    if (!box) return;
+    $$(".tool-btn", box).forEach(function (b) {
+      if (!b.dataset.tool) return;
+      b.classList.toggle("active", b.dataset.tool === (ui.tileTool || "paint"));
+    });
+    const hint = $("#placementHint");
+    if (hint && ui.decorMode) {
+      const tool = ui.tileTool || "paint";
+      hint.textContent = tool === "erase" ? "橡皮擦：拖动擦除地砖（会退回库存）"
+        : tool === "move" ? "移动：按住一片已铺地砖拖动，松手放下"
+        : "铺砖：选中砖后拖出矩形铺设 · 也可拖动房间/装饰换位置";
+    }
+  }
+
   function enterDecorMode() {
     if (!state.expansionUnlocked) { toast("修好所有房间后，装修模式才会开放。", "bad", "lock"); return; }
     if (state.view !== "expansion") switchView("expansion");
@@ -3436,6 +3581,9 @@
     if (bar) bar.textContent = "装修模式：拖动房间或装饰调整位置 · 选中地砖后点击地面铺设";
     const barBtn = document.querySelector(".placement-bar [data-action='placement-cancel']");
     if (barBtn) barBtn.textContent = "退出装修";
+    const tools = $("#placementTools");
+    if (tools) tools.hidden = false;
+    setTileToolUI();
     toast("装修模式：可拖动房间、铺设地砖。", "gold", "sparkle");
     renderAll(true);
   }
@@ -3450,6 +3598,8 @@
     ui.tileBrush = null;
     const layer = $("#placementLayer");
     if (layer) layer.hidden = true;
+    const tools = $("#placementTools");
+    if (tools) tools.hidden = true;
     document.body.classList.remove("placement-on");
     renderAll(true);
   }
@@ -3601,6 +3751,7 @@
         '<div class="tile-actions"><span class="tile-price">' + pack.cost.gold + ' 金</span>' +
         '<button class="btn btn-wood btn-small" data-action="buy-tile" data-id="' + pack.id + '"' + (can ? "" : " disabled") + '>买一包</button>' +
         '<button class="btn btn-gold btn-small" data-action="brush-tile" data-id="' + pack.id + '">铺这种</button>' +
+        '<button class="btn btn-ghost btn-small" data-action="fill-floor" data-id="' + pack.id + '">整层</button>' +
         "</div></div>";
     }).join("") + "</div>";
   }
@@ -3610,37 +3761,129 @@
     const rooms = floorRoomList(floor).length;
     const decors = (state.decor[floor] || []).length;
     const tiles = Object.keys(state.floorTiles[floor] || {}).length;
-    return '<div class="decorate-panel">' +
-      '<div class="decorate-stats">' +
-      '<div><span>本层房间</span><b>' + rooms + "</b></div>" +
-      '<div><span>已摆装饰</span><b>' + decors + "</b></div>" +
-      '<div><span>已铺地砖</span><b>' + tiles + "</b></div></div>" +
-      '<p class="decorate-tip">装修模式里可以拖动房间和装饰调整位置；选中地砖后拖出矩形批量铺设。</p>' +
-      '<button class="btn ' + (ui.decorMode ? "btn-ghost" : "btn-gold") + ' decorate-btn" data-action="decor-mode">' +
-      (ui.decorMode ? "退出装修模式" : "进入装修模式") + "</button>" +
-      '<p class="decorate-hint">快捷键：Esc 退出装修；WASD/方向键不参与布局。</p></div>';
+    const hallSkin = D.FLOOR_SKINS.filter(function (f) { return f.id === (state.interiorSkin && state.interiorSkin.selected); })[0];
+    const floorSkin = D.FLOOR_SKINS.filter(function (f) { return f.id === currentFloorSkin().selected; })[0];
+    let html = '<div class="decorate-panel">';
+    html += '<div class="decorate-section">' +
+      '<div class="decorate-head"><b>城堡大厅地板</b><span>' + (hallSkin ? hallSkin.name : "灰石砖") + '</span></div>' +
+      '<p class="decorate-tip">只替换大厅地板，家具、人物和墙面保持原样；共 ' + D.FLOOR_SKINS.length + ' 种样式。</p>' +
+      '<button class="btn btn-gold btn-small" data-action="floor-skin-open">选择大厅地板</button></div>';
+    if (state.expansionUnlocked) {
+      html += '<div class="decorate-section">' +
+        '<div class="decorate-head"><b>扩建层 · 第 ' + (floor + 1) + ' 层</b><span>' + (floorSkin ? floorSkin.name : "") + '</span></div>' +
+        '<div class="decorate-stats">' +
+        '<div><span>房间</span><b>' + rooms + "</b></div>" +
+        '<div><span>装饰</span><b>' + decors + "</b></div>" +
+        '<div><span>地砖</span><b>' + tiles + "</b></div></div>" +
+        '<div class="decorate-row">' +
+        '<button class="btn ' + (ui.decorMode ? "btn-ghost" : "btn-gold") + ' btn-small" data-action="decor-mode">' + (ui.decorMode ? "退出装修模式" : "进入装修模式") + '</button>' +
+        '<button class="btn btn-wood btn-small" data-action="floor-skin-open-expansion">本层地板样式</button></div>' +
+        '<p class="decorate-tip">装修模式里：拖动房间/装饰换位置；地砖页选砖后可整层铺满，也可以一包一包自己铺，支持橡皮擦和撤销。</p></div>';
+    } else {
+      html += '<div class="decorate-section"><div class="decorate-head"><b>扩建层</b><span>未开放</span></div>' +
+        '<p class="decorate-tip">修复完城堡大厅的房间后，这里会开放房间、装饰与地砖。</p></div>';
+    }
+    html += '<p class="decorate-hint">快捷键：Esc 退出装修；Ctrl/⌘+Z 撤销上一步地砖操作。</p></div>';
+    return html;
+  }
+
+  function floorsTabHTML() {
+    return '<div class="floor-picker">' + D.FLOOR_SKINS.map(function (f) {
+      const active = (state.interiorSkin && state.interiorSkin.selected) === f.id;
+      const owned = state.interiorSkin && state.interiorSkin.owned.indexOf(f.id) >= 0;
+      return '<button class="floor-pick' + (active ? " active" : "") + '" data-action="pick-hall-floor" data-id="' + f.id + '">' +
+        '<span class="floor-pick-swatch" style="background:' + f.base + '"><i style="background:' + f.a + '"></i><i style="background:' + f.b + '"></i></span>' +
+        '<b>' + f.name + '</b><em>' + (active ? "使用中" : owned ? "已拥有" : f.cost + " 金") + '</em></button>';
+    }).join("") + "</div>";
   }
 
   function openBuildShopModal(tab) {
-    if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层才会开放。", "bad", "lock"); return; }
-    const t = ["room", "decor", "tile", "decorate"].indexOf(tab) >= 0 ? tab : "room";
+    const locked = !state.expansionUnlocked;
+    let t = ["room", "decor", "tile", "decorate", "floors"].indexOf(tab) >= 0 ? tab : "decorate";
+    if (locked && (t === "room" || t === "decor" || t === "tile")) t = "decorate";
     const floor = state.currentFloor || 0;
-    const tabs = [["room", "房间"], ["decor", "装饰"], ["tile", "地砖"], ["decorate", "装修"]].map(function (item) {
-      return '<button class="shop-tab' + (item[0] === t ? " active" : "") + '" data-action="shop-tab" data-tab="' + item[0] + '">' + item[1] + "</button>";
+    const tabs = [["room", "房间"], ["decor", "装饰"], ["tile", "地砖"], ["decorate", "装修"], ["floors", "大厅"]].map(function (item) {
+      const dis = locked && item[0] !== "decorate" && item[0] !== "floors";
+      return '<button class="shop-tab' + (item[0] === t ? " active" : "") + '" data-action="shop-tab" data-tab="' + item[0] + '"' + (dis ? " disabled" : "") + '>' + item[1] + "</button>";
     }).join("");
     let body = "";
     if (t === "room") body = roomShopCardsHTML();
     else if (t === "decor") body = decorShopCardsHTML();
     else if (t === "tile") body = tileRowsHTML();
+    else if (t === "floors") body = floorsTabHTML();
     else body = decorateTabHTML();
     openModal(
-      modalHead("hammer", "扩建层 · 工坊", "第 " + (floor + 1) + " 层工坊", "房间、装饰、地砖与装修都在这里；购买后进入放置模式。") +
+      modalHead("hammer", "工坊 · 装修", "第 " + (floor + 1) + " 层", "房间、装饰、地砖与地板都在这里；购买后进入放置模式。") +
       '<div class="modal-body"><div class="shop-tabs">' + tabs + "</div>" + body +
       '<div class="modal-actions"><span class="modal-note">' +
       (t === "room" ? "本层 " + floorRoomCount(floor) + " / " + D.FLOOR_GRID.maxRooms + " 间" : t === "tile" ? "已铺 " + Object.keys(state.floorTiles[floor] || {}).length + " 块" : "") +
       '</span><button class="btn btn-primary" data-action="close-modal">关闭</button></div></div>',
       { className: "modal-shop" }
     );
+  }
+
+  function fillFloorConfirm(id) {
+    const pack = D.TILE_PACKS.filter(function (p) { return p.id === id; })[0];
+    if (!pack) return;
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    const g = D.FLOOR_GRID;
+    const cols = Math.floor((g.right - g.left) / D.TILE_CELL);
+    const rows = Math.floor((g.bottom - g.top) / D.TILE_CELL);
+    let missing = 0;
+    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+      if (state.floorTiles[floor][cx + "," + cy] !== id) missing++;
+    }
+    const packs = Math.max(0, Math.ceil((missing - (stock[id] || 0)) / pack.count));
+    const cost = packs * pack.cost.gold;
+    openModal(
+      modalHead("sparkle", "地砖 · 整层铺满", pack.name, "把第 " + (floor + 1) + " 层整片地面铺成这种砖。") +
+      '<div class="modal-body"><div class="confirm-list">' +
+      '<div><span>需要覆盖</span><b>' + missing + ' 格</b></div>' +
+      '<div><span>现有库存</span><b>' + (stock[id] || 0) + ' 块</b></div>' +
+      '<div><span>需补买</span><b>' + packs + ' 包（' + cost + ' 金）</b></div></div>' +
+      '<div class="modal-actions"><span class="modal-note">' + (cost > 0 ? "将扣除 " + cost + " 金" : "库存足够，直接铺") + '</span>' +
+      '<button class="btn btn-ghost" data-action="close-modal">取消</button>' +
+      '<button class="btn btn-gold" data-action="fill-floor-apply" data-id="' + id + '"' + (cost > Math.floor(state.resources.gold) ? " disabled" : "") + '>铺满本层</button></div></div>'
+    );
+  }
+
+  function applyFillFloor(id) {
+    const pack = D.TILE_PACKS.filter(function (p) { return p.id === id; })[0];
+    if (!pack) return;
+    const floor = state.currentFloor || 0;
+    const stock = tileStockOf(floor);
+    const g = D.FLOOR_GRID;
+    const cols = Math.floor((g.right - g.left) / D.TILE_CELL);
+    const rows = Math.floor((g.bottom - g.top) / D.TILE_CELL);
+    let missing = 0;
+    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+      if (state.floorTiles[floor][cx + "," + cy] !== id) missing++;
+    }
+    const packs = Math.max(0, Math.ceil((missing - (stock[id] || 0)) / pack.count));
+    const cost = packs * pack.cost.gold;
+    if (cost > 0) {
+      if (!canAfford({ gold: cost })) { toast("金币不够，还差 " + (cost - Math.floor(state.resources.gold)) + " 金。", "bad", "coin"); return; }
+      payCost({ gold: cost });
+      stock[id] = (stock[id] || 0) + packs * pack.count;
+    }
+    pushTileSnapshot();
+    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+      const key = cx + "," + cy;
+      if (state.floorTiles[floor][key] === id) continue;
+      if (state.floorTiles[floor][key]) {
+        const old = state.floorTiles[floor][key];
+        stock[old] = (stock[old] || 0) + 1;
+      }
+      state.floorTiles[floor][key] = id;
+      stock[id] = Math.max(0, (stock[id] || 0) - 1);
+    }
+    addLog("第 " + (floor + 1) + " 层地面整片铺成了" + pack.name + "。", "good");
+    toast("整层铺满：" + pack.name + "（覆盖 " + (cols * rows) + " 格）。", "gold", "sparkle");
+    A.sfx("complete");
+    closeModal(true);
+    renderAll(true);
+    saveState();
   }
 
   function openRoomCatalogModal() { openBuildShopModal("room"); }
@@ -4656,8 +4899,7 @@
     if (buildShopBtn) {
       buildShopBtn.addEventListener("click", function () {
         if (!started) return;
-        if (!state.expansionUnlocked) { toast("修复所有房间后，扩建层工坊才会开放。", "bad", "lock"); return; }
-        openBuildShopModal("room");
+        openBuildShopModal(state.expansionUnlocked ? "room" : "decorate");
       });
     }
     const collapseBtn = $("#ledgerCollapse");
@@ -4678,7 +4920,8 @@
         if (ui.placement) { movePlacement(p.x, p.y); return; }
         if (ui.decorMode && ui.dragRoom) { updateRoomDrag(p.x, p.y); return; }
         if (ui.decorMode && ui.dragDecor) { updateDecorDrag(p.x, p.y); return; }
-        if (ui.decorMode && ui.painting && ui.paintStart && ui.tileBrush) {
+        if (ui.decorMode && ui.moveSel) { updateMoveSelection(p.x, p.y); return; }
+        if (ui.decorMode && ui.painting && ui.paintStart) {
           const t = tileAt(state.currentFloor || 0, p.x, p.y);
           if (!t) return;
           const rect = tileCellRect(ui.paintStart.cx, ui.paintStart.cy, t.cx, t.cy);
@@ -4691,28 +4934,53 @@
         if (!p) return;
         if (ui.placement) { movePlacement(p.x, p.y); return; }
         if (!ui.decorMode) return;
+        const tool = ui.tileTool || "paint";
+        if (tool === "move") {
+          const t0 = tileAt(state.currentFloor || 0, p.x, p.y);
+          if (!t0) return;
+          const region = tileRegionAt(t0.cx, t0.cy);
+          if (!region) { toast("这里还没有铺地砖。", "neutral", "sparkle"); return; }
+          const set = {};
+          region.cells.forEach(function (c) { set[c.cx + "," + c.cy] = true; });
+          ui.moveSel = Object.assign({}, region, { startCx: t0.cx, startCy: t0.cy, dx: 0, dy: 0, valid: true, cellSet: set });
+          showMoveGhost(ui.moveSel, 0, 0);
+          return;
+        }
         const dec = decorAtPoint(p.x, p.y);
         if (dec) { beginDecorDrag(dec.decor, dec.item, p.x, p.y); return; }
         const room = roomAtPoint(p.x, p.y);
         if (room) { beginRoomDrag(room, p.x, p.y); return; }
-        if (ui.tileBrush) {
+        if (tool === "erase" || ui.tileBrush) {
           const t = tileAt(state.currentFloor || 0, p.x, p.y);
           if (!t) return;
+          pushTileSnapshot();
           ui.painting = true;
           ui.paintStart = { cx: t.cx, cy: t.cy };
           if (placeLayer.setPointerCapture && e.pointerId != null) {
             try { placeLayer.setPointerCapture(e.pointerId); } catch (err) {}
           }
-          paintTileAt(p.x, p.y);
+          if (tool === "erase") eraseTileAt(p.x, p.y);
+          else paintTileAt(p.x, p.y);
           showTileRectGhost(tileCellRect(t.cx, t.cy, t.cx, t.cy), true);
         }
       });
       placeLayer.addEventListener("pointerup", function (e) {
-        if (ui.painting && ui.paintStart && ui.tileBrush) {
+        if (ui.moveSel) { e.preventDefault(); commitMoveSelection(); return; }
+        if (ui.painting && ui.paintStart) {
           const p = layerPoint(e);
           const t = p ? tileAt(state.currentFloor || 0, p.x, p.y) : null;
           const end = t || ui.paintStart;
-          fillTileRect(ui.paintStart.cx, ui.paintStart.cy, end.cx, end.cy);
+          if ((ui.tileTool || "paint") === "erase") {
+            for (let cy = Math.min(ui.paintStart.cy, end.cy); cy <= Math.max(ui.paintStart.cy, end.cy); cy++) {
+              for (let cx = Math.min(ui.paintStart.cx, end.cx); cx <= Math.max(ui.paintStart.cx, end.cx); cx++) {
+                eraseTileAt(20 + cx * D.TILE_CELL + 2, 40 + cy * D.TILE_CELL + 2, true);
+              }
+            }
+            renderAll(true);
+            saveState();
+          } else {
+            fillTileRect(ui.paintStart.cx, ui.paintStart.cy, end.cx, end.cy);
+          }
           ui.paintStart = null;
           const ghost = $("#placementGhost");
           if (ghost) ghost.hidden = true;
@@ -4843,6 +5111,17 @@
       else if (action === "room-manage") openExpansionRoomModal(el.dataset.room);
       else if (action === "open-room-catalog") openBuildShopModal("room");
       else if (action === "shop-tab") openBuildShopModal(el.dataset.tab);
+      else if (action === "fill-floor") fillFloorConfirm(el.dataset.id);
+      else if (action === "fill-floor-apply") applyFillFloor(el.dataset.id);
+      else if (action === "pick-hall-floor") buyFloorSkin(el.dataset.id);
+      else if (action === "floor-skin-open") openInteriorSkinModal();
+      else if (action === "floor-skin-open-expansion") openFloorSkinModal();
+      else if (action === "tile-tool") {
+        ui.tileTool = el.dataset.tool || "paint";
+        setTileToolUI();
+        if (ui.tileTool === "paint" && !ui.tileBrush) toast("先在「地砖」里选一种砖。", "neutral", "sparkle");
+      }
+      else if (action === "tile-undo") undoTile();
       else if (action === "open-decor-catalog") openDecorCatalogModal();
       else if (action === "open-tile-shop") openTileShopModal();
       else if (action === "buy-tile") buyTilePack(el.dataset.id, 1);
@@ -4883,12 +5162,13 @@
         else switchView("indoor");
       }
       else if (action === "territory-to") switchView(el.dataset.view);
-      else if (action === "decor-open") { if (state.view === "indoor") openInteriorSkinModal(); else if (state.view === "expansion") openFloorSkinModal(); }
+      else if (action === "decor-open") openBuildShopModal("decorate");
       else if (action === "floor-skin-open") openFloorSkinModal();
-      else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);
+      else if (action === "buy-floor-skin") buyExpansionFloorSkin(el.dataset.id);
       else if (action === "apply-floor-skin") applyFloorSkin(el.dataset.id);
       else if (action === "apply-interior-skin") applyInteriorSkin(el.dataset.id);
       else if (action === "buy-interior-skin") buyInteriorSkin(el.dataset.id);
+      else if (action === "buy-floor-skin") buyFloorSkin(el.dataset.id);
       else if (action === "buy-decor-set") buyDecorSet(el.dataset.set);
       else if (action === "demolish-open") openDemolishConfirm(el.dataset.room);
       else if (action === "demolish-confirm") demolishExpansionRoom(el.dataset.room);
@@ -4944,6 +5224,7 @@
       if (e.target && ["INPUT", "SELECT", "TEXTAREA"].indexOf(e.target.tagName) >= 0) return;
       if (e.key === "`" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d")) { e.preventDefault(); setDebugMode(!ui.debugMode); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") { e.preventDefault(); setSidebarCollapsed(!ui.sidebarCollapsed); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && ui.decorMode) { e.preventDefault(); undoTile(); return; }
       if (e.code === "Space") { e.preventDefault(); state.speed = state.speed === 0 ? 1 : 0; setSpeedButtons(state.speed); }
       else if (["1", "2", "3"].indexOf(e.key) >= 0) { state.speed = Number(e.key); setSpeedButtons(state.speed); }
       else if (e.key === "m" || e.key === "M") toggleMute();
@@ -5064,6 +5345,9 @@
     menu: function (id) { buyMenu(id); },
     shop: function (id) { buyShop(id); },
     expand: function (type) { startPlacement("room", type || "guest"); },
+    workshop: function (tab) { openBuildShopModal(tab || "room"); },
+    floors: function () { openInteriorSkinModal(); },
+    buyFloor: function (id) { buyFloorSkin(id); },
     upgrade: function (id) { upgradeBuilding(id); },
     invite: function () { inviteResident(); },
     fastForward: function (seconds) {

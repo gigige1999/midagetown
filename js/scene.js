@@ -2347,6 +2347,7 @@ window.CastleScene = (function () {
   }
 
   function interiorStoneFloor(x, y, w, h, tint) {
+    if (drawSelectedFloor(x, y, w, h)) return;
     const base = tint || IN.floorStone;
     const rng = mulberry32((x * 31 + y * 17) | 0);
     R(ctx, x, y, w, h, base);
@@ -2363,6 +2364,7 @@ window.CastleScene = (function () {
   }
 
   function interiorWoodFloor(x, y, w, h) {
+    if (drawSelectedFloor(x, y, w, h)) return;
     R(ctx, x, y, w, h, IN.floorWood);
     const rng = mulberry32((x * 7 + y * 23) | 0);
     for (let yy = y + 6; yy < y + h; yy += 8) {
@@ -3447,39 +3449,121 @@ window.CastleScene = (function () {
   }
 
   function floorSkinData(id) {
-    const skins = {
-      stone: { base: "#6e5a49", a: "#766252", b: "#615244", corridor: "#4b2f26", runner: "#8c3f34", accent: "#d6a449", name: "灰石砖" },
-      wood: { base: "#7c5939", a: "#8b653f", b: "#69492d", corridor: "#5b422a", runner: "#4e6b42", accent: "#c9a24e", name: "暖木地板" },
-      checker: { base: "#8f8677", a: "#d2c6ad", b: "#4e4942", corridor: "#3f3a34", runner: "#6d5b74", accent: "#d6d0bd", name: "黑白棋盘" },
-      moss: { base: "#64705a", a: "#718061", b: "#526048", corridor: "#3f4b3b", runner: "#5b7c4a", accent: "#a7bd76", name: "青苔石砖" },
-      royal: { base: "#6f4e4b", a: "#8e5a51", b: "#3d2e31", corridor: "#3a1f26", runner: "#8f2f3d", accent: "#d6a449", name: "皇家红石" }
+    const def = (D.FLOOR_SKINS || []).filter(function (f) { return f.id === id; })[0];
+    if (!def) return { base: "#6e5a49", a: "#766252", b: "#615244", corridor: "#4b2f26", runner: "#8c3f34", accent: "#d6a449", name: "灰石砖", pattern: "tile" };
+    return {
+      base: def.base, a: def.a, b: def.b, accent: def.accent, name: def.name, pattern: def.pattern,
+      corridor: def.b, runner: def.a
     };
-    return skins[id] || skins.stone;
   }
 
-  function drawSkinFloorBase(x, y, w, h, skin) {
-    const p = floorSkinData(skin);
+  function drawFloorSkin(x, y, w, h, skinId) {
+    const p = floorSkinData(skinId);
     R(ctx, x, y, w, h, p.base);
-    const step = skin === "checker" ? 14 : 12;
-    for (let yy = y; yy < y + h; yy += step) {
-      for (let xx = x; xx < x + w; xx += step) {
+    const pattern = p.pattern || "tile";
+    const rng = mulberry32((x * 19 + y * 31 + skinId.length * 7) | 0);
+    if (pattern === "plank" || pattern === "parquet") {
+      const step = pattern === "parquet" ? 10 : 8;
+      for (let yy = y; yy < y + h; yy += step) {
+        R(ctx, x, yy, w, 1, p.b);
+        R(ctx, x, yy + 1, w, 1, "rgba(255,236,200,0.06)");
+        const off = pattern === "parquet" ? ((Math.floor((yy - y) / step) % 2) * 12) : 0;
+        for (let xx = x + 12 + off; xx < x + w; xx += 24) {
+          R(ctx, xx, yy + 1, 1, step - 1, "rgba(40,26,16,0.28)");
+        }
+        for (let xx = x + 3; xx < x + w; xx += 13) {
+          if (rng() < 0.12) R(ctx, xx, yy + 3, 6, 1, "rgba(255,230,180,0.10)");
+        }
+      }
+    } else if (pattern === "checker") {
+      const step = 14;
+      for (let yy = y; yy < y + h; yy += step) for (let xx = x; xx < x + w; xx += step) {
         const odd = ((Math.floor((xx - x) / step) + Math.floor((yy - y) / step)) % 2) === 0;
-        if (skin === "checker") R(ctx, xx, yy, step - 1, step - 1, odd ? p.a : p.b);
-        else if (skin === "wood") {
-          if (Math.floor((yy - y) / 5) !== Math.floor((yy - y - 1) / 5)) R(ctx, xx, yy, step, 1, p.b);
-        } else if (skin === "moss") {
-          if ((xx + yy) % 23 === 0) R(ctx, xx, yy, 4, 3, p.accent);
-          else if (odd) R(ctx, xx, yy, step, 1, "rgba(90,110,80,.16)");
-        } else if (skin === "royal") {
-          R(ctx, xx, yy, step, 1, odd ? "rgba(214,164,73,.18)" : "rgba(45,30,32,.2)");
-          if ((xx + yy) % 29 === 0) R(ctx, xx, yy, 3, 3, "#c39a51");
-        } else {
-          if (odd) R(ctx, xx, yy, step, 1, "rgba(45,35,28,.12)");
+        R(ctx, xx, yy, step - 1, step - 1, odd ? p.a : p.b);
+        R(ctx, xx, yy, step - 1, 1, "rgba(255,255,255,0.10)");
+      }
+    } else if (pattern === "mosaic") {
+      const step = 8;
+      for (let yy = y; yy < y + h; yy += step) for (let xx = x; xx < x + w; xx += step) {
+        const odd = ((Math.floor((xx - x) / step) + Math.floor((yy - y) / step)) % 2) === 0;
+        R(ctx, xx, yy, step - 1, step - 1, odd ? p.a : p.b);
+        if ((Math.floor((xx - x) / step) % 3 === 0) && (Math.floor((yy - y) / step) % 3 === 0)) R(ctx, xx + 2, yy + 2, 3, 3, p.accent);
+      }
+    } else if (pattern === "brick") {
+      let row = 0;
+      for (let yy = y; yy < y + h; yy += 8) {
+        R(ctx, x, yy, w, 1, p.b);
+        const off = (row % 2) * 8;
+        for (let xx = x + off; xx < x + w; xx += 16) R(ctx, xx, yy + 1, 1, 7, p.b);
+        row++;
+      }
+    } else if (pattern === "carpet" || pattern === "tatami") {
+      const pad = pattern === "tatami" ? 0 : 2;
+      R(ctx, x + pad, y + pad, w - pad * 2, h - pad * 2, p.a);
+      if (pattern === "carpet") {
+        R(ctx, x + 3, y + 3, w - 6, h - 6, p.base);
+        R(ctx, x + 3, y + 3, w - 6, 1, p.accent);
+        R(ctx, x + 3, y + h - 4, w - 6, 1, p.accent);
+        for (let xx = x + 8; xx < x + w - 6; xx += 12) R(ctx, xx, y + 6, 4, 1, "rgba(255,230,180,0.14)");
+      } else {
+        for (let yy = y; yy < y + h; yy += 12) {
+          R(ctx, x, yy, w, 1, p.b);
+          for (let xx = x + 6; xx < x + w; xx += 22) R(ctx, xx, yy + 1, 1, 11, p.b);
+        }
+      }
+    } else if (pattern === "flag" || pattern === "cobble") {
+      let row = 0;
+      for (let yy = y; yy < y + h; yy += 10) {
+        let xx = x - (row % 2) * 6;
+        while (xx < x + w) {
+          const bw = pattern === "cobble" ? 8 + Math.floor(rng() * 4) : 10 + Math.floor(rng() * 10);
+          const tone = rng();
+          R(ctx, xx + 1, yy + 1, bw - 2, 8, tone < 0.33 ? p.a : tone < 0.66 ? p.base : p.b);
+          R(ctx, xx + 1, yy + 1, bw - 2, 1, "rgba(230,220,200,0.08)");
+          xx += bw;
+        }
+        row++;
+      }
+    } else if (pattern === "marble") {
+      R(ctx, x, y, w, h, p.base);
+      for (let i = 0; i < 26; i++) {
+        const sx = x + Math.floor(rng() * w);
+        const sy = y + Math.floor(rng() * h);
+        const len = 6 + Math.floor(rng() * 14);
+        for (let k = 0; k < len; k++) R(ctx, sx + k, sy + Math.floor(k / 2), 1, 1, k % 3 ? p.a : p.accent);
+      }
+      for (let xx = x; xx < x + w; xx += 24) R(ctx, xx, y, 1, h, "rgba(40,34,28,0.18)");
+      for (let yy = y; yy < y + h; yy += 24) R(ctx, x, yy, w, 1, "rgba(40,34,28,0.18)");
+    } else if (pattern === "moss") {
+      for (let yy = y; yy < y + h; yy += 10) for (let xx = x; xx < x + w; xx += 12) {
+        R(ctx, xx, yy, 11, 9, rng() < 0.3 ? p.a : p.base);
+        R(ctx, xx, yy, 11, 1, "rgba(220,210,180,0.08)");
+        if (rng() < 0.18) R(ctx, xx + 2, yy + 2, 2, 2, p.accent);
+      }
+      R(ctx, x, y, w, 1, "rgba(20,30,18,0.3)");
+    } else {
+      for (let yy = y; yy < y + h; yy += 12) {
+        R(ctx, x, yy, w, 1, p.b);
+        for (let xx = x + ((Math.floor((yy - y) / 12) % 2) * 6); xx < x + w; xx += 12) {
+          R(ctx, xx, yy, 1, 12, p.b);
+          R(ctx, xx + 1, yy + 1, 10, 1, "rgba(255,250,235,0.10)");
+          if (rng() < 0.08) R(ctx, xx + 2, yy + 2, 8, 7, p.a);
         }
       }
     }
+    R(ctx, x, y, w, 1, "rgba(255,244,214,0.10)");
   }
 
+  function drawSelectedFloor(x, y, w, h) {
+    const skin = stateRef && stateRef.interiorSkin ? stateRef.interiorSkin.selected : "stone";
+    if (!skin || skin === "stone") return false;
+    drawFloorSkin(x, y, w, h, skin);
+    return true;
+  }
+
+  function drawSkinFloorBase(x, y, w, h, skin) {
+    drawFloorSkin(x, y, w, h, skin);
+  }
   function drawSkinRoomOverlay(skin, x, y, w, h, alpha) {
     if (skin === "stone") return;
     ctx.save();
@@ -4280,6 +4364,44 @@ window.CastleScene = (function () {
     royal: { wash: "#b03a46", alpha: 0.55, rug: "#7a2f3a", accent: "#f0cc72", glow: "#ff9a7a" }
   };
 
+  const HALL_CAST = [
+    { id: "core-samuel", type: "envoy", klass: "minister", x0: 248, x1: 330, y: 342, speed: 0.20, phase: 0.4 },
+    { id: "core-mabel", type: "gardener", klass: "cook", x0: 336, x1: 430, y: 350, speed: 0.16, phase: 2.2 },
+    { id: "core-bart", type: "merchant", klass: "resident", x0: 444, x1: 480, y: 344, speed: 0.14, phase: 4.1 }
+  ];
+  const HALL_LINES = [
+    "今天的汤很香，别放凉了。",
+    "账房说木料又不够了。",
+    "大厅的灯该换一盏了。",
+    "门口好像有客人在张望。",
+    "地板换了以后，脚步声都轻了。",
+    "先把炉火看好，其他的慢慢来。"
+  ];
+  let lastHallTalk = -99;
+
+  function drawHallCast(t) {
+    const pts = [];
+    HALL_CAST.forEach(function (c, i) {
+      const k = 0.5 + 0.5 * Math.sin(t * c.speed * 2 + c.phase);
+      const x = c.x0 + (c.x1 - c.x0) * k;
+      const y = c.y + Math.sin(t * 1.7 + i) * 1.2;
+      const dir = Math.cos(t * c.speed * 2 + c.phase) >= 0 ? 1 : -1;
+      ctx.save();
+      if (dir < 0) { ctx.translate(x, y); ctx.scale(-1, 1); ctx.translate(-x, -y); }
+      drawGuestSprite(x, y, { id: c.id, klass: c.klass, type: c.type, variant: i }, t, i * 2.2);
+      ctx.restore();
+      pts.push({ r: { id: c.id }, x: x, y: y });
+    });
+    if (t - lastHallTalk > 10) {
+      lastHallTalk = t;
+      const c = HALL_CAST[Math.floor(Math.random() * HALL_CAST.length)];
+      const line = HALL_LINES[Math.floor(Math.random() * HALL_LINES.length)];
+      window.__castleBubbles = (window.__castleBubbles || []).filter(function (b) { return !b.until || Date.now() <= b.until; });
+      window.__castleBubbles.push({ id: c.id, text: line, until: Date.now() + 4200, tone: "talk" });
+    }
+    drawSocialBubbles(pts);
+  }
+
   function drawInteriorSetProps(t) {
     if (!stateRef || !stateRef.interiorDecor) return;
     const set = (D.DECOR_SETS || []).filter(function (s) { return s.id === stateRef.interiorDecor; })[0];
@@ -4404,7 +4526,6 @@ window.CastleScene = (function () {
       if (bs && bs.status === "built") drawInteriorRoomUpgrade(b, bs.level || 1, time);
     });
 
-    drawInteriorSetProps(time);
     drawStudy(time, built("study"));
     drawChapel(time, built("chapel"));
     drawBarracks(time, built("barracks"));
@@ -4441,32 +4562,9 @@ window.CastleScene = (function () {
     if (built("kitchen")) lights.push({ x: 150, y: 348, r: 22, color: "#f3ca75", a: 0.14 });
     lights.forEach(function (l) { drawGlow(l.x, l.y, l.r, l.color, l.a); });
 
-    // 套装整体配色
-    const skinId = state && state.interiorSkin ? state.interiorSkin.selected : "stone";
-    const pal = INTERIOR_PALETTES[skinId];
-    if (pal) {
-      ctx.save();
-      ctx.globalCompositeOperation = "multiply";
-      ctx.globalAlpha = pal.alpha;
-      R(ctx, 20, 20, W - 40, H - 40, pal.wash);
-      ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = 0.10;
-      R(ctx, 20, 20, W - 40, H - 40, pal.glow || pal.wash);
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 0.55;
-      // 墙面/地面分界处的套装色带
-      R(ctx, 22, 22, W - 44, 2, pal.accent);
-      R(ctx, 22, H - 24, W - 44, 2, pal.accent);
-      for (let i = 0; i < 3; i++) {
-        R(ctx, 23 + i, 23 + i, W - 46 - i * 2, 1, pal.accent);
-        R(ctx, 23 + i, H - 24 - i, W - 46 - i * 2, 1, pal.accent);
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-    }
-
     // 戴面具的居民会在主厅里走动
     drawMaskedWanderers(time, "indoor");
+    drawHallCast(time);
 
     // 室内尘埃
     drawInteriorDust(time);

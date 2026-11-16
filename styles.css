@@ -3502,3 +3502,43 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
   .cover-foot { display: none; }
   .start-screen .start-credit { display: none; }
 }
+
+/* 大厅地板样式 */
+.floor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.floor-card { display: flex; flex-direction: column; gap: 4px; padding: 6px; background: #f4e7cc; border: 2px solid #c2a678; }
+.floor-card.active { border-color: #9fae84; background: #eef2df; }
+.floor-swatch { height: 30px; border: 2px solid #8a6a44; display: flex; overflow: hidden; }
+.floor-swatch span { flex: 1; }
+.floor-copy { display: flex; align-items: baseline; gap: 4px; }
+.floor-copy b { font-size: 12px; font-weight: 400; color: #3f2b19; }
+.floor-copy em { margin-left: auto; font-style: normal; font-size: 9px; color: #8a6b48; }
+.floor-card .btn { align-self: stretch; }
+@media (max-width: 1080px) { .floor-grid { grid-template-columns: 1fr 1fr; } }
+
+/* 装修工具条 */
+.placement-tools { display: flex; align-items: center; gap: 3px; padding-right: 6px; border-right: 1px solid rgba(240,210,138,.3); }
+.placement-tools[hidden] { display: none !important; }
+.tool-btn { padding: 3px 7px; background: #3a2a1c; color: #e6cfa0; border: 1px solid #8a6a44; font-family: var(--px); font-size: 11px; cursor: pointer; }
+.tool-btn:hover { background: #4a3624; }
+.tool-btn.active { background: #d3a646; color: #2a1b0d; border-color: #ffe5a0; }
+.placement-bar { flex-wrap: wrap; max-width: calc(100% - 16px); }
+
+/* 工坊地板页 */
+.floor-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.floor-pick { display: flex; flex-direction: column; gap: 3px; padding: 5px; background: #f4e7cc; border: 2px solid #c2a678; cursor: pointer; font-family: var(--px); text-align: left; }
+.floor-pick.active { border-color: #9fae84; background: #eef2df; }
+.floor-pick:hover { background: #fbf0d8; }
+.floor-pick-swatch { display: flex; height: 22px; border: 1px solid #8a6a44; overflow: hidden; }
+.floor-pick-swatch i { flex: 1; }
+.floor-pick b { font-size: 11px; font-weight: 400; color: #3f2b19; }
+.floor-pick em { font-style: normal; font-size: 9px; color: #8a6b48; }
+.decorate-section { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: #f7ecd4; border: 2px solid #c2a678; margin-bottom: 8px; }
+.decorate-head { display: flex; align-items: baseline; }
+.decorate-head b { font-size: 13px; font-weight: 400; color: #3f2b19; }
+.decorate-head span { margin-left: auto; font-size: 10px; color: #8a6b48; }
+.decorate-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.confirm-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.confirm-list > div { display: flex; align-items: baseline; gap: 8px; padding: 6px; background: #eef2df; border: 1px solid #a3b18b; }
+.confirm-list span { font-size: 11px; color: #6f7f58; }
+.confirm-list b { margin-left: auto; font-size: 13px; color: #3f5330; font-weight: 400; }
+@media (max-width: 1080px) { .floor-picker { grid-template-columns: 1fr 1fr; } }
