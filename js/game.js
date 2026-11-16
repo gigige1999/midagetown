@@ -1221,15 +1221,15 @@
   }
 
   function shopLevelScale(id) {
-    return 1 + (shopLevel(id) - 1) * 0.25;
+    return 1 + (shopLevel(id) - 1) * 0.35;
   }
 
   function shopUpgradeCost(shop, level) {
     const lv = Math.max(1, level || shopLevel(shop.id));
     return {
-      gold: Math.round((shop.cost.gold || 60) * 2.2 * lv),
-      wood: Math.round((shop.cost.wood || 30) * 1.5 * lv),
-      stone: Math.round((shop.cost.stone || 20) * 1.5 * lv)
+      gold: Math.round((shop.cost.gold || 60) * 1.6 * lv),
+      wood: Math.round((shop.cost.wood || 30) * 1.2 * lv),
+      stone: Math.round((shop.cost.stone || 20) * 1.2 * lv)
     };
   }
 
