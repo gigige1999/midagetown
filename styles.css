@@ -3696,3 +3696,15 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
   .top-quick-btn span { font-size: 8px; }
   .top-actions .square-btn { display: none; }
 }
+
+/* 手机竖屏：整页旋转为横屏（与小红书版一致） */
+@media (max-width: 1080px) and (orientation: portrait) {
+  html { width: 100%; height: 100%; overflow: hidden; background: #0b0a12; }
+  body {
+    position: fixed; left: 0; top: 0;
+    width: 100vh; height: 100vw;
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: left top;
+    overflow: hidden;
+  }
+}
