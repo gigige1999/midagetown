@@ -82,6 +82,11 @@
     const steward = $("#stewardPortrait");
     if (steward) steward.src = I.npcPortrait("samuel");
     initScene();
+    ui.lowPower = (window.innerWidth <= 1100 || window.innerHeight <= 620 || (navigator.maxTouchPoints || 0) > 0) && window.devicePixelRatio <= 3;
+    if (window.CastleScene && window.CastleScene.setRenderScale) {
+      window.CastleScene.setRenderScale(ui.lowPower ? 1.25 : 1.75);
+      if (window.CastleScene.setLowPower) window.CastleScene.setLowPower(ui.lowPower);
+    }
     if (window.CoverArt) window.CoverArt.init($("#coverCanvas"));
     bindEvents();
     detectSave();
@@ -657,13 +662,20 @@
   /* =========================================================
      循环
      ========================================================= */
+  let lastDraw = 0;
   function loop(now) {
     const dt = Math.min(0.08, Math.max(0, (now - lastFrame) / 1000)) || 0;
     lastFrame = now;
+    const minFrame = ui.lowPower ? 30 : 0;
+    if (minFrame && now - lastDraw < minFrame) {
+      requestAnimationFrame(loop);
+      return;
+    }
+    lastDraw = now;
     if (started && !ui.modalOpen && !ui.dialogueOpen && state && state.speed > 0) {
       updateGame(dt * state.speed);
     }
-    if (window.CastleScene) window.CastleScene.draw(dt, state);
+    if (started && window.CastleScene) window.CastleScene.draw(dt, state);
     if (started) updateRealtimeUI(dt);
     requestAnimationFrame(loop);
   }

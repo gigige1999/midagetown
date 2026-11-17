@@ -5679,6 +5679,21 @@ window.CastleScene = (function () {
      --------------------------------------------------------- */
   let lightsForFrame = [];
 
+  let renderScale = 2;
+  let lowPower = false;
+
+  function setLowPower(on) { lowPower = !!on; }
+
+  function setRenderScale(scale) {
+    const next = Math.max(1, Math.min(2, Number(scale) || 2));
+    if (!canvas || next === renderScale) return;
+    renderScale = next;
+    canvas.width = Math.round(W * renderScale);
+    canvas.height = Math.round(H * renderScale);
+    ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+  }
+
   function draw(dt, state) {
     lastFrameDt = Math.max(0.001, Math.min(0.05, dt || 0.016));
     if (!ctx) return;
@@ -5691,7 +5706,7 @@ window.CastleScene = (function () {
     const night = nightAmount(hour);
     const stage = getCastleStage(state);
 
-    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, W, H);
     hitAreas = [];
@@ -6159,6 +6174,8 @@ window.CastleScene = (function () {
 
   return {
     init: init,
+    setRenderScale: setRenderScale,
+    setLowPower: setLowPower,
     roomThumb: roomThumb,
     cropThumb: cropThumb,
     decorThumb: decorThumb,
