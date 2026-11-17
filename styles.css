@@ -3665,3 +3665,34 @@ body.resizing-ledger { cursor: col-resize; user-select: none; }
 
 .warehouse-cta { background: #b8862f; color: #2a1b0d; border-color: #ffe0a0; font-size: 11px; }
 .warehouse-cta:hover { background: #c9962f; }
+
+/* 窄屏（手机竖屏/小窗口）顶栏强制单行，避免压住场景导航导致按钮不可点 */
+@media (max-width: 760px) {
+  :root { --topbar-h: 50px; }
+  .topbar {
+    flex-wrap: nowrap !important;
+    height: 50px !important;
+    flex-basis: 50px !important;
+    gap: 3px;
+    padding: 0 4px;
+    overflow: hidden;
+  }
+  .brand { gap: 3px; }
+  .brand-mark { width: 26px; height: 26px; flex-basis: 26px; }
+  .brand-mark img { width: 22px; height: 22px; }
+  .brand-copy { display: none; }
+  .top-objective { display: none; }
+  .resource-strip { flex: 1 1 auto !important; flex-basis: auto !important; gap: 2px; overflow: hidden; }
+  .resource-pill { min-width: 48px; padding: 2px 3px; }
+  .resource-pill .res-name, .resource-pill .res-rate { display: none; }
+  .resource-pill img { width: 16px; height: 16px; flex-basis: 16px; }
+  .resource-pill .res-value { font-size: 12px; }
+  .time-widget { min-width: 46px; padding: 1px 2px; }
+  .time-widget .season-text, .time-widget .weather-text, .time-widget .clock-line { display: none; }
+  .speed-btn { width: 19px; height: 26px; font-size: 9px; }
+  .top-actions { gap: 2px; flex: 0 0 auto; }
+  .top-quick-btn { min-width: 48px; height: 36px; padding: 1px 2px; gap: 0; }
+  .top-quick-btn img { width: 16px; height: 16px; }
+  .top-quick-btn span { font-size: 8px; }
+  .top-actions .square-btn { display: none; }
+}
